@@ -1,0 +1,33 @@
+{
+  "name": "@okta/js-auth-sdks",
+  "private": true,
+  "packageManager": "yarn@1.22.19",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "build:sdks": "turbo run build --filter=./packages/* --log-order=grouped",
+    "lint": "turbo run lint",
+    "test:unit": "turbo run test:unit --log-order=grouped"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "turbo": "2.x"
+  },
+  "resolutions": {
+    "**/@docusaurus/**/trim": "^0.0.3",
+    "**/@docusaurus/**/got": "^11.8.5",
+    "**/@docusaurus/**/axios": "^0.28.0"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/*",
+      "docs",
+      "tooling/*",
+      "e2e/**/*"
+    ],
+    "nohoist": [
+    ]
+  }
+}

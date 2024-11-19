@@ -1,0 +1,13 @@
+{
+  "name": "@repo/e2e.helpers",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "Apache-2.0",
+  "private": true,
+  "files": [
+    "./*"
+  ],
+  "devDependencies": {
+    "@repo/typescript-config": "*"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "@okta/spa-oauth2-flows",
+  "version": "0.0.0",
+  "main": "dist/esm/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "author": "jared.perreault@okta.com",
+  "license": "Apache-2.0",
+  "private": true,
+  "files": [
+    "./dist",
+    "*.md",
+    "package.json"
+  ],
+  "scripts": {
+    "lint": "eslint --ext .js,.ts,.jsx .",
+    "build": "yarn build:esm && yarn build:types",
+    "build:watch": "rollup -c --watch & tsc --emitDeclarationOnly --watch",
+    "build:esm": "rollup -c",
+    "build:types": "tsc --emitDeclarationOnly"
+  },
+  "peerDependencies": {
+    "@okta/auth-foundation": "*"
+  },
+  "devDependencies": {
+    "@okta/auth-foundation": "*",
+    "@repo/eslint-config": "*",
+    "@repo/rollup-config": "*",
+    "@repo/typescript-config": "*",
+    "eslint": "^8.56.0",
+    "rollup": "^4.18.0",
+    "typescript": "^5.0.3"
+  }
+}

@@ -1,0 +1,9 @@
+- URL
+- Request
+- Response
+- fetch
+- URLSearchParams
+- Symbol 
+  - https://stackoverflow.com/questions/59542414/ie11-object-doesnt-support-property-or-method-symbolsymbol-iterator-a-2p3bca
+- atob
+- bota

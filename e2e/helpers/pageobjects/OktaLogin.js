@@ -1,0 +1,80 @@
+/*!
+ * Copyright (c) 2015-present, Okta, Inc. and/or its affiliates. All rights reserved.
+ * The Okta software accompanied by this notice is provided pursuant to the Apache License, Version 2.0 (the "License.")
+ *
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * 
+ * See the License for the specific language governing permissions and limitations under the License.
+ */
+
+/* eslint-disable max-len */
+class OktaLogin {
+  get signinForm() { return $('form[data-se="o-form"]');}
+  get signinUsername() { return $('#okta-signin-username'); }
+  get signinPassword() { return $('#okta-signin-password'); }
+  get signinSubmitBtn() { return $('#okta-signin-submit'); }
+
+  get OIEsigninForm() { return $('form[data-se="o-form"]');}
+  get OIEsigninUsername() { return  $('[name="identifier"]'); }
+  get OIEsigninPassword() { return $('[name="credentials.passcode"]'); }
+  get OIEsigninSubmitBtn() { return $('[data-type="save"]'); }
+
+  get authenticatorsList() { return $('form[data-se="o-form"] .authenticator-list'); }
+  get authenticatorPassword() { return $('form[data-se="o-form"] .authenticator-list [data-se="okta_password"] .select-factor'); }
+
+  async signin(username, password) {
+    await this.waitForLoad();
+
+    if (process.env.ORG_OIE_ENABLED) {
+      await this.signinOIE(username, password);
+    } else { 
+      await this.signinLegacy(username, password);
+    }
+  }
+
+  async signinOIE(username, password) {
+    await this.OIEsigninUsername.setValue(username);
+    const isIdFirst = !(await this.OIEsigninPassword.isDisplayed());
+
+    // Identifier first config
+    if (isIdFirst) {
+      await this.OIEsigninSubmitBtn.click();
+      await this.OIEsigninPassword.setValue(password);
+      await this.OIEsigninSubmitBtn.click();
+    }
+    else {
+      // Identifier and passcode on same screen
+      await this.OIEsigninPassword.setValue(password);
+      await this.OIEsigninSubmitBtn.click();
+    }
+  }
+
+  async signinLegacy(username, password) {
+    await this.signinUsername.then(el => el.setValue(username));
+    await this.signinPassword.then(el => el.setValue(password));
+    await this.signinSubmitBtn.then(el => el.click());
+  }
+
+  async selectPasswordAuthenticator() {
+    await browser.waitUntil(async () => {
+      return (await this.authenticatorPassword).isDisplayed();
+    }, 5000, 'wait for password authenticator in list');
+    (await this.authenticatorPassword).click();
+  }
+
+  async waitForLoad() {
+    if (process.env.ORG_OIE_ENABLED) {
+      // With Step Up MFA there can be no Submit button displayed, 
+      //  but authenticator list or prompt to verify authenticator
+      return browser.waitUntil(async () => this.OIEsigninForm.then(el => el.isDisplayed()), 15000, 'wait for signin form');
+    } else {
+      return browser.waitUntil(async () => this.signinSubmitBtn.then(el => el.isDisplayed()), 15000, 'wait for signin btn');
+    }
+  }
+
+}
+
+export default new OktaLogin();

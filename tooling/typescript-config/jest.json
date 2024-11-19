@@ -1,0 +1,22 @@
+{
+  "display": "Jest",
+  "compilerOptions": {
+    "module": "esnext",
+    "target": "es6",
+    "allowJs": true,
+    "checkJs": true,
+    "moduleResolution": "bundler",
+    "alwaysStrict": true,
+    "noImplicitAny": false,
+    "strict": true,
+    "noEmit": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": false,
+    "skipLibCheck": true,
+    "isolatedModules": true
+  },
+  "lib": [
+    "dom"
+  ]
+}

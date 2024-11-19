@@ -1,18 +1,38 @@
 # Metadata for all Bacon test suites. For options, see:
 # https://oktawiki.atlassian.net/wiki/spaces/ESS/pages/635280223/.Bacon.yaml
 test_suites:
-  - name: 'build'
-    script_path: /root/okta/okta-client-javascript/.bacon
-    script_name: build
+  - name: 'publish'
+    script_path: /root/okta/okta-client-javascript/scripts/bacon
+    script_name: publish
     sort_order: '0'
-    timeout: '50'
+    timeout: '20'
     criteria: MERGE
-    queue_name: small
-  - name: 'test'
-    script_path: /root/okta/okta-client-javascript/.bacon
-    script_name: test
+    queue_name: al2023
+  - name: 'lint'
+    script_path: /root/okta/okta-client-javascript/scripts/bacon
+    script_name: lint
     sort_order: '1'
-    timeout: '50'
+    timeout: '10'
     criteria: MERGE
-    queue_name: small
-    prereq_test_suite_name: "build"
+    queue_name: al2023
+  - name: 'unit'
+    script_path: /root/okta/okta-client-javascript/scripts/bacon
+    script_name: unit
+    sort_order: '2'
+    timeout: '20'
+    criteria: MERGE
+    queue_name: al2023
+  - name: 'e2e-oidc'
+    script_path: /root/okta/okta-client-javascript/scripts/bacon
+    script_name: e2e-oidc
+    sort_order: '3'
+    timeout: '20'
+    criteria: MERGE
+    queue_name: al2023
+  - name: 'e2e-dpop'
+    script_path: /root/okta/okta-client-javascript/scripts/bacon
+    script_name: e2e-dpop
+    sort_order: '3'
+    timeout: '20'
+    criteria: MERGE
+    queue_name: al2023

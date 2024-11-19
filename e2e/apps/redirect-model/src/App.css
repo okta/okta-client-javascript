@@ -1,0 +1,102 @@
+.App {
+  text-align: center;
+}
+
+main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+a {
+  color: #61dafb;
+  padding: 0 1rem;
+}
+
+button {
+  font-size: calc(10px + 1vmin);
+  padding: .5rem 1rem;
+  cursor: pointer;
+  margin: 0 1rem;
+  border-radius: 4px;
+}
+
+li {
+  color: lightgrey;
+  font-size: 1rem;
+  padding: .25rem 0;
+}
+
+li:hover, span:hover {
+  color: darkgrey;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+span {
+  font-size: 1rem;
+  color: lightgrey;
+}
+
+hr {
+  width: 80%;
+}
+
+.token {
+  border-radius: 4px;
+  text-align: left;
+  font-size: 1rem;
+}
+
+.token tr {
+  outline: 1px solid floralwhite;
+}
+
+.token td {
+  padding: .5rem 1rem;
+}
+
+.token td + td {
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.token p {
+  text-align: right;
+}
+
+.token button:last-of-type {
+  background-color: rgb(220, 20, 60);
+  border-color: rgb(220, 20, 60);
+  color: rgb(226, 223, 210);
+}
+
+.flex {
+  display: flex;
+}
+
+.flex-1 {
+  flex: 1;
+}
+
+iframe {
+  width: 100%;
+  height: 100%;
+}
+
+.message-container {
+  text-align: left;
+  font-size: 1.25rem;
+  margin-top: 1rem;
+  color: lightgrey;
+}
+
+.message {
+  padding: .35rem 0;
+}
+
+.message:before {
+  content: "•";
+  margin: 0 .75rem;
+}
