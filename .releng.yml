@@ -1,0 +1,7 @@
+promotion:
+  master:
+    - npm_monorepo_promotion
+  /(^release$|^preview$|^((?:[0-9]+\.)+[0-9]+)(-[a-zA-Z]{2,3}[0-9]+)?$)/
+    - npm_monorepo_promotion
+  default:
+    - fail

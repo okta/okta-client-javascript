@@ -1,6 +1,6 @@
 {
-  "name": "@okta/js-oauth-client-sdk-docs",
-  "version": "0.0.0",
+  "name": "@repo/okta-client-js-docs",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
