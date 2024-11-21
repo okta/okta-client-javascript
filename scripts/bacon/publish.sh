@@ -57,7 +57,7 @@ create_log_group "Result"
 echo -e $PACKAGES_PUBLISHED
 log_custom_message "All Published Packages" "$(echo -e $PACKAGES_PUBLISHED)"
 
-if upload_job_data global publish_receipt ${PACKAGES_PUBLISHED}; then
+if upload_job_data global publish_receipt "${PACKAGES_PUBLISHED}"; then
   echo "Upload okta-auth-js job data publish_receipt=${PACKAGES_PUBLISHED} to s3!"
 else
   # only echo the info since the upload is not crucial
