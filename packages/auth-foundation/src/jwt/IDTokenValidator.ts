@@ -110,7 +110,7 @@ export const DefaultIDTokenValidator: IDTokenValidator = {
         case 'maxAge':
           if (context.maxAge) {
             const authTime = jwt.payload['auth_time'];
-            if (!authTime || !Number.isFinite(authTime) || typeof authTime !== 'number') {
+            if (!authTime || typeof authTime !== 'number' || !Number.isFinite(authTime)) {
               throw new JWTError('Invalid Authentication Time');
             }
 

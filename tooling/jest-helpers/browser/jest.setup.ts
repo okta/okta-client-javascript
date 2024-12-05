@@ -9,6 +9,7 @@ Object.defineProperty(global, 'crypto', {
     randomUUID: () => randStr(15),   // do not use actual crypto alg for testing to for speed
     // getRandomValues: () => new Uint8Array(8)
     getRandomValues: arr => crypto.randomBytes(arr.length),
+    subtle: crypto.subtle
   }
 });
 

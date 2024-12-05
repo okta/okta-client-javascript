@@ -295,8 +295,6 @@ export class OAuth2Client extends APIClient {
       }
     }
 
-    // TODO: valid accesstoken at_hash
-
     return token;
   }
 
