@@ -2,6 +2,8 @@
 
 source $(cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)/../utils/verify_package_versions.sh
 
+cd ${OKTA_HOME}/${REPO}
+
 # This suite parses the .releng.yml file and evaluates the provided promotion branch regular expressions
 # to determine if the current branch is a promotion branch. If it is, additional verification is done
 # to prevent flawed builds from being promoted. Otherwise the suite passes to unblock bacon
@@ -20,6 +22,5 @@ for key in $(yq '.promotion | keys | .[0,1]' .releng.yml); do
     if ! verify_package_versions; then
       exit ${FAILED_SETUP}
     fi
-
   fi
 done
