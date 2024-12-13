@@ -12,7 +12,7 @@ export TEST_SUITE_TYPE="build"
 REGISTRY="${ARTIFACTORY_URL}/api/npm/npm-topic"
 npm config set @okta:registry ${REGISTRY}
 
-PACKAGES_PUBLISHED=""
+PROMOTABLE_VERSIONS=""
 
 echo "Publishing packages..."
 for pkg in ./packages/*
@@ -29,6 +29,9 @@ do
       exit ${TEST_FAILURE}
     fi
 
+    # record the artifact version before the SHA is appended
+    artifact_version="$(ci-pkginfo -t pkgname)@$(ci-pkginfo -t pkgsemver)"
+
     # Append a SHA to the version in package.json 
     if ! ci-append-sha; then
       echo "ci-append-sha failed! Exiting..."
@@ -42,8 +45,7 @@ do
       exit $PUBLISH_ARTIFACTORY_FAILURE
     fi
 
-    artifact_version="$(ci-pkginfo -t pkgname)@$(ci-pkginfo -t pkgsemver)"
-    PACKAGES_PUBLISHED="$PACKAGES_PUBLISHED$artifact_version\n"
+    PROMOTABLE_VERSIONS="$PROMOTABLE_VERSIONS$artifact_version\n"
 
     msg_key="Published ${pkg_name} Version"
     msg_version="$(ci-pkginfo -t pkgsemver)"
@@ -54,13 +56,14 @@ do
 done
 
 create_log_group "Result"
-echo -e $PACKAGES_PUBLISHED
-log_custom_message "All Published Packages" "$(echo -e $PACKAGES_PUBLISHED)"
+echo -e $PROMOTABLE_VERSIONS
+log_custom_message "All Published Packages" "$(echo -e $PROMOTABLE_VERSIONS)"
 
-if upload_job_data global publish_receipt "${PACKAGES_PUBLISHED}"; then
-  echo "Upload okta-auth-js job data publish_receipt=${PACKAGES_PUBLISHED} to s3!"
+# uploads a publish receipt which contains all packages and versions to be included in a release promotion
+if upload_job_data global publish_receipt "${PROMOTABLE_VERSIONS}"; then
+  echo "Upload okta-client-javascript publish_receipt=${PROMOTABLE_VERSIONS} to s3!"
 else
   # only echo the info since the upload is not crucial
-  echo "Fail to upload okta-auth-js job data publish_receipt=${PACKAGES_PUBLISHED} to s3!" >&2
+  echo "Fail to upload okta-client-javascript publish_receipt=${PROMOTABLE_VERSIONS} to s3!" >&2
 fi
 finish_log_group $?
