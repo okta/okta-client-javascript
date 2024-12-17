@@ -13,7 +13,7 @@
 
 /* eslint-disable no-console, complexity */
 const env = require('@repo/env');
-const spawn = require('cross-spawn-with-kill');
+const { spawn } = require('node:child_process');
 const waitOn = require('wait-on');
 const { config } = require('./config');
 
@@ -55,14 +55,13 @@ const getTask = (config) => () => {
       runner.on('exit', function (code) {
         console.log('Test runner exited with code: ' + code);
         returnCode = code;
-        server.kill();
+        server.kill('SIGTERM');
       });
       runner.on('error', function (err) {
-        server.kill();
+        server.kill('SIGTERM');
         throw err;
       });
       server.on('exit', function (code) {
-        console.log('Server exited with code: ' + code);
         resolve(returnCode);
       });
     });

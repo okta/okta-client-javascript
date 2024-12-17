@@ -14,6 +14,7 @@
 require('@repo/env').setEnvironmentVarsFromTestEnv(__dirname);
 require('@babel/register'); // Allows use of import module syntax
 require('regenerator-runtime'); // Allows use of async/await
+const fs = require('node:fs/promises');
 
 const DEBUG = process.env.DEBUG;
 const CI = process.env.CI === 'true' || process.env.CI === true;
@@ -22,6 +23,8 @@ const logLevel = CI ? 'warn' : 'info';
 const browserOptions = {
     args: []
 };
+
+let screenshotCount = 0;
 
 if (process.env.CHROME_BINARY) {
   browserOptions.binary = process.env.CHROME_BINARY;
@@ -210,8 +213,11 @@ exports.config = {
      * @param {Object} config wdio configuration object
      * @param {Array.<Object>} capabilities list of capabilities details
      */
-    // onPrepare: function (config, capabilities) {
-    // },
+    onPrepare: async function (config, capabilities) {
+      if (CI) {
+        await fs.mkdir(process.env.E2E_LOG_DIR, { recursive: true });
+      }
+    },
     /**
      * Gets executed just before initialising the webdriver session and test framework. It allows you
      * to manipulate configurations depending on the capability or spec.
@@ -262,8 +268,12 @@ exports.config = {
     /**
      * Function to be executed after a test (in Mocha/Jasmine).
      */
-    // afterTest: function(test, context, { error, result, duration, passed }) {
-    // },
+    afterTest: async function(test, context, { error, result, duration, passed }) {
+      if (CI && error) {
+        screenshotCount += 1;
+        await browser.saveScreenshot(`${process.env.E2E_LOG_DIR}/screeshot${screenshotCount}.png`);
+      }
+    },
 
 
     /**
