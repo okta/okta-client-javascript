@@ -31,8 +31,12 @@ for key in $(yq -r '.promotion | keys | .[]' .releng.yml); do
     # confirms all SDK versions align within the repo-level version
     echo "On Promotion Branch, verifying consistent package versions..."
     if ! verify_package_versions; then
+      echo ""
       echo "Inconsistent versions detected, exiting..."
       exit ${FAILED_SETUP}
+    else
+      echo ""
+      echo "All package versions verified!"
     fi
   fi
 
