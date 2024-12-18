@@ -43,3 +43,18 @@ test_suites:
     timeout: '10'
     criteria: MERGE
     queue_name: small
+  - name: semgrep
+    script_path: /root/okta/okta-client-javascript/scripts/bacon
+    sort_order: '5'
+    timeout: '10'
+    script_name: semgrep
+    criteria: MERGE
+    queue_name: small
+  - name: snyk
+    script_path: /root/okta/okta-client-javascript/scripts/bacon
+    script_name: snyk
+    sort_order: '6'
+    timeout: '200'
+    criteria: MAINLINE
+    queue_name: small
+    trigger: AUTO
