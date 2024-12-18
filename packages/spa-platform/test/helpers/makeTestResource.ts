@@ -23,17 +23,18 @@ export const makeTestIDToken = () => {
   return mockIDToken();
 };
 
-export const makeRawTestToken = (id?, overrides = {}) => {
+export const makeRawTestToken = (id?, overrides: Record<string, any> = {}) => {
   const context: Token.Context = {
     issuer: client.configuration.baseURL.href,
     clientId: client.configuration.clientId,
-    scopes: client.configuration.scopes,
+    scopes: overrides?.scopes ?? client.configuration.scopes,
   };
   return {...mockTokenResponse(id, overrides), context};
 };
 
 export const makeTestToken = (id?, overrides = {}) => {
-  return new Token(makeRawTestToken(id, overrides));
+  const resp = makeRawTestToken(id, overrides);
+  return new Token(resp);
 };
 
 export const makeTestCredential = () => {

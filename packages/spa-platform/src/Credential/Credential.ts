@@ -3,7 +3,8 @@ import {
   EventEmitter,
   Timestamp,
   isOAuth2ErrorResponse,
-  OAuth2Error
+  OAuth2Error,
+  type RequestAuthorizer,
 } from '@okta/auth-foundation';
 import OAuth2Client from '@okta/auth-foundation/client';
 import { type CredentialCoordinator, CredentialCoordinatorImpl } from './CredentialCoordinator';
@@ -40,7 +41,7 @@ class CredentialEventEmitter extends EventEmitter {
  * 
  * @public
  */
-export class Credential {
+export class Credential implements RequestAuthorizer {
   // TODO: define expected events
   protected static readonly emitter = new CredentialEventEmitter();
 
@@ -63,7 +64,7 @@ export class Credential {
   private _token: Token;
 
   /** @internal */
-  private _refreshPromise: Promise<this> | null = null;
+  private _refreshPromise: Promise<void> | null = null;
 
   /** @internal */
   private _oauth2: OAuth2Client;
@@ -182,7 +183,6 @@ export class Credential {
    * 
    * @group Factory Methods
    * 
-   * @see {@link Credential.findByTags | Credential.findByTags}
    */
   public static store (token: Token, tags: string[] = []): Credential {
     return this.#coordinator.store(token, tags);
@@ -355,7 +355,7 @@ export class Credential {
    * 
    * @throws {@link OAuth2Error} if refresh fails
    */
-  public async refresh (): Promise<Credential> {
+  public async refresh (): Promise<void> {
     if (!this._refreshPromise) {
       this._refreshPromise = this.oauth2.refresh(this.token).then(response => {
         if (isOAuth2ErrorResponse(response)) {
@@ -365,14 +365,13 @@ export class Credential {
         }
 
         this.token = response;
-        return this;
       })
       .finally(() => {
         this._refreshPromise = null;
       });
     }
 
-    return this._refreshPromise as Promise<Credential>;
+    return this._refreshPromise;
   }
 
   /**
@@ -385,13 +384,11 @@ export class Credential {
    * 
    * @throws {@link OAuth2Error} if refresh fails
    */
-  public async refreshIfNeeded (gracePeriod: seconds = 30): Promise<Credential> {
+  public async refreshIfNeeded (gracePeriod: seconds = 30): Promise<void> {
     const timestamp = Timestamp.from(this.token.expiresAt);
     if (timestamp.timeSinceNow() <= gracePeriod) {
-      return this.refresh();
+      await this.refresh();
     }
-
-    return this;
   }
 
   /**

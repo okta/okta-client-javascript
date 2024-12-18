@@ -1,4 +1,5 @@
 import type { JWK, JWKS } from '../jwt';
+import type { ConfigurationParams } from '../oauth2/configuration';
 // moved to separate file because it's so large
 import type { OpenIdConfiguration } from './openid';
 
@@ -46,13 +47,7 @@ export function isJWKS (input: unknown): input is JWKS {
   return false;
 }
 
-export type ConfigurationParams = {
-  baseURL: URL | string;
-  clientId: string;
-  scopes: string | string[];
-  authentication?: ClientAuthentication;
-  discoveryURL?: URL | string;
-};
+export type { ConfigurationParams };
 
 export type GrantType = 'authorization_code' | 'refresh_token';
 

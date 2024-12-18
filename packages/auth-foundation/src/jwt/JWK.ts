@@ -29,7 +29,7 @@ export type SubtleAlgoritm = RsaHashedImportParams;
 
 function jwkToCryptoAlg (jwk: JWK): SubtleAlgoritm {
   switch (jwk.alg) {
-    case JWK.Algorithm.RS256:
+    case 'RS256':
       return {
         name: 'RSASSA-PKCS1-v1_5',
         hash: { name: 'SHA-256' }
@@ -66,9 +66,8 @@ export const DefaultJWKValidator: JWKValidator = {
  */
 export namespace JWK {
   // TODO: add other algorithms
-  export enum Algorithm {
-    RS256 = 'RS256'
-  }
+  export type Algorithm = 'RS256'
+
   // TODO: add following enums (are they even needed? JS crypto libs expect JWK format already)
   // https://github.com/okta/okta-mobile-swift/blob/ee28a74e47e8f6b3526ccf4e312d3d61b4108966
   // /Sources/AuthFoundation/JWT/Enums/JWK%2BEnums.swift#L15

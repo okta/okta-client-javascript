@@ -38,3 +38,7 @@ export interface Decodable {
 
 // https://developer.apple.com/documentation/swift/codable
 export type Codable = Encodable & Decodable;
+
+export interface RequestAuthorizer {
+  authorize (input: string | URL | Request, init?: RequestInit): Promise<Request>;
+}

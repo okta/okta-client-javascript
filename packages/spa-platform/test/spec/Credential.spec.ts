@@ -1,36 +1,21 @@
-// NOTE: Credential.ts and config.ts are dynamically imported into this spec file
-// because they use their respective module's global space to define/store
-// a configuration object. This needs to be reset inbetween each test, otherwise
-// previous tests with affect the behavior of the current test.
-// *  modules are reset in top-level 'afterEach' and dynamically imported in top-level 'beforeEach'
-// *  modules used in specific tests will need to be dynamiacally imported as well to ensure
-// reference: https://stackoverflow.com/questions/48989643/how-to-reset-module-imported-between-tests
-
 import {
   EVENT_ADDED,
   EVENT_DEFAULT_CHANGED,
   EVENT_REMOVED,
 } from 'src/Credential/constants';
 import { oauthClient, makeTestToken } from '../helpers/makeTestResource';
-
+import { Credential } from 'src/Credential';
 
 interface TestContext {
   [key:string]: any;
 }
 
 describe('Credential', () => {
-  let Credential;   // see note at top of file
   const context: TestContext = {};
 
-  beforeEach(async () => {
-    // see note at top of file
-    Credential = (await import('src/Credential/Credential')).default;
-  });
-
-  afterEach( () => {
-    // see note at top of file
-    jest.resetModules();
+  afterEach(() => {
     localStorage.clear();
+    Credential.clear();
   });
 
   describe('instantiate', () => {
@@ -97,7 +82,7 @@ describe('Credential', () => {
           expect(onAdded2).toHaveBeenNthCalledWith(1, { credential: cred });
           expect(onRemoved1).toHaveBeenCalledTimes(0);
           expect(onRemoved2).toHaveBeenCalledTimes(0);
-          cred.remove(cred);
+          cred.remove();
           expect(onAdded1).toHaveBeenCalledTimes(1);
           expect(onAdded2).toHaveBeenCalledTimes(1);
           expect(onRemoved1).toHaveBeenNthCalledWith(1, { id: cred.id });
@@ -147,7 +132,9 @@ describe('Credential', () => {
           expect(Credential.size).toEqual(0);
 
           // no setters, should throw
+          // @ts-expect-error confirms assignment logically won't work
           expect(() => Credential.allIDs = []).toThrow();
+          // @ts-expect-error confirms assignment logically won't work
           expect(() => Credential.size = 5).toThrow();
         });
       });
@@ -167,7 +154,7 @@ describe('Credential', () => {
               issuedAt: expect.any(Number),
               scopes: 'openid email profile offline_access',
               accessToken: cred.token.accessToken,
-              idToken: cred.token.idToken.rawValue,
+              idToken: cred.token?.idToken?.rawValue,
               refreshToken: cred.token.refreshToken,
               context: {
                 issuer: 'https://foo.okta.com/',
@@ -244,6 +231,7 @@ describe('Credential', () => {
             const cred = Credential.store(t1);
             expect(cred.token).toEqual(t1);
             const t2 = makeTestToken();
+            // @ts-expect-error confirms assignment logically won't work
             expect(() => cred.token = t2).toThrow(new CredentialError('Unrelated token. ids do not match'));
           });
         });
@@ -335,8 +323,7 @@ describe('Credential', () => {
             const { cred, id } = context;
             const rawToken = cred.token.toJSON();
             const refreshSpy = jest.spyOn(cred.oauth2, 'refresh').mockResolvedValue(makeTestToken(id));
-            const result = await cred.refresh();
-            expect(result).toEqual(cred);
+            await cred.refresh();
             expect(refreshSpy).toHaveBeenCalledTimes(1);
             expect(cred.token.toJSON()).not.toEqual(rawToken);
           });
@@ -345,8 +332,7 @@ describe('Credential', () => {
             it('token is not expired', async () => {
               const { cred, id } = context;
               const refreshSpy = jest.spyOn(cred.oauth2, 'refresh').mockResolvedValue(makeTestToken(id));
-              const result = await cred.refreshIfNeeded();
-              expect(result).toEqual(cred);
+              await cred.refreshIfNeeded();
               expect(refreshSpy).not.toHaveBeenCalled();
             });
 
@@ -356,8 +342,7 @@ describe('Credential', () => {
               const cred = Credential.store(expiredToken);
               const rawToken = cred.token.toJSON();
               const refreshSpy = jest.spyOn(cred.oauth2, 'refresh').mockResolvedValue(makeTestToken(id));
-              const result = await cred.refreshIfNeeded();
-              expect(result).toEqual(cred);
+              await cred.refreshIfNeeded();
               expect(refreshSpy).toHaveBeenCalledTimes(1);
               expect(cred.token.toJSON()).not.toEqual(rawToken);
             });
@@ -383,7 +368,7 @@ describe('Credential', () => {
 
           const t2 = makeTestToken('t2', { refreshToken: undefined });
           const c2 = Credential.store(t2);
-          revokeSpy = jest.spyOn(c2.oauth2, 'revoke').mockResolvedValue(undefined);
+          revokeSpy = jest.spyOn(c2.oauth2 as any, 'revoke').mockResolvedValue(undefined);
           rmSpy = jest.spyOn(c2, 'remove').mockImplementation(() => {});
 
           await c2.revoke('ACCESS');

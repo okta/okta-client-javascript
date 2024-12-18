@@ -7,7 +7,7 @@ import type {
 import type { IDTokenValidatorContext } from '../jwt/IDTokenValidator';
 import { isJWKS, isOAuth2ErrorResponse, isOpenIdConfiguration } from '../types';
 import { OAuth2Error, JWTError, TokenError } from '../errors';
-import { validateString, validateURL } from '../validators';
+import { validateString, validateURL, validateArrayNotEmpty } from '../validators';
 import {
   JWT,
   JWKS,
@@ -17,12 +17,13 @@ import {
   TokenHashValidator
 } from '../jwt';
 import { APIClient } from '../http';
-import { Configuration as ConfigurationConstructor } from './configuration';
+import { Configuration as ConfigurationConstructor, type ConfigurationParams } from './configuration';
 import { TokenJSON, Token } from '../Token';
 import { createDPoPKeyPair, generateDPoPProof } from './dpop';
 import { SynchronizedResult } from '../utils/SynchronizedResult';
 import { PromiseQueue } from '../utils/PromiseQueue';
 import { EventEmitter } from '../utils/EventEmitter';
+import { hasSameValues } from '../utils';
 
 // ref: https://developer.okta.com/docs/reference/api/oidc/
 
@@ -47,16 +48,6 @@ function assertReadableResponse(response: Response) {
   }
 }
 
-/**
- * @group OAuth2Client
- */
-export interface OAuth2ClientParams {
-  baseURL: string | URL;
-  clientId: string;
-  scopes: string | string[];
-  dpop?: boolean;
-}
-
 /** @internal */
 export class OAuth2ClientEventEmitter extends EventEmitter {
   tokenWillRefresh (token: Token) {
@@ -75,15 +66,15 @@ export class OAuth2Client extends APIClient {
   public static readonly accessTokenValidator: TokenHashValidator = DefaultTokenHashValidator('accessToken');
 
   #httpCache: Map<string, JsonRecord> = new Map();
-  #pendingRefresh: WeakMap<Token, Promise<Token | OAuth2ErrorResponse>> = new WeakMap();
+  #pendingRefresh: Map<string, Promise<Token | OAuth2ErrorResponse>> = new Map();
   #dpopNonces: Map<string, string> = new Map();
   private readonly queue: PromiseQueue = new PromiseQueue();
   readonly emitter: OAuth2ClientEventEmitter = new OAuth2ClientEventEmitter();
   readonly configuration: OAuth2Client.Configuration;
 
-  constructor (params: OAuth2ClientParams);
+  constructor (params: ConfigurationParams);
   constructor (configuration: OAuth2Client.Configuration);
-  constructor (params: OAuth2ClientParams | OAuth2Client.Configuration) {
+  constructor (params: ConfigurationParams | OAuth2Client.Configuration) {
     super();
 
     if (params instanceof OAuth2Client.Configuration) {
@@ -255,7 +246,7 @@ export class OAuth2Client extends APIClient {
       result.idToken = new JWT(json.id_token);
     }
 
-    if (tokenRequest instanceof Token.RefreshRequest) {
+    if (tokenRequest instanceof Token.RefreshRequest && tokenRequest.id) {
       result.id = tokenRequest.id;
     }
 
@@ -317,18 +308,27 @@ export class OAuth2Client extends APIClient {
     return this.validateToken(request, keySet, response);
   }
 
-  public async refresh (token: Token): Promise<Token | OAuth2ErrorResponse> {
-    if (this.#pendingRefresh.has(token)) {
-      return this.#pendingRefresh.get(token)!;
-    }
-
+  public async refresh (token: Token, scopes?: string[]): Promise<Token | OAuth2ErrorResponse> {
     if (!token.refreshToken) {
       throw new OAuth2Error(`Missing token: refreshToken`);
     }
 
+    // If there is a pending refresh request for a giving refresh token, wait that request to resolve
+    if (this.#pendingRefresh.has(token.refreshToken)) {
+      // refresh tokens are often single use, therefore sending concurrent requests against the same token
+      // will most likely fail anyways, therefore waiting for the pending refresh request to finish still
+      // has value even if the requests aren't indentical (aka different scopes)
+      const response = await this.#pendingRefresh.get(token.refreshToken)!;
+      // only propagate the result of the refresh request if the scopes match
+      // TODO: consider propagating result if requests results in an OAuth Error (we would be unable to compare scopes)
+      if (!isOAuth2ErrorResponse(response) && hasSameValues(response.scopes, scopes ?? token.scopes)) {
+        return response;
+      }
+    }
+
     const synchronizer = new SynchronizedResult<Token | OAuth2ErrorResponse, TokenJSON | OAuth2ErrorResponse>(
       `refresh:${token.id}`,
-      this.performRefresh.bind(this, token),
+      this.performRefresh.bind(this, token, scopes),
       {
         // NOTE: I tried everything I could think to avoid casting `response.toJSON()` (even adding a generic to the mixin signature).
         // It seems like the mixin pattern mucks with types too much for TS to figure it out
@@ -339,20 +339,22 @@ export class OAuth2Client extends APIClient {
     );
 
     let tokenRequest: Promise<Token | OAuth2ErrorResponse>;
-    try {
-      // wraps refresh action in a local promise queue and tab-synchronized result
-      tokenRequest = this.queue.push(() => synchronizer.exec());
-    }
-    finally {
+    // wraps refresh action in a local promise queue and tab-synchronized result
+    tokenRequest = this.queue.push(() => synchronizer.exec());
+    this.#pendingRefresh.set(token.refreshToken, tokenRequest);
+
+    return tokenRequest.finally(() => {
       // clean up pendingRefresh map
-      this.#pendingRefresh.delete(token);
-    }
-    return tokenRequest;
+      if (token.refreshToken) {
+        this.#pendingRefresh.delete(token.refreshToken);
+      }
+    });
   }
 
   // TODO: use clientSettings
   // private async performRefresh (token: Token, clientSettings: Record<string, string>) {
-  private async performRefresh (token: Token) {
+  /* eslint max-statements: [2, 28] */
+  private async performRefresh (token: Token, scopes?: string[]) {
     // TODO: remove, for testing
     // await (new Promise(resolve => setTimeout(resolve, 5000)));
 
@@ -360,20 +362,30 @@ export class OAuth2Client extends APIClient {
       return { error: `Missing token: refreshToken` };
     }
 
+    if (!validateArrayNotEmpty(scopes)) {
+      return { error: '`scopes` array cannot be empty' };
+    }
+
     // TODO: use clientSettings
 
     this.emitter.tokenWillRefresh(token);
 
     const openIdConfiguration = await this.openIdConfiguration();
-    const request = new Token.RefreshRequest({
+    const refreshParams: Token.RefreshRequestParams = {
       id: token.id,
       openIdConfiguration,
       clientConfiguration: this.configuration,
       refreshToken: token.refreshToken
-    });
+    };
+
+    if (scopes && scopes.length > 0) {
+      refreshParams.scope = scopes.join(' ');
+    }
+
+    const request = new Token.RefreshRequest(refreshParams);
 
     const tokenOptions: OAuth2Client.TokenRequestOptions = {};
-    if (token.context.dpopPairId) {
+    if (token.context?.dpopPairId) {
       tokenOptions.keyPairId = token.context.dpopPairId;
     }
 
@@ -386,9 +398,29 @@ export class OAuth2Client extends APIClient {
       return response;
     }
 
-    const newToken = response.merge(token);
+    let newToken: Token;
+    let refreshedToken: Token;
+
+    // when refresh is used to produce a downscoped token
+    if (!hasSameValues(response.scopes, token.scopes)) {
+      refreshedToken = new Token({
+        ...(token.toJSON() as TokenJSON),
+        id: token.id,
+        refreshToken: response.refreshToken
+      });
+
+      newToken = new Token({
+        ...(response.toJSON() as TokenJSON),
+        refreshToken: undefined
+      });
+    }
+    else {
+      newToken = response.merge(token);
+      refreshedToken = newToken;
+    }
+
     await this.validateToken(request, keySet, newToken);
-    this.emitter.tokenDidRefresh(newToken);
+    this.emitter.tokenDidRefresh(refreshedToken);
     return newToken;
   }
 

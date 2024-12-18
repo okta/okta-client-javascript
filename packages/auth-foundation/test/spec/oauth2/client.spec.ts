@@ -20,7 +20,7 @@ jest.mock('src/utils/SynchronizedResult', () => {
   };
 });
 
-import { Token } from 'src/Token';
+import { Token, TokenJSON } from 'src/Token';
 import { OAuth2Client } from 'src/oauth2/client';
 import { OAuth2Error, TokenError, JWTError } from 'src/errors';
 import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
@@ -205,24 +205,14 @@ describe('OAuth2Client', () => {
         performSpy = jest.spyOn(client, 'performRefresh');
       });
 
-      it('should queue .refresh calls and return the same return if called twice', async () => {
-        const token1 = new Token(mockTokenResponse());
-        const token2 = new Token(mockTokenResponse());
-        const newToken1 = new Token(mockTokenResponse());
-        const newToken2 = new Token(mockTokenResponse());
-        performSpy
-          .mockResolvedValueOnce(newToken1)
-          .mockResolvedValueOnce(newToken2)
-          .mockResolvedValueOnce(newToken1);
+      it('should return a new token', async () => {
+        const original = new Token(mockTokenResponse());
+        const newToken = new Token(mockTokenResponse());
+        performSpy.mockResolvedValueOnce(newToken);
 
-        const call1 = client.refresh(token1);
-        const call2 = client.refresh(token2);
-        const call3 = client.refresh(token1);
-        expect(call1).not.toBe(call2);
-        expect(call1).toEqual(call3);
-        expect(client.queue.size).toEqual(2);
-        expect(client.queue.isRunning).toBe(true);
-        await call1;
+        const result = await client.refresh(original);
+        expect(performSpy).toHaveBeenCalledTimes(1);
+        expect(result).not.toEqual(original);
       });
 
       it('should throw if no refresh token exists', async () => {
@@ -231,16 +221,120 @@ describe('OAuth2Client', () => {
         await expect(() => client.refresh(token)).rejects.toThrow(OAuth2Error);
         expect(performSpy).not.toHaveBeenCalled();
       });
+
+      describe('concurrent requests', () => {
+        it('should return same Promise if indential request is made concurrently', async () => {
+          const original = new Token(mockTokenResponse());
+          const refresh1 = new Token(mockTokenResponse());
+          const refresh2 = new Token(mockTokenResponse());
+  
+          jest.spyOn(client, 'refresh');
+  
+          let proceed;
+          performSpy
+            // do not resolve this promise instantly, to allow for subsequent call to be made
+            .mockImplementationOnce(() => new Promise((resolve) => {
+              proceed = () => resolve(refresh1);
+            }))
+            .mockResolvedValueOnce(refresh2);
+  
+          const call1 = client.refresh(original);
+          const call2 = client.refresh(original);
+          proceed();    // resolves client.performRefresh mock promise
+          const result1 = await call1;
+          const result2 = await call2;
+  
+          expect(client.refresh).toHaveBeenCalledTimes(2);
+          expect(performSpy).toHaveBeenCalledTimes(1);
+          expect(result1).toEqual(result2);
+        });
+
+        it('should queue .refresh calls and return the same return if called twice', async () => {
+          const token1 = new Token(mockTokenResponse());
+          const token2 = new Token(mockTokenResponse());
+          const newToken1 = new Token(mockTokenResponse());
+          const newToken2 = new Token(mockTokenResponse());
+          performSpy
+            .mockResolvedValueOnce(newToken1)
+            .mockResolvedValueOnce(newToken2)
+            .mockResolvedValueOnce(newToken1);
+  
+          const call1 = client.refresh(token1);
+          const call2 = client.refresh(token2);
+          const call3 = client.refresh(token1);
+          expect(call1).not.toBe(call2);
+          expect(call1).toEqual(call3);
+          expect(client.queue.size).toEqual(1);
+          expect(client.queue.isRunning).toBe(true);
+          await call1;
+          expect(performSpy).toHaveBeenCalledTimes(2);
+        });
+
+        it('should invoke second request if first request results in OAuth error', async () => {
+          const original = new Token(mockTokenResponse());
+          const refresh1 = new Token(mockTokenResponse());
+  
+          jest.spyOn(client, 'refresh');
+  
+          let proceed;
+          performSpy
+            // do not resolve this promise instantly, to allow for subsequent call to be made
+            .mockImplementationOnce(() => new Promise((resolve) => {
+              proceed = () => resolve({ error: 'Mock OAuth Error' });
+            }))
+            .mockResolvedValueOnce(refresh1);
+  
+          const call1 = client.refresh(original);
+          const call2 = client.refresh(original);
+          proceed();    // resolves client.performRefresh mock promise
+          const result1 = await call1;
+          const result2 = await call2;
+  
+          expect(client.refresh).toHaveBeenCalledTimes(2);
+          expect(performSpy).toHaveBeenCalledTimes(2);
+          expect(result1).toEqual({ error: 'Mock OAuth Error' });
+          expect(result2).toEqual(refresh1);
+        });
+
+        it('should result in separate requests when different scopes are requested', async () => {
+          const original = new Token(mockTokenResponse());
+          const refresh1 = new Token(mockTokenResponse(null, { scopes: 'openid' }));
+          const refresh2 = new Token(mockTokenResponse());
+  
+          jest.spyOn(client, 'refresh');
+  
+          let proceed;
+          performSpy
+            // do not resolve this promise instantly, to allow for subsequent call to be made
+            .mockImplementationOnce(() => new Promise((resolve) => {
+              proceed = () => resolve(refresh1);
+            }))
+            .mockResolvedValueOnce(refresh2);
+  
+          const call1 = client.refresh(original, ['openid']);
+          const call2 = client.refresh(original);
+          proceed();    // resolves client.performRefresh mock promise
+          const result1 = await call1;
+          const result2 = await call2;
+  
+          expect(client.refresh).toHaveBeenCalledTimes(2);
+          expect(performSpy).toHaveBeenCalledTimes(2);
+          expect(result1).toEqual(refresh1);
+          expect(result2).toEqual(refresh2);
+        });
+      });
     });
 
     describe('performRefresh', () => {
-      it('should send a request to /token', async () => {
+      beforeEach(() => {
         jest.spyOn(client, 'openIdConfiguration').mockResolvedValue({
           issuer: 'https://fake.okta.com',
           token_endpoint: 'https://fake.okta.com/token'
         });
         jest.spyOn(client, 'jwks').mockResolvedValue({});
+      });
 
+      it('should send a request to /token', async () => {
         const fetchSpy = global.fetch = jest.fn().mockResolvedValue({
           ok: true,
           json: () => Promise.resolve({ keys: [{ kid: 'foo', alg: 'bar'}]})
@@ -248,7 +342,7 @@ describe('OAuth2Client', () => {
 
         const tokenResponse = mockTokenResponse();
         const token = new Token({...tokenResponse, context: {}});
-        await client.performRefresh(token, {});
+        await client.performRefresh(token);
         expect(fetchSpy).toHaveBeenLastCalledWith(expect.any(Request));
 
         const lastArg = fetchSpy.mock.lastCall[0];
@@ -270,8 +364,38 @@ describe('OAuth2Client', () => {
 
       it('should throw if no refresh token exists', async () => {
         const token = new Token(mockTokenResponse('foo', { refreshToken: undefined }));
-        const response = await client.performRefresh(token, {});
+        const response = await client.performRefresh(token);
         expect(response).toEqual({ error: `Missing token: refreshToken` });
+      });
+
+      it('should handle token down scoping', async () => {
+        jest.spyOn(client, 'validateToken').mockResolvedValue(undefined);
+
+        const downscoped = new Token(mockTokenResponse(null, { scopes: 'openid', refreshToken: 'foobar' }));
+        jest.spyOn(client, 'sendTokenRequest').mockResolvedValue(downscoped);
+        
+        const willRefreshSpy = jest.fn();
+        client.emitter.on('token_will_refresh', willRefreshSpy);
+        const didRefreshSpy = jest.fn();
+        client.emitter.on('token_did_refresh', didRefreshSpy);
+
+        // mock scopes: openid email profile offline_access
+        const token = new Token(mockTokenResponse());
+
+        const newToken = await client.refresh(token, ['openid']);
+        expect(willRefreshSpy).toHaveBeenCalledWith({ token });
+        expect(didRefreshSpy).toHaveBeenCalledTimes(1);
+        expect(didRefreshSpy).toHaveBeenCalledWith({
+          token: new Token({
+            ...token.toJSON() as TokenJSON,
+            id: token.id,
+            refreshToken: 'foobar'
+          })
+        });
+        expect(newToken).not.toEqual(token);
+        expect(newToken.scopes).toEqual(['openid']);
+        expect(newToken.refreshToken).not.toEqual(token.refreshToken);
+        expect(newToken.refreshToken).toEqual(undefined);
       });
     });
 

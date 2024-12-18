@@ -1,6 +1,15 @@
+jest.mock('src/http/oktaUserAgent', () => {
+  return {
+    __esModule: true,
+    getOktaUserAgent: () => 'fake-useragent'
+  };
+});
+
 import { JWT } from 'src/jwt';
 import { Token } from 'src/Token';
+import { OAuth2Client } from 'src/oauth2/client';
 import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
+import { OAuth2Error } from 'src/errors';
 
 
 interface TestContext {
@@ -80,6 +89,71 @@ describe('Token', () => {
       const t2 = new Token(mockTokenResponse());
       expect(Token.isEqual(t1, t1)).toBe(true);
       expect(Token.isEqual(t1, t2)).toBe(false);
+    });
+
+    it('.from', async () => {
+      const client = new OAuth2Client({
+        baseURL: 'https://fake.okta.com',
+        clientId: 'fake',
+        scopes: 'openid email profile',
+      });
+
+      jest.spyOn(client, 'openIdConfiguration').mockResolvedValue({
+        issuer: 'https://fake.okta.com',
+        token_endpoint: 'https://fake.okta.com/token'
+      });
+      jest.spyOn(client, 'jwks').mockResolvedValue([{ kid: 'foo', alg: 'RS256'}]);
+      // cast to any because `validateToken` is a private method
+      jest.spyOn(client as any, 'validateToken').mockImplementation((a, b, token) => Promise.resolve(token));
+
+      const fetchSpy = global.fetch = jest.fn()
+        // happy path (first call)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve(mockTokenResponse())
+        })
+        // error path (second call)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({error: 'some oauth2 error'})
+        });
+
+      // happy path
+      const t1 = await Token.from('testRefreshToken1', client);
+      expect(t1).toBeInstanceOf(Token);
+      const firstCall = fetchSpy.mock?.lastCall?.[0];
+      expect(firstCall.url).toEqual('https://fake.okta.com/token');
+      expect(firstCall.method).toEqual('POST');
+      expect(firstCall.headers).toEqual(new Headers({
+        'accept': 'application/json',
+        'X-Okta-User-Agent-Extended': 'fake-useragent',
+        'content-type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      }));
+      // request.text returns raw request body
+      expect(await firstCall.text()).toEqual(new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: 'fake',
+        scope: 'openid email profile',
+        refresh_token: 'testRefreshToken1'
+      }));
+
+      // error path
+      await expect(Token.from('testRefreshToken2', client)).rejects.toThrow(new OAuth2Error('some oauth2 error'));
+      const secondCall = fetchSpy.mock?.lastCall?.[0];
+      expect(secondCall.url).toEqual('https://fake.okta.com/token');
+      expect(secondCall.method).toEqual('POST');
+      expect(secondCall.headers).toEqual(new Headers({
+        'accept': 'application/json',
+        'X-Okta-User-Agent-Extended': 'fake-useragent',
+        'content-type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      }));
+      // request.text returns raw request body
+      expect(await secondCall.text()).toEqual(new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: 'fake',
+        scope: 'openid email profile',
+        refresh_token: 'testRefreshToken2'
+      }));
     });
   });
 

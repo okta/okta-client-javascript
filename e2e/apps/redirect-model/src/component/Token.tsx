@@ -15,6 +15,10 @@ export function Token ({ credential }) {
     }
   }, [setToken]);
 
+  useEffect(() => {
+    setToken(credential.token);
+  }, [credential]);
+
   const remove = () => {
     credential.remove();
   };

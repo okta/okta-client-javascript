@@ -1,9 +1,12 @@
-import type {
-  GrantType,
-  Codable,
-  Expires,
-  TokenType,
+import {
+  type GrantType,
+  type Codable,
+  type Expires,
+  type TokenType,
+  type RequestAuthorizer,
+  isOAuth2ErrorResponse,
 } from './types';
+import type { OAuth2Client } from './oauth2/client';
 import { OAuth2Error } from './errors';
 import { validateURL } from './validators';
 import { mCodable } from './mixins/Codable';
@@ -115,6 +118,25 @@ const TokenImpl = mCodable(class {
     );
   }
 
+  public static async from (refreshToken: string, client: OAuth2Client): Promise<Token> {
+    const openIdConfiguration = await client.openIdConfiguration();
+
+    // eslint-disable-next-line @typescript-eslint/no-use-before-define
+    const request = new Token.RefreshRequest({
+      openIdConfiguration,
+      clientConfiguration: client.configuration,
+      refreshToken
+    });
+
+    const response = await client.exchange(request);
+
+    if (isOAuth2ErrorResponse(response)) {
+      throw new OAuth2Error(response);
+    }
+
+    return response;
+  }
+
   /**
    * When the Token will expire, represented as a `Date`
    * @public
@@ -162,7 +184,7 @@ const TokenImpl = mCodable(class {
       accessToken,
       context
     } = this;
-    
+
     const value: TokenJSON = {
       tokenType,
       expiresIn,
@@ -247,7 +269,7 @@ const TokenImpl = mCodable(class {
  * @see
  * - Okta Documentation: {@link https://developer.okta.com/docs/reference/api/oidc/#response-properties-4 | OIDC }
  */
-export class Token extends TokenImpl implements Codable, Expires {}
+export class Token extends TokenImpl implements Codable, Expires, RequestAuthorizer {}
 
 
 /**
@@ -327,14 +349,14 @@ export namespace Token {
 
   /** @internal */
   export interface RefreshRequestParams extends Omit<Token.TokenRequestParams, 'grantType'> {
-    id: string;
+    id?: string;
     scope?: string;
     refreshToken: string;
   }
 
   /** @internal */
   export class RefreshRequest extends Token.TokenRequest {
-    id: string;
+    id?: string;
     scope: string;
     refreshToken: string;
 
