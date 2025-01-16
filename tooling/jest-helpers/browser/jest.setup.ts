@@ -32,7 +32,14 @@ class MockBroadcastChannel implements BroadcastChannel {
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 global.BroadcastChannel = MockBroadcastChannel;
-// console.log = () => {};
 
 global.Request = Request;
 global.Response = Response;
+
+global.fetch = () => {
+  throw new Error(`
+ERROR: FETCH CALL MADE TO OUTSIDE RESOURCE!
+The test most likely has flawed logic, like a
+missing resource request mock
+  `);
+}

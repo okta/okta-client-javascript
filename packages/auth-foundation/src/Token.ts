@@ -4,15 +4,20 @@ import {
   type Expires,
   type TokenType,
   type RequestAuthorizer,
+  type RequestAuthorizerInit,
+  type seconds,
   isOAuth2ErrorResponse,
+  JsonPrimitive,
 } from './types';
 import type { OAuth2Client } from './oauth2/client';
 import { OAuth2Error } from './errors';
-import { validateURL } from './validators';
-import { mCodable } from './mixins/Codable';
+import { validateURL } from './internals/validators';
+import { mCodable } from './internals/mixins/Codable';
 import { shortID } from './crypto';
 import { JWT } from './jwt';
 import { OAuth2Request } from './http';
+import { DefaultDPoPSigningAuthority, DPoPSigningAuthority } from './oauth2/dpop';
+import { Timestamp } from './utils/TimeCoordinator';
 import TimeCoordinator from './utils/TimeCoordinator';
 
 /**
@@ -39,13 +44,14 @@ export type TokenResponse = {
  * JSON representation of token
  * @group Token
  */
-export type TokenJSON = Omit<TokenResponse, 'idToken'> & {
+export type TokenInit = Omit<TokenResponse, 'idToken'> & {
   idToken?: string | JWT;
-  context: Token.Context;
 };
 
 /** @ignore */
 const TokenImpl = mCodable(class {
+  public readonly dpopSigningAuthority: DPoPSigningAuthority = DefaultDPoPSigningAuthority;
+
   /** @internal */
   public static expiryTimeouts: {[key: string]: NodeJS.Timeout} = {};
 
@@ -86,7 +92,7 @@ const TokenImpl = mCodable(class {
   /**
    * The constructor of Token
    */
-  constructor (obj: TokenJSON) {
+  constructor (obj: TokenInit) {
     const id = obj?.id ?? shortID();
     this.id = id;
     this.issuedAt = obj?.issuedAt ? new Date(obj?.issuedAt) : TimeCoordinator.now().asDate;
@@ -95,7 +101,9 @@ const TokenImpl = mCodable(class {
     if (obj.idToken) {
       this.idToken = obj.idToken instanceof JWT ? obj.idToken : new JWT(obj.idToken);
     }
-    this.refreshToken = obj?.refreshToken;
+    if (obj.refreshToken) {
+      this.refreshToken = obj.refreshToken;
+    }
 
     this.tokenType = obj.tokenType;
     this.expiresIn = obj.expiresIn;
@@ -118,6 +126,7 @@ const TokenImpl = mCodable(class {
     );
   }
 
+  // TODO: consider with method with DPOP
   public static async from (refreshToken: string, client: OAuth2Client): Promise<Token> {
     const openIdConfiguration = await client.openIdConfiguration();
 
@@ -165,6 +174,25 @@ const TokenImpl = mCodable(class {
   }
 
   /**
+   * Returns `true` if the {@link Token} will expire after a duration (seconds)
+   *
+   * @see {@link Token.willBeValidIn}
+   */
+  willBeExpiredIn (duration: seconds) {
+    const ts = Timestamp.from(TimeCoordinator.now().value + duration);
+    return ts.isAfter(this.expiresAt);
+  }
+
+  /**
+   * Returns `true` if the {@link Token} will _not_ expire after a duration (seconds)
+   *
+   * @see {@link Token.willBeExpiredIn}
+   */
+  willBeValidIn (duration: seconds) {
+    return !this.willBeExpiredIn(duration);
+  }
+
+  /**
    * Returns the OAuth2 `scope`(s) used to issue the token
    */
   get scopes (): string[] {
@@ -175,7 +203,7 @@ const TokenImpl = mCodable(class {
   /**
    * Converts a {@link Token} instance to an serializable object literal representation
    */
-  toJSON (): TokenJSON {
+  toJSON (): TokenInit {
     const {
       tokenType,
       expiresIn,
@@ -185,7 +213,7 @@ const TokenImpl = mCodable(class {
       context
     } = this;
 
-    const value: TokenJSON = {
+    const value: TokenInit = {
       tokenType,
       expiresIn,
       issuedAt: issuedAt.valueOf(),
@@ -246,11 +274,19 @@ const TokenImpl = mCodable(class {
    * Accepts the same method signature as {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch | fetch}
    * @returns {@link https://developer.mozilla.org/en-US/docs/Web/API/Request | Request} wrapped in a `Promise`
    *
-   * TODO: add dpop support (method is async for this purpose)
    */
-  async authorize (input: string | URL | Request, init?: RequestInit): Promise<Request> {
-    const request = input instanceof Request ? input : new Request(input, init);
-    request.headers.append('Authorization', `Bearer ${this.accessToken}`);
+  async authorize (input: string | URL | Request, init: RequestAuthorizerInit = {}): Promise<Request> {
+    const { dpopNonce, ...fetchInit } = init;
+    const request = input instanceof Request ? input : new Request(input, fetchInit);
+
+    if (this.tokenType === 'DPoP') {
+      const keyPairId = this.context.dpopPairId;
+      // .generateDPoPProof() will throw if dpopPairId is undefined
+      await this.dpopSigningAuthority.sign(request, { keyPairId, nonce: dpopNonce });
+    }
+
+    request.headers.set('Authorization', `${this.tokenType} ${this.accessToken}`);
+
     return request;
   }
 
@@ -331,19 +367,12 @@ export namespace Token {
       this.body.set('grant_type', this.grantType);
     }
 
-    request (): Request {
+    get url (): string {
       if (!validateURL(this.openIdConfiguration?.token_endpoint)) {
         throw new OAuth2Error('missing `token_endpoint`');
       }
 
-      // validateURL ensures .token_endpoint exists and is a valid URL
-      const url = new URL(this.openIdConfiguration.token_endpoint!);
-
-      return new Request(url, {
-        method: 'POST',
-        body: this.body,
-        headers: this.headers
-      });
+      return this.openIdConfiguration.token_endpoint!;
     }
   }
 
@@ -393,18 +422,58 @@ export namespace Token {
       this.body.set('token_type_hint', params.hint);
     }
 
-    request (): Request {
+    get url (): string {
       if (!validateURL(this.openIdConfiguration?.revocation_endpoint)) {
         throw new OAuth2Error('missing `revocation_endpoint`');
       }
-      // validateURL ensures .revocation_endpoint exists and is a valid URL
-      const url = new URL(this.openIdConfiguration.revocation_endpoint!);
 
-      return new Request(url, {
-        method: 'POST',
-        body: this.body,
-        headers: this.headers
-      });
+      return this.openIdConfiguration.revocation_endpoint!;
     }
   }
+
+  export type Kind = 'access_token' | 'refresh_token' | 'id_token';
+
+  export interface IntrospectRequestParams extends OAuth2Request.RequestParams {
+    token: Token;
+    type: Token.Kind;
+  }
+
+  /** @internal */
+  export class IntrospectRequest extends OAuth2Request {
+    constructor (params: IntrospectRequestParams) {
+      const { openIdConfiguration, clientConfiguration, token } = params;
+      super({ openIdConfiguration, clientConfiguration });
+
+      this.headers.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+      this.headers.set('authorization', `Basic ${ btoa(this.clientConfiguration.clientId) }`);
+      this.body.set('token_type_hint', params.type);
+
+      if (params.type === 'access_token') {
+        this.body.set('token', token.accessToken);
+      }
+      else if (token.refreshToken && params.type === 'refresh_token') {
+        this.body.set('token', token.refreshToken);
+      }
+      else if (token.idToken && params.type === 'id_token') {
+        this.body.set('token', token.idToken.rawValue);
+      }
+    }
+
+    get url (): string {
+      if (!this.body.get('token')) {
+        throw new OAuth2Error('No token available for introspection');
+      }
+
+      if (!validateURL(this.openIdConfiguration?.introspection_endpoint)) {
+        throw new OAuth2Error('missing `introspection_endpoint`');
+      }
+
+      return this.openIdConfiguration.introspection_endpoint!;
+    }
+  }
+
+  export type IntrospectResponse = {
+    active: boolean,
+    [key: string]: JsonPrimitive
+  };
 }

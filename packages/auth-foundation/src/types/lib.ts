@@ -7,8 +7,15 @@ export type JsonPrimitive = string | number | boolean | null;
 export type JsonRecord = Record<string, Json>;
 export type Json = JsonPrimitive | Record<string, JsonPrimitive> | JsonPrimitive[];
 
+/**
+ * A duration of time,in seconds
+ */
 export type TimeInterval = number;
+/**
+ * Number of seconds elapsed since midnight, Jan 1, 1970 UTC
+ */
 export type EpochTimestamp = number;
+export type seconds = number;
 
 // https://developer.apple.com/documentation/swift/rawrepresentable
 export interface RawRepresentable<T = string> {
@@ -39,6 +46,11 @@ export interface Decodable {
 // https://developer.apple.com/documentation/swift/codable
 export type Codable = Encodable & Decodable;
 
+export type RequestAuthorizerInit = RequestInit & { dpopNonce?: string };
 export interface RequestAuthorizer {
-  authorize (input: string | URL | Request, init?: RequestInit): Promise<Request>;
+  authorize (input: string | URL | Request, init?: RequestAuthorizerInit): Promise<Request>;
+}
+
+export interface Broadcaster {
+  close (): void;
 }

@@ -17,7 +17,7 @@ describe('OAuth2Client.Configuration', () => {
       scopes: 'openid email profile'
     });
     const s1 = conf.encode();
-    expect(s1).toEqual(`{"baseURL":"https://foo.com/","discoveryURL":"https://foo.com/.well-known/openid-configuration","clientId":"fakeclientid","scopes":"openid email profile","authentication":"none","dpop":false}`);
+    expect(s1).toEqual(`{"baseURL":"https://foo.com/","dpop":false,"discoveryURL":"https://foo.com/.well-known/openid-configuration","clientId":"fakeclientid","scopes":"openid email profile","authentication":"none"}`);
   });
 
   it('should decode instance from a string', () => {

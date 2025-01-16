@@ -4,6 +4,7 @@ source $OKTA_HOME/$REPO/scripts/bacon/setup-e2e.sh
 
 create_log_group "E2E DPoP"
 
+export TEST_NAME="redirect-model"
 export USE_DPOP="true"
 
 if ! yarn workspace @repo/wdio-e2e start; then

@@ -3,10 +3,10 @@ import ts from 'typescript';
 import pkg from './package.json' assert { type: "json" };
 
 
-const base = baseConfig(ts);
+const base = baseConfig(ts, pkg);
 
 export default {
   ...base,
-  input: [base.input, 'src/client.ts'],
+  input: [base.input, 'src/client.ts', 'src/internal.ts'],
   external: [...Object.keys(pkg.dependencies)],
 };

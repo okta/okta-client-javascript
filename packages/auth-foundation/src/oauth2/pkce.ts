@@ -1,5 +1,5 @@
 import { randomBytes, hash } from '../crypto';
-import { validateString } from '../validators';
+import { validateString } from '../internals/validators';
 
 /**
  * @group PKCE

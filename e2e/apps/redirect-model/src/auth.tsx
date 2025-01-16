@@ -82,4 +82,4 @@ export const signOut = async () => {
   }
 };
 
-export const orchestrator = new AuthorizationCodeFlowOrchestrator(signInFlow);
+export const orchestrator = new AuthorizationCodeFlowOrchestrator(signInFlow, oauthConfig);

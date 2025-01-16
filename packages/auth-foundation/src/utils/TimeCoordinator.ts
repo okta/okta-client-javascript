@@ -2,7 +2,9 @@
 // https://stackoverflow.com/questions/43344819/reading-response-headers-with-fetch-api
 // CORS requests are limited to the specific headers exposed. This by default will block the `date` header
 
-import type { TimeInterval, EpochTimestamp } from '../types';
+import type { TimeInterval, EpochTimestamp, seconds } from '../types';
+
+// TODO: DOC THIS
 
 export class Timestamp {
   constructor (private ts: EpochTimestamp) {}
@@ -52,9 +54,9 @@ export class Timestamp {
     return this.ts > t + TimeCoordinator.clockTolerance;
   }
 
-  timeSince (t: Timestamp): number;
-  timeSince (t: Date): number;
-  timeSince (t: EpochTimestamp): number;
+  timeSince (t: Timestamp): seconds;
+  timeSince (t: Date): seconds;
+  timeSince (t: EpochTimestamp): seconds;
   timeSince (t: EpochTimestamp | Date | Timestamp): TimeInterval {
     t = Timestamp.from(t).value;
     return this.ts - t;

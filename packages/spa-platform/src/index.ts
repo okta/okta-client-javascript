@@ -1,10 +1,14 @@
-import { addEnv } from '@okta/auth-foundation';
+import { addEnv } from '@okta/auth-foundation/internal';
 
-// TODO: rename from package.json or use build?
-const packageName = '@okta/spa-platform';
-const version = '0.0.0';
-addEnv(`${packageName}/${version}`);
+// defined in rollup.config.js
+declare const __PKG_NAME__: string;
+declare const __PKG_VERSION__: string;
+
+
+addEnv(`${__PKG_NAME__}/${__PKG_VERSION__}`);
 
 export * from './Credential';
-export * from './CredentialOrchestrator';
+export * from './TokenOrchestrator';
 export * from './FetchClient';
+
+export * from './utils/isModernBrowser';

@@ -7,7 +7,7 @@ import type {
 import type { IDTokenValidatorContext } from '../jwt/IDTokenValidator';
 import { isJWKS, isOAuth2ErrorResponse, isOpenIdConfiguration } from '../types';
 import { OAuth2Error, JWTError, TokenError } from '../errors';
-import { validateString, validateURL, validateArrayNotEmpty } from '../validators';
+import { validateURL, validateArrayNotEmpty, validateString } from '../internals/validators';
 import {
   JWT,
   JWKS,
@@ -16,14 +16,15 @@ import {
   DefaultTokenHashValidator,
   TokenHashValidator
 } from '../jwt';
-import { APIClient } from '../http';
+import { APIClient, APIRequest } from '../http';
+import { DefaultDPoPSigningAuthority, DPoPSigningAuthority } from './dpop';
 import { Configuration as ConfigurationConstructor, type ConfigurationParams } from './configuration';
-import { TokenJSON, Token } from '../Token';
-import { createDPoPKeyPair, generateDPoPProof } from './dpop';
+import { TokenInit, Token } from '../Token';
 import { SynchronizedResult } from '../utils/SynchronizedResult';
 import { PromiseQueue } from '../utils/PromiseQueue';
 import { EventEmitter } from '../utils/EventEmitter';
 import { hasSameValues } from '../utils';
+
 
 // ref: https://developer.okta.com/docs/reference/api/oidc/
 
@@ -36,17 +37,6 @@ import { hasSameValues } from '../utils';
 // jwks (keys endpoint)
 // exchange
 // validateToken
-
-class TodoError extends Error {}
-
-class NetworkError extends Error {}
-
-// TODO: move to common place?
-function assertReadableResponse(response: Response) {
-  if (response.bodyUsed) {
-    throw new TypeError('"response" body has been used already');
-  }
-}
 
 /** @internal */
 export class OAuth2ClientEventEmitter extends EventEmitter {
@@ -62,20 +52,18 @@ export class OAuth2ClientEventEmitter extends EventEmitter {
  * @group OAuth2Client
  */
 export class OAuth2Client extends APIClient {
+  public readonly dpopSigningAuthority: DPoPSigningAuthority = DefaultDPoPSigningAuthority;
   public static readonly idTokenValidator: IDTokenValidator = DefaultIDTokenValidator;
   public static readonly accessTokenValidator: TokenHashValidator = DefaultTokenHashValidator('accessToken');
 
   #httpCache: Map<string, JsonRecord> = new Map();
   #pendingRefresh: Map<string, Promise<Token | OAuth2ErrorResponse>> = new Map();
-  #dpopNonces: Map<string, string> = new Map();
   private readonly queue: PromiseQueue = new PromiseQueue();
   readonly emitter: OAuth2ClientEventEmitter = new OAuth2ClientEventEmitter();
   readonly configuration: OAuth2Client.Configuration;
 
-  constructor (params: ConfigurationParams);
-  constructor (configuration: OAuth2Client.Configuration);
-  constructor (params: ConfigurationParams | OAuth2Client.Configuration) {
-    super();
+  constructor (params: ConfigurationParams | OAuth2Client.Configuration, options?: APIClient.Options) {
+    super(options);
 
     if (params instanceof OAuth2Client.Configuration) {
       this.configuration = params;
@@ -84,64 +72,40 @@ export class OAuth2Client extends APIClient {
       this.configuration = new OAuth2Client.Configuration(params);
     }
   }
-
-  private async handleOAuthBodyError (response: Response) {
-    if (response.status > 399 && response.status < 500) {
-      assertReadableResponse(response);
-      try {
-        const json = await response.json();
-        if (validateString(json.error)) {
-          if (json.error_description !== undefined && typeof json.error_description !== 'string') {
-            delete json.error_description;
-          }
-          if (json.error_uri !== undefined && typeof json.error_uri !== 'string') {
-            delete json.error_uri;
-          }
-          if (json.algs !== undefined && typeof json.algs !== 'string') {
-            delete json.algs;
-          }
-          if (json.scope !== undefined && typeof json.scope !== 'string') {
-            delete json.scope;
-          }
-          return <OAuth2Error>json;
-        }
-      } catch {
-        // TODO: what can we do if we can't read the error?
-      }
-    }
-    return undefined;
-  }
-
-  private async processOAuthResponse (response: Response): Promise<Record<string, any> | OAuth2ErrorResponse> {
-    assertReadableResponse(response);
-
+  
+  protected async processResponse (response: Response): Promise<void> {
+    await super.processResponse(response);
     try {
       const nonce = response.headers.get('dpop-nonce');
       if (nonce) {
-        this.#dpopNonces.set(new URL(response.url).origin, nonce);
+        this.dpopSigningAuthority.cacheNonce(new URL(response.url).origin, nonce);
       }
     // eslint-disable-next-line no-empty
     } catch (err) {}
-
-    if (response.status !== 200) {
-      const err = await this.handleOAuthBodyError(response);
-      if (err) {
-        return err;
-      }
-    }
-
-    let json;
-    try {
-      json = await response.json();
-    }
-    catch (err) {
-      // TODO: throw
-    }
-
-    return json;
   }
 
-  // TODO: cache response (is map sufficient?)
+  // Auth Servers return a 400 with dpop-nonce header and a json body identifying the error
+  // https://datatracker.ietf.org/doc/html/rfc9449#section-8
+  // https://datatracker.ietf.org/doc/html/rfc9449#figure-20
+  protected async checkForDPoPNonceErrorResponse (response: Response): Promise<string | undefined> {
+    if (response.status === 400) {
+      const json = await response.clone().json();
+
+      if (isOAuth2ErrorResponse(json) && json.error === 'use_dpop_nonce') {
+        const nonce = response.headers.get('dpop-nonce');
+        if (nonce && validateString(nonce)) {
+          return nonce;
+        }
+      }
+    }
+  }
+
+  protected async prepareDPoPNonceRetry (request: APIRequest, nonce: string): Promise<APIRequest> {
+    const { dpopPairId } = request.context;
+    await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce });
+    return request;
+  }
+
   private async getJson (url: URL): Promise<JsonRecord> {
     if (this.#httpCache.has(url.href)) {
       return this.#httpCache.get(url.href)!;
@@ -150,17 +114,13 @@ export class OAuth2Client extends APIClient {
     const headers = new Headers();
     headers.set('accept', 'application/json');
 
-    const response = await this.internalFetch(url, {
+    const response = await this.fetch(url, {
       headers,
       method: 'GET',
       redirect: 'manual'
     });
-
-    if (!response.ok) {
-      throw new NetworkError(url.href);
-    }
-
     const json = await response.json();
+
     this.#httpCache.set(url.href, json);
     return json;
   }
@@ -185,7 +145,7 @@ export class OAuth2Client extends APIClient {
       throw new OAuth2Error(`Unexpected response from ${openIdConfig.jwks_uri}`);
     }
 
-    // `areJWKs` is type predicate
+    // `isJWKS` is type predicate
     return jwks.keys;
   }
 
@@ -193,33 +153,17 @@ export class OAuth2Client extends APIClient {
     tokenRequest: Token.TokenRequest,
     options: OAuth2Client.TokenRequestOptions = {}
   ): Promise<Token | OAuth2ErrorResponse> {
-    const request = tokenRequest.request();
+    const request = tokenRequest.prepare();
 
     const { keyPairId: dpopPairId, dpopNonce } = options;
     if (this.configuration.dpop) {
-      if (!dpopPairId) {
-        throw new TodoError('TODO - no dpop key when required');
-      }
-
-      const dpopProof = await generateDPoPProof({ request, keyPairId: dpopPairId, nonce: dpopNonce });
-      request.headers.set('dpop', dpopProof);
+      await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce: dpopNonce });
     }
 
-    const response = await this.internalFetch(request);
-    const json = await this.processOAuthResponse(response);
+    const response = await this.send(request, { dpopPairId });
+    const json = await response.json();
 
     if (isOAuth2ErrorResponse(json)) {
-      // error	"use_dpop_nonce"
-      // error_description	"Authorization server requires nonce in DPoP proof."
-      // NOTE: only retry token request if `!dpopNonce` to prevent infinite loops
-      if (this.configuration.dpop && !dpopNonce && json.error === 'use_dpop_nonce') {
-        const nonce = response.headers.get('dpop-nonce');
-        if (nonce) {
-          // if a dpop-nonce is now available, retry same request (with nonce value)
-          return this.sendTokenRequest(tokenRequest, { keyPairId: dpopPairId, dpopNonce: nonce });
-        }
-      }
-
       return json;
     }
 
@@ -233,7 +177,7 @@ export class OAuth2Client extends APIClient {
       context.dpopPairId = dpopPairId;
     }
 
-    const result: TokenJSON = {
+    const result: TokenInit = {
       tokenType: json.token_type,
       expiresIn: json.expires_in,
       accessToken: json.access_token,
@@ -292,7 +236,7 @@ export class OAuth2Client extends APIClient {
   public async exchange (request: Token.TokenRequest): Promise<Token | OAuth2ErrorResponse> {
     const tokenOptions: OAuth2Client.TokenRequestOptions = {};
     if (this.configuration.dpop) {
-      const keyPairId = await createDPoPKeyPair();
+      const keyPairId = await this.dpopSigningAuthority.createDPoPKeyPair();
       tokenOptions.keyPairId = keyPairId;
     }
 
@@ -326,14 +270,14 @@ export class OAuth2Client extends APIClient {
       }
     }
 
-    const synchronizer = new SynchronizedResult<Token | OAuth2ErrorResponse, TokenJSON | OAuth2ErrorResponse>(
-      `refresh:${token.id}`,
+    const synchronizer = new SynchronizedResult<Token | OAuth2ErrorResponse, TokenInit | OAuth2ErrorResponse>(
+      `refresh:${token.refreshToken}`,
       this.performRefresh.bind(this, token, scopes),
       {
         // NOTE: I tried everything I could think to avoid casting `response.toJSON()` (even adding a generic to the mixin signature).
         // It seems like the mixin pattern mucks with types too much for TS to figure it out
-        seralizer: (response: Token | OAuth2ErrorResponse) => isOAuth2ErrorResponse(response) ? response : response.toJSON() as TokenJSON,
-        deseralizer: (response: TokenJSON | OAuth2ErrorResponse) =>
+        seralizer: (response: Token | OAuth2ErrorResponse) => isOAuth2ErrorResponse(response) ? response : response.toJSON() as TokenInit,
+        deseralizer: (response: TokenInit | OAuth2ErrorResponse) =>
           isOAuth2ErrorResponse(response) ? response : new Token({id: token.id, ...response}),
       }
     );
@@ -404,13 +348,13 @@ export class OAuth2Client extends APIClient {
     // when refresh is used to produce a downscoped token
     if (!hasSameValues(response.scopes, token.scopes)) {
       refreshedToken = new Token({
-        ...(token.toJSON() as TokenJSON),
+        ...(token.toJSON() as TokenInit),
         id: token.id,
         refreshToken: response.refreshToken
       });
 
       newToken = new Token({
-        ...(response.toJSON() as TokenJSON),
+        ...(response.toJSON() as TokenInit),
         refreshToken: undefined
       });
     }
@@ -425,8 +369,6 @@ export class OAuth2Client extends APIClient {
   }
 
   // TODO: userInfo
-
-  // TODO: introspect
 
   public async revoke (token: Token, type: Token.RevokeType): Promise<void | OAuth2ErrorResponse> {
     if (type === 'ALL') {
@@ -460,13 +402,15 @@ export class OAuth2Client extends APIClient {
       hint,
       clientConfiguration: this.configuration,
       clientAuthentication: this.configuration.authentication
-    }).request();
+    }).prepare();
 
-    const response = await this.internalFetch(request);
-    const json = await this.processOAuthResponse(response);
+    const response = await this.send(request);
 
-    if (isOAuth2ErrorResponse(json)) {
-      return json;
+    if (!response.ok) {
+      const json = await this.send(request);
+      if (isOAuth2ErrorResponse(json)) {
+        return json;
+      }
     }
   }
 
@@ -486,6 +430,26 @@ export class OAuth2Client extends APIClient {
         return r;
       }
     }
+  }
+
+  public async introspect (token: Token, kind: Token.Kind): Promise<Token.IntrospectResponse | OAuth2ErrorResponse> {
+    const openIdConfiguration = await this.openIdConfiguration();
+    const request = new Token.IntrospectRequest({
+      openIdConfiguration,
+      token,
+      type: kind,
+      clientConfiguration: this.configuration,
+      clientAuthentication: this.configuration.authentication
+    }).prepare();
+
+    const response = await this.send(request);
+    const json = await response.json();
+
+    if (isOAuth2ErrorResponse(json)) {
+      return json;
+    }
+
+    return json as Token.IntrospectResponse;
   }
 }
 

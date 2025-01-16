@@ -1,6 +1,11 @@
 type EmitterEvent = Record<string, any>;
 type EmitterEventHandler = (event: EmitterEvent) => void;
 
+export interface Emitter {
+  on: (...args: Parameters<EventEmitter['on']>) => void;
+  off: (...args: Parameters<EventEmitter['off']>) => void;
+}
+
 export class EventEmitter {
   listeners: Record<string, EmitterEventHandler[]> = {};
 
@@ -28,7 +33,7 @@ export class EventEmitter {
     return this;
   }
 
-  protected emit (eventName: string, data: EmitterEvent): void {
+  protected emit (eventName: string, data: EmitterEvent = {}): void {
     for (const listener of (this.listeners[eventName] ?? [])) {
       // eslint-disable-next-line no-empty
       try { listener(data); } catch(err) {}

@@ -20,10 +20,13 @@ jest.mock('src/utils/SynchronizedResult', () => {
   };
 });
 
-import { Token, TokenJSON } from 'src/Token';
+import { Token, TokenInit } from 'src/Token';
 import { OAuth2Client } from 'src/oauth2/client';
 import { OAuth2Error, TokenError, JWTError } from 'src/errors';
 import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
+
+const fetchSpy = global.fetch = jest.fn();
+
 
 describe('OAuth2Client', () => {
   const params = {
@@ -45,18 +48,19 @@ describe('OAuth2Client', () => {
   describe('methods', () => {
     let client;
     beforeEach(() => {
+      fetchSpy.mockReset();
       client = new OAuth2Client(params);
     });
 
     describe('openIdConfiguration', () => {
       it('should send openid configuration request', async () => {
-        const fetchSpy = global.fetch = jest.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve({issuer: 'foo'})
-        });
+        fetchSpy.mockResolvedValue(Response.json({issuer: 'foo'}));
 
-        await client.openIdConfiguration();
+        const result1 = await client.openIdConfiguration();
+        const result2 = await client.openIdConfiguration();   // 2nd call should come from cache
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
         expect(fetchSpy).toHaveBeenLastCalledWith(expect.any(Request));
+        expect(result1).toEqual(result2);
 
         const lastArg = fetchSpy.mock.lastCall[0];
         expect(lastArg.url).toEqual('https://fake.okta.com/.well-known/openid-configuration');
@@ -72,14 +76,13 @@ describe('OAuth2Client', () => {
     describe('jwks', () => {
       it('should send jwks (/keys) request', async () => {
         jest.spyOn(client, 'openIdConfiguration').mockResolvedValue({ jwks_uri: 'https://fake.okta.com/keys' });
+        fetchSpy.mockResolvedValue(Response.json({ keys: [{ kid: 'foo', alg: 'bar'}]}));
 
-        const fetchSpy = global.fetch = jest.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve({ keys: [{ kid: 'foo', alg: 'bar'}]})
-        });
-
-        await client.jwks();
+        const result1 = await client.jwks();
+        const result2 = await client.jwks();   // 2nd call should come from cache
+        expect(fetchSpy).toHaveBeenCalledTimes(1);
         expect(fetchSpy).toHaveBeenLastCalledWith(expect.any(Request));
+        expect(result1).toEqual(result2);
 
         const lastArg = fetchSpy.mock.lastCall[0];
         expect(lastArg.url).toEqual('https://fake.okta.com/keys');
@@ -95,11 +98,7 @@ describe('OAuth2Client', () => {
     describe('exchange', () => {
       it('should send request to /token', async () => {
         jest.spyOn(client, 'jwks').mockResolvedValue({});
-
-        const fetchSpy = global.fetch = jest.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve({ keys: [{ kid: 'foo', alg: 'bar'}]})
-        });
+        fetchSpy.mockResolvedValue(Response.json(mockTokenResponse()));
 
         const tokenRequest = new Token.TokenRequest({
           openIdConfiguration: {
@@ -122,9 +121,9 @@ describe('OAuth2Client', () => {
         }));
         // request.text returns raw request body
         expect(await lastArg.text()).toEqual(new URLSearchParams({
-          grant_type: 'authorization_code',
           client_id: 'fake',
-        }));
+          grant_type: 'authorization_code',
+        }).toString());
       });
     });
 
@@ -331,14 +330,11 @@ describe('OAuth2Client', () => {
           issuer: 'https://fake.okta.com',
           token_endpoint: 'https://fake.okta.com/token'
         });
-        jest.spyOn(client, 'jwks').mockResolvedValue({});
+        jest.spyOn(client, 'jwks').mockResolvedValue({ keys: [{ kid: 'foo', alg: 'bar'}]});
       });
 
       it('should send a request to /token', async () => {
-        const fetchSpy = global.fetch = jest.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve({ keys: [{ kid: 'foo', alg: 'bar'}]})
-        });
+        fetchSpy.mockResolvedValue(Response.json(mockTokenResponse()));
 
         const tokenResponse = mockTokenResponse();
         const token = new Token({...tokenResponse, context: {}});
@@ -355,11 +351,11 @@ describe('OAuth2Client', () => {
         }));
         // request.text returns raw request body
         expect(await lastArg.text()).toEqual(new URLSearchParams({
-          grant_type: 'refresh_token',
           client_id: 'fake',
+          grant_type: 'refresh_token',
           scope: 'openid email profile',
           refresh_token: token.refreshToken!
-        }));
+        }).toString());
       });
 
       it('should throw if no refresh token exists', async () => {
@@ -387,7 +383,7 @@ describe('OAuth2Client', () => {
         expect(didRefreshSpy).toHaveBeenCalledTimes(1);
         expect(didRefreshSpy).toHaveBeenCalledWith({
           token: new Token({
-            ...token.toJSON() as TokenJSON,
+            ...token.toJSON() as TokenInit,
             id: token.id,
             refreshToken: 'foobar'
           })
@@ -405,11 +401,7 @@ describe('OAuth2Client', () => {
           issuer: 'https://fake.okta.com',
           revocation_endpoint: 'https://fake.okta.com/revoke'
         });
-
-        const fetchSpy = global.fetch = jest.fn().mockResolvedValue({
-          ok: true,
-          json: () => {}
-        });
+        fetchSpy.mockResolvedValue(new Response());
 
         const tokenResponse = mockTokenResponse();
         const token = new Token(tokenResponse);
@@ -431,7 +423,7 @@ describe('OAuth2Client', () => {
         expect(await call1.text()).toEqual(new URLSearchParams({
           token: token.accessToken,
           token_type_hint: 'access_token'
-        }));
+        }).toString());
 
         const call2 = fetchSpy.mock.calls[1][0];
         expect(call2.url).toEqual('https://fake.okta.com/revoke');
@@ -445,7 +437,7 @@ describe('OAuth2Client', () => {
         expect(await call2.text()).toEqual(new URLSearchParams({
           token: token.refreshToken!,
           token_type_hint: 'refresh_token'
-        }));
+        }).toString());
 
         await client.revoke(token, 'ACCESS');
         expect(fetchSpy).toHaveBeenNthCalledWith(3, expect.any(Request));
@@ -462,7 +454,7 @@ describe('OAuth2Client', () => {
         expect(await call3.text()).toEqual(new URLSearchParams({
           token: token.accessToken,
           token_type_hint: 'access_token'
-        }));
+        }).toString());
 
         await client.revoke(token, 'REFRESH');
         expect(fetchSpy).toHaveBeenNthCalledWith(4, expect.any(Request));
@@ -479,25 +471,25 @@ describe('OAuth2Client', () => {
         expect(await call4.text()).toEqual(new URLSearchParams({
           token: token.refreshToken!,
           token_type_hint: 'refresh_token'
-        }));
+        }).toString());
       });
 
       it('should throw if an invalid token type is passed', async () => {
-        const internalFetchSpy = jest.spyOn(client, 'internalFetch');
+        const clientFetchSpy = jest.spyOn(client, 'fetch');
         const token = new Token(mockTokenResponse());
         await expect(client.revoke(token, 'FOO')).rejects.toThrow(
           new Error('Unrecognized Token Type: FOO')
         );
-        expect(internalFetchSpy).not.toHaveBeenCalled();
+        expect(clientFetchSpy).not.toHaveBeenCalled();
       });
 
       it('should throw if a refresh token does not exist', async () => {
-        const internalFetchSpy = jest.spyOn(client, 'internalFetch');
+        const clientFetchSpy = jest.spyOn(client, 'fetch');
         const token = new Token(mockTokenResponse('foo', { refreshToken: undefined }));
         await expect(client.revoke(token, 'REFRESH')).rejects.toThrow(
           new TokenError('missing expected token (REFRESH)')
         );
-        expect(internalFetchSpy).not.toHaveBeenCalled();
+        expect(clientFetchSpy).not.toHaveBeenCalled();
       });
 
       it('should throw if no `revocation_endpoint` exists', async () => {
@@ -515,6 +507,10 @@ describe('OAuth2Client', () => {
           new OAuth2Error('missing `revocation_endpoint`')
         );
       });
+    });
+
+    describe('introspect', () => {
+      // TODO:
     });
   });
 });

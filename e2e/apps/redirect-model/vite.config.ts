@@ -2,8 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsConfigPaths from 'vite-tsconfig-paths'
 import mockServer from './resource-server';
-
 import envModule from '@repo/env';
+
 
 envModule.setEnvironmentVarsFromTestEnv(__dirname);
 

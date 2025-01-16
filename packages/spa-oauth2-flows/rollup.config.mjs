@@ -3,9 +3,10 @@ import ts from 'typescript';
 import pkg from './package.json' assert { type: "json" };
 
 export default {
-  ...baseConfig(ts),
+  ...baseConfig(ts, pkg),
   external: [
     ...Object.keys(pkg.peerDependencies),
-    '@okta/auth-foundation/client'     // TODO: review this
+    '@okta/auth-foundation/client',
+    '@okta/auth-foundation/internal'
   ],
 };

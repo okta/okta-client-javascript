@@ -144,7 +144,7 @@ describe('Credential', () => {
           const token = makeTestToken();
           const cred = Credential.store(token, ['test']);
           expect(cred.id).toEqual(token.id);
-          const storageItem = localStorage.getItem(`okta-token:${cred.id}`);
+          const storageItem = localStorage.getItem(`okta-token:v2:${cred.id}`);
           expect(storageItem).toBeDefined();
           expect(() => JSON.parse(storageItem!)).not.toThrow();
           expect(JSON.parse(storageItem!)).toMatchObject({

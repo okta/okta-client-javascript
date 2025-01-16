@@ -1,6 +1,6 @@
 import type { JsonRecord, RawRepresentable, Expires, TimeInterval } from '../types';
 import { JWTError } from '../errors';
-import { validateString } from '../validators';
+import { validateString } from '../internals/validators';
 import TimeCoordinator from '../utils/TimeCoordinator';
 import { JWK, JWKS } from './JWK';
 import { buf, b64u } from '../crypto';
@@ -11,8 +11,8 @@ import { IDTokenValidator } from './IDTokenValidator';
  */
 export interface JWTHeader {
   alg: string;
-  kid: string;
-  // typ?: string;
+  kid?: string;
+  typ?: string;
   // jku?: string;
   // x5u?: string;
   // x5t?: string;
@@ -34,10 +34,6 @@ type JWTPayload = {
 function validateHeader (header: JsonRecord) {
   if (!validateString(header.alg)) {
     throw new JWTError('Missing `alg` claim');
-  }
-
-  if (!validateString(header.kid)) {
-    throw new JWTError('Missing `kid` claim');
   }
 }
 
@@ -115,7 +111,7 @@ export class JWT implements RawRepresentable, Expires {
     }
 
     const header = parseJWTComponent(head);
-    // ensures `alg` and `kid` are defined
+    // ensures `alg` is defined
     validateHeader(header);
     this.#header = header as JWTHeader;
 

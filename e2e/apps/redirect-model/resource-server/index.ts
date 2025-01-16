@@ -1,4 +1,4 @@
-import { default as mockServer } from 'vite-plugin-mock-server';
+import mockServer from 'vite-plugin-mock-server';
 import { requireBearerToken } from './middleware';
 
 export default function () {

@@ -7,9 +7,9 @@
     "node": ">=18"
   },
   "scripts": {
-    "build": "turbo run build",
+    "build": "yarn build:sdks",
     "build:sdks": "turbo run build --filter=./packages/* --log-order=grouped",
-    "lint": "turbo run lint",
+    "lint": "turbo run --continue --log-order=grouped lint",
     "test:unit": "turbo run test:unit --log-order=grouped"
   },
   "devDependencies": {

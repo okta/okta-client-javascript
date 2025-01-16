@@ -6,45 +6,31 @@ import { Token as TokenComponent } from '@/component/Token';
 
 
 export function Landing () {
-  const [size, setSize] = useState<number>(Credential.allIDs.length);
+  const [count, setCount] = useState<number>(Credential.allIDs.length);
   const [credential, setCredential] = useState<Credential | null>(null);
   const [defaultCred, setDefault] = useState<string | null>(Credential.default?.id ?? null);
 
   useEffect(() => {
-    // added
-    const addedHandler = () => {
-      setSize(Credential.size);
+    const updateHandler = () => {
+      setCount(Credential.allIDs.length);
     };
-    Credential.on(Events.CREDENTIAL_ADDED, addedHandler);
 
-    // removed
-    const removedHandler = () => {
-      setCredential(credential);
-      setSize(Credential.size);
-    };
-    Credential.on(Events.CREDENTIAL_REMOVED, removedHandler);
-
-    // storage cleared
-    const clearedHandler = () => {
-      setCredential(null);
+    const defaultHandler = () => {
       setDefault(Credential.default?.id ?? null);
-      setSize(Credential.size);
     };
-    Credential.on(Events.STORAGE_CLEARED, clearedHandler);
 
-    // default changed
-    const defaultChangedHandler = ({ id }) => {
-      setDefault(id);
-    };
-    Credential.on(Events.DEFAULT_CHANGED, defaultChangedHandler);
+    Credential.on(Events.CREDENTIAL_ADDED, updateHandler);
+    Credential.on(Events.CREDENTIAL_REMOVED, updateHandler);
+    Credential.on(Events.STORAGE_CLEARED, updateHandler);
+    Credential.on(Events.DEFAULT_CHANGED, defaultHandler);
 
     return () => {
-      Credential.off(Events.CREDENTIAL_ADDED, addedHandler);
-      Credential.off(Events.CREDENTIAL_REMOVED, removedHandler);
-      Credential.off(Events.STORAGE_CLEARED, clearedHandler);
-      Credential.off(Events.DEFAULT_CHANGED, defaultChangedHandler);
+      Credential.off(Events.CREDENTIAL_ADDED, updateHandler);
+      Credential.off(Events.CREDENTIAL_REMOVED, updateHandler);
+      Credential.off(Events.STORAGE_CLEARED, updateHandler);
+      Credential.off(Events.DEFAULT_CHANGED, defaultHandler);
     };
-  }, [setSize, setCredential, setDefault]);
+  }, [setCount, setCredential, setDefault]);
 
   const clear = () => {
     Credential.clear();
@@ -72,7 +58,7 @@ export function Landing () {
       </p>
       <hr />
       <p>
-        Credential count is: <span data-e2e="Credential.size">{size}</span>
+        Credential count is: <span data-e2e="Credential.size">{count}</span>
       </p>
       <p>
         Default Credential:

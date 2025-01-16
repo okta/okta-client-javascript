@@ -13,11 +13,10 @@
   ],
   "include": [
     "./src/**/*.js",
-    "./src/**/*.ts",
+    "./src/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "test",
     "dist"
   ]
 }

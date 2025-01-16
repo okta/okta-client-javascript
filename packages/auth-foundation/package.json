@@ -1,6 +1,7 @@
 {
   "name": "@okta/auth-foundation",
   "version": "0.2.0",
+  "type": "module",
   "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -20,6 +21,10 @@
     "./client": {
       "types": "./dist/types/client.d.ts",
       "import": "./dist/esm/client.js"
+    },
+    "./internal": {
+      "types": "./dist/types/internal.d.ts",
+      "import": "./dist/esm/internal.js"
     },
     "./package.json": "./package.json"
   },

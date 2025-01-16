@@ -36,16 +36,23 @@ test_suites:
     timeout: '20'
     criteria: MERGE
     queue_name: al2023
+  - name: 'e2e-token-broker'
+    script_path: /root/okta/okta-client-javascript/scripts/bacon
+    script_name: e2e-token-broker
+    sort_order: '4'
+    timeout: '20'
+    criteria: MERGE
+    queue_name: al2023
   - name: 'prerelease'
     script_path: /root/okta/okta-client-javascript/scripts/bacon
     script_name: prerelease
-    sort_order: '4'
+    sort_order: '5'
     timeout: '10'
     criteria: MERGE
     queue_name: small
   - name: semgrep
     script_path: /root/okta/okta-client-javascript/scripts/bacon
-    sort_order: '5'
+    sort_order: '6'
     timeout: '10'
     script_name: semgrep
     criteria: MERGE
@@ -53,7 +60,7 @@ test_suites:
   - name: snyk
     script_path: /root/okta/okta-client-javascript/scripts/bacon
     script_name: snyk
-    sort_order: '6'
+    sort_order: '7'
     timeout: '200'
     criteria: MAINLINE
     queue_name: small

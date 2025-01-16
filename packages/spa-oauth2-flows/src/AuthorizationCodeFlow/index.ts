@@ -1,29 +1,33 @@
 /* eslint max-len: [2, 145] */
-import type { AuthorizationCodeFlowOptions, RedirectValues } from './types';
+import type { OAuth2FlowOptions, AuthContext } from '../types';
 import {
   type OAuth2ErrorResponse,
   type TimeInterval,
-  AuthContext,
-  AuthTransaction,
   PKCE,
   OAuth2Error,
   isOAuth2ErrorResponse,
   getSearchParam,
   randomBytes,
   mergeURLSearchParameters,
-  Token
+  Token,
 } from '@okta/auth-foundation';
 import OAuth2Client from '@okta/auth-foundation/client';
+import { OAuth2Flow, OAuth2FlowError } from '../OAuth2Flow';
+import { AuthTransaction } from '../AuthTransaction';
 
 
 /**
  * @module AuthorizationCodeFlow
  */
 
-function bindOktaPostMessageListener ({ state, timeout = 120000 }): Promise<RedirectValues | OAuth2ErrorResponse> {
+function bindOktaPostMessageListener ({
+  state,
+  timeout = 120000
+}): Promise<AuthorizationCodeFlow.RedirectValues | OAuth2ErrorResponse>
+{
   let handler: (evt: MessageEvent<any>) => void;
   let timeoutId: NodeJS.Timeout;
-  return (new Promise<RedirectValues | OAuth2ErrorResponse>((resolve, reject) => {
+  return (new Promise<AuthorizationCodeFlow.RedirectValues | OAuth2ErrorResponse>((resolve, reject) => {
     handler = function (e) {
       if (!e.data || e.data.state !== state) {
         // A message not meant for us
@@ -60,7 +64,7 @@ function bindOktaPostMessageListener ({ state, timeout = 120000 }): Promise<Redi
  * - Authorization Code Flow: {@link https://developer.okta.com/docs/concepts/oauth-openid/#authorization-code-flow-with-pkce-flow | Concepts}
  * - Authorization Code Flow: {@link https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/#authorization-code-flow | Guide}
  */
-export class AuthorizationCodeFlow {
+export class AuthorizationCodeFlow extends OAuth2Flow {
   readonly client: OAuth2Client;
   // readonly context: AuthContext = {};
   readonly redirectUri: string;
@@ -69,49 +73,40 @@ export class AuthorizationCodeFlow {
   private context: AuthorizationCodeFlow.Context | null = null;
   private authorizeUrl: URL | null = null;
 
-  #isAuthenticating: boolean = false;
-
-  constructor (options: AuthorizationCodeFlowOptions);
-  constructor (client: OAuth2Client, options: AuthorizationCodeFlowOptions);
-  constructor (client: OAuth2Client | AuthorizationCodeFlowOptions, options?: AuthorizationCodeFlowOptions) {
+  constructor (options: AuthorizationCodeFlow.InitOptions);
+  constructor (client: OAuth2Client, options: AuthorizationCodeFlow.RedirectParams);
+  constructor (
+    client: OAuth2Client | AuthorizationCodeFlow.InitOptions,
+    options?: AuthorizationCodeFlow.InitOptions | AuthorizationCodeFlow.RedirectParams
+  ) {
+    super();
     if (client instanceof OAuth2Client) {
       this.client = client;
     }
     else {
-      options = client as AuthorizationCodeFlowOptions;
-      const { issuer, clientId, scopes, dpop } = options;
-      this.client = new OAuth2Client({ baseURL: issuer, clientId, scopes, dpop });
+      const { issuer, redirectUri, additionalParameters, ...oauth2Params } = client;
+      this.client = new OAuth2Client({ baseURL: issuer, ...oauth2Params });
+      options = { redirectUri, additionalParameters };
     }
 
-    // based on ctor signatures, options cannot be undefined at this point
-    const { redirectUri, additionalParameters } = options!;
+    const { redirectUri, additionalParameters } = options as AuthorizationCodeFlow.RedirectParams;
 
     this.redirectUri = (new URL(redirectUri)).href;
     this.additionalParameters = additionalParameters ?? {};
   }
 
   public get isAuthenticating (): boolean {
-    return this.#isAuthenticating;
-  }
-
-  private set isAuthenticating (isAuthenticating: boolean) {
-    this.#isAuthenticating = isAuthenticating;
-    if (isAuthenticating) {
-      // TODO: emit authenticationStarted
-    }
-    else {
-      // TODO: emit authenticationFinished
-    }
+    return this.inProgress;
   }
 
   reset () {
-    this.isAuthenticating = false;
+    super.reset();
     this.context = null;
     this.authorizeUrl = null;
   }
 
   /** @internal */
-  private parseAuthorizationCode (url: URL): RedirectValues | OAuth2ErrorResponse {
+  private parseAuthorizationCode (url: URL): AuthorizationCodeFlow.RedirectValues | OAuth2ErrorResponse {
     const params = url.searchParams;
 
     const error = getSearchParam(params, 'error');
@@ -126,9 +121,11 @@ export class AuthorizationCodeFlow {
     const code = getSearchParam(params, 'code');
     const state = getSearchParam(params, 'state');
 
-    if (!code || !state) {
-      // TODO: handle error
-      throw new Error('parse error');
+    if (!code) {
+      throw new OAuth2FlowError('Failed to parse `code` from redirect url');
+    }
+    if (!state) {
+      throw new OAuth2FlowError('Failed to parse `state` from redirect url');
     }
 
     // TODO: compare to expected state, can this be done?
@@ -175,7 +172,7 @@ export class AuthorizationCodeFlow {
     context?: AuthorizationCodeFlow.Context,
     additionalParameters: Record<string, string> = {}
   ): Promise<URL> {
-    this.isAuthenticating = true;
+    this.inProgress = true;
 
     try {
       const flowContext: AuthorizationCodeFlow.Context = context ?? await AuthorizationCodeFlow.Context();
@@ -189,7 +186,7 @@ export class AuthorizationCodeFlow {
       if (!openIdConfig.authorization_endpoint) {
         throw new OAuth2Error('Missing `authorization_endpoint` from ./well-known config');
       }
-      console.log('context', flowContext);
+
       const url = this.buildAuthorizeURL(openIdConfig.authorization_endpoint, flowContext, additionalParameters);
       this.authorizeUrl = url;
 
@@ -197,13 +194,8 @@ export class AuthorizationCodeFlow {
     }
     catch (err) {
       this.reset();
-
-      // TODO:
-      const oauthError = err ?? new Error('catch all');
-      
-      // TODO: emit error
-
-      throw oauthError;   // throw?
+      this.emitter.flowErrored({ error: err });
+      throw err;
     }
   }
 
@@ -217,32 +209,40 @@ export class AuthorizationCodeFlow {
    * @returns 
    */
   async resume (redirectUri?: string): Promise<AuthorizationCodeFlow.Result> {
-    this.isAuthenticating = true;
-    const currentUrl = new URL(redirectUri ?? window.location.href);
+    this.inProgress = true;
 
-    const values = this.parseAuthorizationCode(currentUrl);
-    if (isOAuth2ErrorResponse(values)) {
-      throw new Error('OAuthError');  // TODO:
-    }
-
-    const { code, state } = values;
-
+    let oauthState = '';
     try {
-      const context = AuthTransaction.load(state) as AuthorizationCodeFlow.Context;
+      const currentUrl = new URL(redirectUri ?? window.location.href);
+
+      const values = this.parseAuthorizationCode(currentUrl);
+      if (isOAuth2ErrorResponse(values)) {
+        throw new OAuth2Error(values);
+      }
+
+      const { code, state } = values;
+      oauthState = state;
+
+      const context = await AuthTransaction.load(state) as AuthorizationCodeFlow.Context;
       if (!context) {
-        // TODO: handle no stored transactions
-        throw new Error('NoTransactionError');    // NoTransactionError?
+        throw new OAuth2FlowError(`Failed to load auth transaction for state ${state}`);
       }
   
       // TODO: does loading the transaction from storage count as a state check?
   
-      return this.exchangeCodeForTokens(code, context);
+      const result = await this.exchangeCodeForTokens(code, context);
+      return result;
+    }
+    catch (err) {
+      this.emitter.flowErrored({ error: err });
+      throw err;
     }
     finally {
       try {
-        if (state) {
-          AuthTransaction.remove(state);
+        if (oauthState) {
+          await AuthTransaction.remove(oauthState);
         }
+        this.reset();
       // eslint-disable-next-line no-empty
       } catch {}  // ignore storage errors
     }
@@ -264,21 +264,14 @@ export class AuthorizationCodeFlow {
       nonce
     });
 
-    try {
-      const response = await this.client.exchange(request);
+    const response = await this.client.exchange(request);
 
-      if (isOAuth2ErrorResponse(response)) {
-        throw new OAuth2Error(response);
-      }
-  
-      // TODO: emit authentication(response)
-  
-      // TODO: consider renaming meta vs context?
-      return { token: response, context: meta };
+    if (isOAuth2ErrorResponse(response)) {
+      throw new OAuth2Error(response);
     }
-    finally {
-      this.reset();
-    }
+
+    // TODO: consider renaming meta vs context?
+    return { token: response, context: meta };
   }
 
   /**
@@ -328,7 +321,7 @@ export class AuthorizationCodeFlow {
    * - {@link https://developers.google.com/privacy-sandbox/cookies | Third-party Cookie Deprecation}
    */
   static async PerformSilently (flow: AuthorizationCodeFlow): Promise<AuthorizationCodeFlow.Result> {
-    if (!flow.isAuthenticating) {
+    if (!flow.inProgress) {
       // starts flow if it hasn't been started already
       await flow.start();
     }
@@ -358,12 +351,12 @@ export class AuthorizationCodeFlow {
       const values = await oktaPostMessage;
 
       if (isOAuth2ErrorResponse(values)) {
-        throw new Error('OAuthError');
+        throw new OAuth2Error(values);
       }
 
       const { code, state: stateValue } = values;
       if (state !== stateValue) {
-        throw new Error('OAuth `state` values do not match');
+        throw new OAuth2FlowError('OAuth `state` values do not match');
       }
 
       return flow.exchangeCodeForTokens(code, context);
@@ -378,6 +371,19 @@ export class AuthorizationCodeFlow {
 }
 
 export namespace AuthorizationCodeFlow {
+
+  export type RedirectParams = {
+    redirectUri: string | URL;
+    additionalParameters?: Record<string, string>;
+  };
+
+  export type InitOptions = OAuth2FlowOptions & RedirectParams;
+
+  export interface RedirectValues {
+    code: string;
+    state: string;
+  }
+
   export type TransactionMeta = Record<string, string>;
 
   /**

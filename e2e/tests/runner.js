@@ -14,12 +14,22 @@
 /* eslint-disable no-console, complexity */
 const env = require('@repo/env');
 const { spawn } = require('node:child_process');
+const killAll = require('tree-kill');
 const waitOn = require('wait-on');
 const { config } = require('./config');
 
 env.setEnvironmentVarsFromTestEnv(__dirname);
 
+// https://github.com/nodejs/node/issues/40438
+// killing the `spawn` pid does not terminate the dev server process
+// we need to kill all descendant processes of the child process
+function killChildProcess (cp) {
+  killAll(cp.pid);
+}
+
 const getTask = (config) => () => {
+  console.log('Running test with following config: ');
+  console.log(JSON.stringify(config, null, 4));
   return new Promise(resolve => {
     const server = spawn('yarn', [
       'workspace',
@@ -37,14 +47,15 @@ const getTask = (config) => () => {
 
       let opts = process.argv.slice(2); // pass extra arguments through
       const runnerArgs = ['wdio', 'run', wdioConfig];
-      // (config.spec || []).forEach(spec => {
-      //   runnerArgs.push('--spec');
-      //   runnerArgs.push(`./specs/${spec}`);
-      // });
+      (config.specs || []).forEach(spec => {
+        runnerArgs.push('--spec');
+        runnerArgs.push(`./specs/${spec}`);
+      });
       // (config.exclude || []).forEach(spec => {
       //   runnerArgs.push('--exclude');
       //   runnerArgs.push(`./specs/${spec}`);
       // });
+
       const runner = spawn(
         'yarn',
         runnerArgs.concat(opts),
@@ -55,11 +66,18 @@ const getTask = (config) => () => {
       runner.on('exit', function (code) {
         console.log('Test runner exited with code: ' + code);
         returnCode = code;
-        server.kill('SIGTERM');
+        killChildProcess(server);
       });
       runner.on('error', function (err) {
-        server.kill('SIGTERM');
+        killChildProcess(server);
         throw err;
+      });
+      runner.on('SIGINT', function () {
+        runner.exit(1);   // will trigger server kill
+      });
+
+      server.on('SIGINT', function () {
+        runner.exit(1);   // will trigger server kill
       });
       server.on('exit', function (code) {
         resolve(returnCode);
@@ -96,3 +114,7 @@ function runNextTask() {
 }
 
 runNextTask();
+
+process.on('exit', () => {
+  killChildProcess(process);
+});

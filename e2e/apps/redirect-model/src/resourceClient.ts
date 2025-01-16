@@ -1,15 +1,12 @@
 import { Credential } from '@okta/spa-platform';
 import { FetchClient } from '@okta/spa-platform/fetch';
-import { SubAppOrchestrator } from '@okta/spa-platform/orchestrator';
+import { HostOrchestrator } from '@okta/spa-platform/orchestrator';
 import { oauthConfig } from '@/auth';
 
-export { SAOError } from '@okta/spa-platform/orchestrator';
 
+const nested = new HostOrchestrator.SubApp('SubAppOrchestrator', oauthConfig);
 
-const nested = new SubAppOrchestrator();
-
-const { issuer, clientId, scopes } = oauthConfig
-export const fetchClient = new FetchClient(nested, { issuer, clientId, scopes });
+export const fetchClient = new FetchClient(nested);
 
 
 // Host App (Token Broker) Orchestrator

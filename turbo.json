@@ -3,6 +3,7 @@
   "globalDependencies": ["**/.env.*local"],
   "tasks": {
     "lint": {
+      "cache": false,
       "dependsOn": ["^lint"]
     },
     "build": {

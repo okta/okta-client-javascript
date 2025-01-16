@@ -104,6 +104,9 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
   private readonly id: string = shortID();
   private readonly channel: BroadcastChannel = new BroadcastChannel('CredentialCoordinatorImpl');
 
+  // see get / set default
+  // mimic "lazy" loading value: Cred | null are the "real types"
+  // undefined indicates the value hasn't been resolved yet (loaded from storage)
   #default: Credential | null | undefined = undefined;
 
   // configurations
@@ -120,13 +123,11 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
     // parse out config options
     this.autoClean = false;   // TODO: fix auto clean
 
-    this.emitter.relay(this.credentialDataSource.emitter, ['credential_added', 'credential_removed']);
-    this.emitter.relay(this.tokenStorage.emitter, ['default_changed', 'token_replaced']);
-
-    // emitter listeners need to be registered before storage is checked for existing tokens
-    // loading the existing tokens will fire tokenStorage events which should be handled
     this.registerDelegateListeners();
     this.registerTabListeners();
+
+    this.emitter.relay(this.credentialDataSource.emitter, ['credential_added', 'credential_removed']);
+    this.emitter.relay(this.tokenStorage.emitter, ['default_changed', 'token_replaced']);
   }
 
   private broadcast (eventName: string, data: Record<string, JsonPrimitive>) {
@@ -142,56 +143,51 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
     this.channel.onmessage = (event) => {
       const { eventName, id, value, source } = event.data;
       log('tab sync event: ', { eventName, source });
-      log(source, this.id, source === this.id);
       if (source == this.id) {
-        log('prevented');
         return;   // do not listen to messages broadcasted by this instance
       }
 
-      // special case
       if (eventName === EVENT_DEFAULT_CHANGED) {
-        log('default', id, this.default);
-        if (id === this.default?.id) {
-          return;
+        log('default', id, this.#default);
+        if (id !== this.#default?.id) {
+          this.#default = undefined;    // set to undefined to trigger "reload" when accessed after this event
+          this.emitter.defaultChanged(id);
         }
-
-        this.tokenStorage.setDefaultTokenId(id);
-        return;
       }
-
-      // special case
-      if (eventName === EVENT_CLEARED) {
+      else if (eventName === EVENT_CLEARED) {
         this.clear(true);   // only clear local values and do not broadcast
         this.emitter.cleared();
-        return;
-      }
-
-      // CRUD events
-      const token = new Token({...(value ?? {}), id});
-      const cred = this.credentialDataSource.credentialFor(token);
-      if (eventName === EVENT_ADDED) {
-        log('added');
       }
       else if (eventName === EVENT_REMOVED) {
         log('removal');
-        this.credentialDataSource.remove(cred);
+        this.credentialDataSource.remove(id);
       }
-      else if (eventName === EVENT_REFRESHED) {
-        log('refresh');
-        // when a Credential is updated in a separate tab, the Token passed via the broadcast
-        // may differ from cred.token via DataSource, so the update should continue. 
-        // If the tokens are equal, this means this DataSource has already updated the token to the new value
-        if (Token.isEqual(token, cred.token)) {
-          log('token has already been updated');
-          return;
-        }
+      else {
+        const token = new Token({...value, id});
+        const credential = this.credentialDataSource.credentialFor(token);
 
-        // @ts-expect-error - Credential `set token()` is a private setter to avoid exposing this to the public API
-        cred.token = token;
-        this.emitter.refreshed(cred);
-        return;
+        if (eventName === EVENT_ADDED) {
+          log('added');
+          // credentialDataSource.credentialFor() call above handles updating credDataSrc
+        }
+        else if (eventName === EVENT_REFRESHED) {
+          log('refresh');
+
+          // when a Credential is updated in a separate tab, the Token passed via the broadcast
+          // may differ from cred.token via DataSource, so the update should continue.
+          // If the tokens are equal, this means this DataSource has already updated the token to the new value
+          if (Token.isEqual(token, credential.token)) {
+            log('token has already been updated');
+            return;
+          }
+
+          // @ts-expect-error - Credential `set token()` is a private setter to avoid exposing this to the public API
+          credential.token = token;
+          this.emitter.refreshed(credential);
+        }
       }
-      log('allIDs: ', this.allIDs());
+
+      log('allIDs: ', this.allIDs(), 'size: ', this.credentialDataSource.size);
     };
   }
 
@@ -228,12 +224,8 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
     });
 
     this.tokenStorage.emitter.on('default_changed', ({ id }) => {
-      if (this.#default?.id === id) {
-        return;
-      }
-
-      this.#default = this.loadDefaultCredential();
-      this.broadcast(EVENT_DEFAULT_CHANGED, { id: this.default?.id ?? null });
+      this.#default = undefined;      // clears cached value, which will trigger storage "reload" once accessed again
+      this.broadcast(EVENT_DEFAULT_CHANGED, { id });
     });
   }
 
@@ -257,8 +249,8 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
   }
 
   public set default (cred: Credential | null) {
-    this.tokenStorage.setDefaultTokenId(cred?.id ?? null);
     this.#default = cred;
+    this.tokenStorage.setDefaultTokenId(cred?.id ?? null);
   }
 
   // TODO: patch auto clean
@@ -302,7 +294,6 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
   }
 
   public clear (localOnly = false): void {
-    this.default = null;
     Object.keys(this.expiryTimeouts).forEach(t => this.clearExpireEventTimeout(t));
     this.credentialDataSource.clear();
     if (!localOnly) {
@@ -310,6 +301,7 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
       this.emitter.cleared();
       this.broadcast(EVENT_CLEARED, {});
     }
+    this.default = null;
   }
 
   public allIDs (): string[] {

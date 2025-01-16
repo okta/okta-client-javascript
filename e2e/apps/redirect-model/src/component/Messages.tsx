@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchClient, SAOError } from '@/resourceClient';
+import { fetchClient } from '@/resourceClient';
 import { Credential, Events } from '@okta/spa-platform';
 
 let dataFetched = false;
@@ -21,7 +21,7 @@ export function Messages () {
       setError(false);
     }
     catch (err) {
-      if (err instanceof SAOError) {
+      if (err instanceof Error) {
         setError(true);
         return;
       }

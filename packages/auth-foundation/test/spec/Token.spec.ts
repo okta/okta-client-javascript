@@ -92,6 +92,12 @@ describe('Token', () => {
     });
 
     it('.from', async () => {
+      const fetchSpy = global.fetch = jest.fn()
+        // happy path (first call)
+        .mockResolvedValueOnce(Response.json(mockTokenResponse()))
+        // // error path (second call)
+        .mockResolvedValueOnce(Response.json({error: 'some oauth2 error'}));
+
       const client = new OAuth2Client({
         baseURL: 'https://fake.okta.com',
         clientId: 'fake',
@@ -106,18 +112,6 @@ describe('Token', () => {
       // cast to any because `validateToken` is a private method
       jest.spyOn(client as any, 'validateToken').mockImplementation((a, b, token) => Promise.resolve(token));
 
-      const fetchSpy = global.fetch = jest.fn()
-        // happy path (first call)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve(mockTokenResponse())
-        })
-        // error path (second call)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({error: 'some oauth2 error'})
-        });
-
       // happy path
       const t1 = await Token.from('testRefreshToken1', client);
       expect(t1).toBeInstanceOf(Token);
@@ -131,11 +125,11 @@ describe('Token', () => {
       }));
       // request.text returns raw request body
       expect(await firstCall.text()).toEqual(new URLSearchParams({
-        grant_type: 'refresh_token',
         client_id: 'fake',
+        grant_type: 'refresh_token',
         scope: 'openid email profile',
         refresh_token: 'testRefreshToken1'
-      }));
+      }).toString());
 
       // error path
       await expect(Token.from('testRefreshToken2', client)).rejects.toThrow(new OAuth2Error('some oauth2 error'));
@@ -149,11 +143,11 @@ describe('Token', () => {
       }));
       // request.text returns raw request body
       expect(await secondCall.text()).toEqual(new URLSearchParams({
-        grant_type: 'refresh_token',
         client_id: 'fake',
+        grant_type: 'refresh_token',
         scope: 'openid email profile',
         refresh_token: 'testRefreshToken2'
-      }));
+      }).toString());
     });
   });
 
@@ -254,6 +248,34 @@ describe('Token', () => {
       });
 
       // TODO: update when dpop is implemented
+    });
+
+    it('.willBeExpiredIn / .willBeValidIn', () => {
+      const { raw } = context;
+      const t1 = new Token(raw);
+      expect(t1.isExpired).toBe(false);
+      expect(t1.willBeExpiredIn(30)).toBe(false);
+      expect(t1.willBeValidIn(30)).toBe(true);
+
+      raw.issuedAt = 1000;
+      const t2 = new Token(raw);
+      expect(t2.isExpired).toBe(true);
+      expect(t2.willBeExpiredIn(30)).toBe(true);
+      expect(t2.willBeValidIn(30)).toBe(false);
+
+      raw.issuedAt = Date.now();
+      raw.expiresIn = 25;   // expires in 25 seconds
+      const t3 = new Token(raw);
+      expect(t3.isExpired).toBe(false);
+      expect(t3.willBeExpiredIn(30)).toBe(true);
+      expect(t3.willBeValidIn(30)).toBe(false);
+
+      raw.issuedAt = Date.now();
+      raw.expiresIn = 35;   // expires in 25 seconds
+      const t4 = new Token(raw);
+      expect(t4.isExpired).toBe(false);
+      expect(t4.willBeExpiredIn(30)).toBe(false);
+      expect(t4.willBeValidIn(30)).toBe(true);
     });
   });
 });

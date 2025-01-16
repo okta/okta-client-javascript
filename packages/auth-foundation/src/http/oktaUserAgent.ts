@@ -1,16 +1,17 @@
-const envs: string[] = [];
+// defined in rollup.config.js and jest.config.ts
+declare const __PKG_NAME__: string;
+declare const __PKG_VERSION__: string;
+
+const envs: Set<string> = new Set();
 
 /** @internal */
 export function addEnv (env: string) {
-  envs.push(env);
+  envs.add(env);
 }
 
 /** @internal */
 export function getOktaUserAgent () {
-  return envs.join(' ');
+  return [...envs].join(' ');
 }
 
-// TODO: rename from package.json or use build?
-const packageName = '@okta/auth-foundation';
-const version = '0.0.0';
-addEnv(`${packageName}/${version}`);
+addEnv(`${__PKG_NAME__}/${__PKG_VERSION__}`);

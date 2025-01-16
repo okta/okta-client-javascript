@@ -1,6 +1,7 @@
 import cleanup from 'rollup-plugin-cleanup';
 import typescript from 'rollup-plugin-typescript2';
 import license from 'rollup-plugin-license';
+import replace from '@rollup/plugin-replace';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -9,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 
-export default function (tsModule) {
+export default function (tsModule, packageJson) {
   return {
     input: 'src/index.ts',
     output: {
@@ -20,6 +21,11 @@ export default function (tsModule) {
       preserveModules: true
     },
     plugins: [
+      replace({
+        __PKG_NAME__: JSON.stringify(packageJson.name),
+        __PKG_VERSION__: JSON.stringify(packageJson.version),
+        preventAssignment: true
+      }),
       typescript({
         // eslint-disable-next-line node/no-unpublished-require
         typescript: tsModule,

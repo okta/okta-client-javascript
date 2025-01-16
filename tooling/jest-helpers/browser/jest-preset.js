@@ -2,7 +2,7 @@ const path = require('path');
 
 module.exports = {
   roots: ['<rootDir>'],
-  testEnvironment: 'jsdom',
+  testEnvironment: path.join(__dirname, 'jest.environment.js'),
   extensionsToTreatAsEsm: ['.ts'],
   transform: {
     '^.+\\.tsx?$': [
@@ -10,9 +10,13 @@ module.exports = {
       {
         // ts-jest options
         'tsconfig': '<rootDir>/test/tsconfig.json',
-        useESM: true
+        useESM: true,
       }
     ]
+  },
+  globals: {
+    __PKG_NAME__: 'PLACEHOLDER',
+    __PKG_VERSION__: 'PLACEHOLDER'
   },
   restoreMocks: true,
   clearMocks: true,

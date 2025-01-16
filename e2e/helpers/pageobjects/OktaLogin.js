@@ -42,7 +42,20 @@ class OktaLogin {
     // Identifier first config
     if (isIdFirst) {
       await this.OIEsigninSubmitBtn.click();
-      await this.OIEsigninPassword.setValue(password);
+
+      // test needs to determine if select-authenticator-list rendered before password prompt
+      await browser.waitUntil(async () => {
+        return (
+          this.OIEsigninPassword.isDisplayed() ||
+          this.authenticatorPassword.isDisplayed()
+        );
+      });
+
+      if (await this.authenticatorPassword.isDisplayed()) {
+        await this.authenticatorPassword.click();
+      }
+
+      await this.OIEsigninPassword.setValue(password),
       await this.OIEsigninSubmitBtn.click();
     }
     else {
@@ -56,13 +69,6 @@ class OktaLogin {
     await this.signinUsername.then(el => el.setValue(username));
     await this.signinPassword.then(el => el.setValue(password));
     await this.signinSubmitBtn.then(el => el.click());
-  }
-
-  async selectPasswordAuthenticator() {
-    await browser.waitUntil(async () => {
-      return (await this.authenticatorPassword).isDisplayed();
-    }, 5000, 'wait for password authenticator in list');
-    (await this.authenticatorPassword).click();
   }
 
   async waitForLoad() {

@@ -1,7 +1,7 @@
 import type { JWT } from './JWT';
 import { b64u, buf } from '../crypto';
 import { JWTError } from '../errors';
-import { validateString } from '../validators';
+import { validateString } from '../internals/validators';
 
 /**
  * @group JWT & Token Verification

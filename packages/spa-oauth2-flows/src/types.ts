@@ -4,3 +4,5 @@ export interface OAuth2FlowOptions {
   scopes: string | string[];
   dpop?: boolean;
 }
+
+export type AuthContext = Record<string, any>;

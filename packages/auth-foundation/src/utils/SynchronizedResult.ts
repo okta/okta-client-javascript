@@ -47,9 +47,7 @@ export class SynchronizedResult<T, R = T> {
   private onResultFromOtherTab (): Promise<T> {
     const { deseralizer } = this.options;
     return new Promise<T>((resolve) => {
-      console.log('waiting for other tab...');
       this.channel.onmessage = (event) => {
-        console.log('event: ', event);
         const item = deseralizer ? deseralizer(event.data) : event.data;
         resolve(item);
       };
@@ -57,9 +55,7 @@ export class SynchronizedResult<T, R = T> {
   }
 
   private async onLockFreedPlusDelay (): Promise<'FREED'> {
-    await navigator.locks.request(this.name, async () => {
-      console.log('Lock is now free!');
-    });
+    await navigator.locks.request(this.name, async () => {});
     // wait short delay to allow time for message to broadcast from other tab
     await sleep(this.options.lockFreedDelay);
     return 'FREED';
@@ -83,7 +79,6 @@ export class SynchronizedResult<T, R = T> {
     this.channel.onmessage = () => {};
 
     if (result === 'FREED' || result === 'TIMEOUT') {
-      console.log(`timed out waiting for other tab, retrying task (${result})...`);
       if (retries > 0) {
         return this.exec();
       }
@@ -92,7 +87,6 @@ export class SynchronizedResult<T, R = T> {
       }
     }
 
-    console.log('token received from other tab');
     return result;
   }
 
@@ -105,12 +99,10 @@ export class SynchronizedResult<T, R = T> {
     }
     catch (err) {
       this.channel.postMessage(err);
-      console.log('error: ', err);
       throw err;
     }
 
     this.channel.postMessage(seralizer ? seralizer(result) : result);
-    console.log('result: ', result);
     return result;
   }
 
@@ -119,16 +111,12 @@ export class SynchronizedResult<T, R = T> {
     return await navigator.locks.request(this.name, { ifAvailable: true }, async (lock) => {
       try {
         if (!lock) {
-          console.log('lock not available...');
           return this.whenLockIsTaken();
         }
 
-        console.log('lock granted...');
-        console.log('performing task...');
         return this.whenLockIsGranted();
       }
       catch (err) {
-        console.log(err);
         // TODO: throw TabSync error?
       }
     });

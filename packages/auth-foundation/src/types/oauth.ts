@@ -6,7 +6,9 @@ import type { OpenIdConfiguration } from './openid';
 export interface OAuth2ErrorResponse {
   readonly error: string
   readonly errorDescription?: string
+  readonly error_description?: string
   readonly errorUri?: string
+  readonly error_uri?: string
 
   // readonly algs?: string
   // readonly scope?: string
@@ -55,6 +57,7 @@ export type TokenType = 'Bearer' | 'DPoP';
 
 export type ClientAuthentication = 'none';
 
+// TODO: revisit (name, location)
 export interface APIClientConfiguration {
   readonly baseURL: URL;
 }

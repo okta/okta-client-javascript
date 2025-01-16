@@ -1,6 +1,7 @@
 {
   "name": "@okta/spa-oauth2-flows",
   "version": "0.2.0",
+  "type": "module",
   "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
@@ -17,7 +18,10 @@
     "build": "yarn build:esm && yarn build:types",
     "build:watch": "rollup -c --watch & tsc --emitDeclarationOnly --watch",
     "build:esm": "rollup -c",
-    "build:types": "tsc --emitDeclarationOnly"
+    "build:types": "tsc --emitDeclarationOnly",
+    "test": "yarn test:unit",
+    "test:watch": "jest --watchAll",
+    "test:unit": "jest"
   },
   "peerDependencies": {
     "@okta/auth-foundation": "*"
@@ -25,6 +29,7 @@
   "devDependencies": {
     "@okta/auth-foundation": "*",
     "@repo/eslint-config": "*",
+    "@repo/jest-helpers": "*",
     "@repo/rollup-config": "*",
     "@repo/typescript-config": "*",
     "eslint": "^8.56.0",

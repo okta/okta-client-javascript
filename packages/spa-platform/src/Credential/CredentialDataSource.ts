@@ -113,9 +113,13 @@ export class DefaultCredentialDataSource<T extends Credential = Credential> impl
     return cred;
   }
 
-  public remove (cred: Credential) {
-    this.credentials.delete(cred.token.id);
-    this.emitter.credentialRemoved(this, cred);
+  public remove (cred: Credential | string) {
+    const id = typeof cred === 'string' ? cred : cred.id;
+    if (this.credentials.has(id)) {
+      const cred = this.credentials.get(id)!;
+      this.credentials.delete(id);
+      this.emitter.credentialRemoved(this, cred);
+    }
   }
 
   public clear () {

@@ -6,7 +6,7 @@ import { mockIDToken, mockTokenResponse } from '@repo/jest-helpers/browser/helpe
 import { Credential } from 'src/Credential';
 
 class JestOAuth2Client extends OAuth2Client {
-  protected internalFetch (url: string | URL, options: RequestInit = {}): Promise<Response> {
+  public fetch (url: string | URL, options: RequestInit = {}): Promise<Response> {
     throw new Error('JEST CLIENT BOUNDARY, NO NETWORK REQUEST SHOULD BE MADE!');
   }
 }

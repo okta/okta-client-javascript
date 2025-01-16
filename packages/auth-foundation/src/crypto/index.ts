@@ -80,21 +80,3 @@ export function randomBytes(): string {
 export function shortID (): string {
   return [...crypto.getRandomValues(new Uint8Array(6))].map(v => v.toString(16)).join('');
 }
-
-/**
- * @internal
- * @group Crypto
- * @returns a public/private key pair. The private key will be non-extractable
- */
-export async function generateKeyPair (): Promise<CryptoKeyPair> {
-  const algorithm = {
-    name: 'RSASSA-PKCS1-v1_5',
-    hash: 'SHA-256',
-    modulusLength: 2048,
-    publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
-  };
-
-  // The "false" here makes it non-exportable
-  // https://caniuse.com/mdn-api_subtlecrypto_generatekey
-  return crypto.subtle.generateKey(algorithm, false, ['sign', 'verify']);
-}

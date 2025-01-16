@@ -1,77 +1,53 @@
-import type { SessionLogoutFlowOptions } from './types';
+import type { OAuth2FlowOptions, AuthContext } from '../types';
 import {
-  AuthContext,
   randomBytes,
   OAuth2Error,
   mergeURLSearchParameters
 } from '@okta/auth-foundation';
 import OAuth2Client from '@okta/auth-foundation/client';
+import { OAuth2Flow } from '../OAuth2Flow';
 
-export class SessionLogoutFlow {
+
+export class SessionLogoutFlow extends OAuth2Flow {
   readonly client: OAuth2Client;
   readonly logoutRedirectUri: string;
   readonly additionalParameters: Record<string, string>;
 
-  #inProgress: boolean = false;
-
-  constructor (options: SessionLogoutFlowOptions);
-  constructor (client: OAuth2Client, options: SessionLogoutFlowOptions);
-  constructor (client: OAuth2Client | SessionLogoutFlowOptions, options?: SessionLogoutFlowOptions) {
+  constructor (options: SessionLogoutFlow.InitOptions);
+  constructor (client: OAuth2Client, options: SessionLogoutFlow.LogoutParams);
+  constructor (
+    client: OAuth2Client | SessionLogoutFlow.InitOptions,
+    options?: SessionLogoutFlow.InitOptions | SessionLogoutFlow.LogoutParams
+  ) {
+    super();
     if (client instanceof OAuth2Client) {
       this.client = client;
     }
     else {
-      options = client;
-      const { issuer, clientId, scopes, dpop } = options;
-      this.client = new OAuth2Client({ baseURL: issuer, clientId, scopes, dpop });
+      const { issuer, logoutRedirectUri, additionalParameters, ...oauth2Params } = client;
+      this.client = new OAuth2Client({ baseURL: issuer, ...oauth2Params });
+      options = { logoutRedirectUri, additionalParameters };
     }
 
-    const { logoutRedirectUri, additionalParameters } = options!;
+    const { logoutRedirectUri, additionalParameters } = options as SessionLogoutFlow.LogoutParams;
 
     this.logoutRedirectUri = (new URL(logoutRedirectUri)).href;
     this.additionalParameters = additionalParameters ?? {};
   }
 
-  public get inProgress (): boolean {
-    return this.#inProgress;
-  }
-
-  // reference: https://github.com/okta/okta-mobile-swift/blob/master/Sources/OktaOAuth2/Authentication/AuthorizationCodeFlow.swift#L128
-  private set inProgress (inProgress: boolean) {
-    this.#inProgress = inProgress;
-    if (inProgress) {
-      // TODO: emit authenticationStarted
-    }
-    else {
-      // TODO: emit authenticationFinished
-    }
-  }
-
   private buildLogoutURL (url: string, context: SessionLogoutFlow.Context, additionalParameters: Record<string, string>) {
-    let logoutUrl: URL | undefined;
-    try {
-      logoutUrl = new URL(url);
-    }
-    catch (err) {
-      throw new OAuth2Error('invalid url (logoutUrl)');
-    }
+    let logoutUrl = new URL(url);
 
-    try {
-      logoutUrl.searchParams.set('id_token_hint', context.idToken);
-      logoutUrl.searchParams.set('post_logout_redirect_uri', this.logoutRedirectUri);
-      logoutUrl.searchParams.set('state', context.state);
+    logoutUrl.searchParams.set('id_token_hint', context.idToken);
+    logoutUrl.searchParams.set('post_logout_redirect_uri', this.logoutRedirectUri);
+    logoutUrl.searchParams.set('state', context.state);
 
-      // TODO: if prompt is defined?
+    // TODO: if prompt is defined?
 
-      mergeURLSearchParameters(logoutUrl.searchParams, this.additionalParameters);
-      mergeURLSearchParameters(logoutUrl.searchParams, additionalParameters);
+    mergeURLSearchParameters(logoutUrl.searchParams, this.additionalParameters);
+    mergeURLSearchParameters(logoutUrl.searchParams, additionalParameters);
 
-      return logoutUrl;
-    }
-    catch(err) {
-      console.log(err);
-      throw new OAuth2Error('cannot compose url (logoutUrl)');
-    }
+    return logoutUrl;
   }
 
   async start (idToken: string, additionalParameters?: Record<string, string>): Promise<URL>;
@@ -98,31 +74,30 @@ export class SessionLogoutFlow {
         throw new OAuth2Error('Missing `end_session_endpoint` from ./well-known config');
       }
 
-      console.log('context: ', context);
       const url = this.buildLogoutURL(openIdConfig.end_session_endpoint, context, additionalParameters);
       context.logoutUrl = url.href;
 
       return url;
     }
     catch (err) {
-      this.reset();
-
-      // TODO:
-      const oauthError = err ?? new Error('catch all');
-      
-      // TODO: emit error
-
-      throw oauthError;   // throw?
+      this.emitter.flowErrored({ error: err });
+      throw err;
     }
-  }
-
-  reset () {
-    this.inProgress = false;
+    finally {
+      this.reset();
+    }
   }
 
 }
 
 export namespace SessionLogoutFlow {
+
+  export type LogoutParams = {
+    logoutRedirectUri: string | URL;
+    additionalParameters?: Record<string, string>;
+  }
+
+  export type InitOptions = LogoutParams & OAuth2FlowOptions;
 
   export type Result = {
     state?: string;

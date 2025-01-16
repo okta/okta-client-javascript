@@ -9,7 +9,7 @@ type StoreMethod = 'get' | 'add' | 'delete' | 'clear';
 
 export class IndexedDBDPoPStore implements DPoPStorage {
   
-  // TODO: make this configurable?? (not sure if they is necessary)
+  // TODO: make this configurable?? (not sure if this is necessary)
   static INDEXEDDB_NAME = 'AuthFoundation';
   static DB_KEY = 'DPoPKeys';
 

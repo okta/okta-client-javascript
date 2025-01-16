@@ -5,6 +5,7 @@ import {
   isOAuth2ErrorResponse,
   OAuth2Error,
   type RequestAuthorizer,
+  type RequestAuthorizerInit,
 } from '@okta/auth-foundation';
 import OAuth2Client from '@okta/auth-foundation/client';
 import { type CredentialCoordinator, CredentialCoordinatorImpl } from './CredentialCoordinator';
@@ -17,11 +18,6 @@ import { EVENT_ADDED, EVENT_REMOVED, EVENT_REFRESHED } from './constants';
  */
 
 type seconds = number;
-
-/** @internal */
-export type CredentialMeta = {
-  id: string;
-} & Record<string, string | string[]>
 
 /**
  * @internal
@@ -201,7 +197,6 @@ export class Credential implements RequestAuthorizer {
     return this.#coordinator.with(id);
   }
 
-  // TODO: better document `CredentialMeta`
   /**
    * Returns all Credential instances where `matcher` function returns `true`
    * 
@@ -214,7 +209,7 @@ export class Credential implements RequestAuthorizer {
    * // find Credentials by tag 'foo'
    * Credential.find(meta => meta?.tags?.includes('foo'));
    */
-  public static find (matcher: (meta: CredentialMeta) => boolean): Credential[] {
+  public static find (matcher: (meta: Token.Metadata) => boolean): Credential[] {
     return this.#coordinator.find(matcher);
   }
 
@@ -324,7 +319,7 @@ export class Credential implements RequestAuthorizer {
    * A utility method which matches the signature of [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
    * a [Request](https://developer.mozilla.org/en-US/docs/Web/API/Request) instance with a predefined `Authorization` header
    */
-  public async authorize (input: string | URL | Request, init?: RequestInit) {
+  public async authorize (input: string | URL | Request, init: RequestAuthorizerInit = {}) {
     return this.token.authorize(input, init);
   }
 
@@ -337,7 +332,6 @@ export class Credential implements RequestAuthorizer {
   private observeToken () {
     this.oauth2.emitter.on('token_did_refresh', ({ token }) => {
       if (Token.isEqual(token, this.token)) { return; }
-      console.log('token observed to be refreshed');
       this.token = token;
     });
   }

@@ -124,18 +124,18 @@ export namespace TokenStorageDelegate {
  * Default implementation of TokenStorage backend by `localStorage`
  */
 export class BrowserTokenStorage implements TokenStorage {
-  #defaultTokenId: string | null;
+  // increment this value if breaking changes to the JSON structure of a Token is required
+  // allows the opportunity for transformers to be implemented
+  private static version = 'v2';
+
   #defaultCredentialKey: string = 'okta-default';
-  tokenPrefix: string = 'okta-token';
+  tokenPrefix: string = `okta-token:${BrowserTokenStorage.version}`;
 
   readonly emitter = new TokenStorageEventEmitter();
 
-  constructor () {
-    this.#defaultTokenId = localStorage.getItem(this.#defaultCredentialKey) ?? null;
-  }
-
+  // No point in caching value when we can just read storage each time
   get defaultTokenId (): string | null {
-    return this.#defaultTokenId;
+    return localStorage.getItem(this.#defaultCredentialKey) ?? null;
   }
 
   private idToStoreKey (id: string): string {
@@ -147,13 +147,11 @@ export class BrowserTokenStorage implements TokenStorage {
       return;
     }
 
-    this.#defaultTokenId = id;
-    this.saveDefault();
+    this.saveDefault(id);
     this.emitter.defaultChanged(this, id);
   }
 
-  private saveDefault(): void {
-    const id = this.defaultTokenId;
+  private saveDefault (id: string | null): void {
     if (id) {
       localStorage.setItem(this.#defaultCredentialKey, id);
     }

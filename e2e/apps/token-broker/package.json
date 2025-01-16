@@ -1,0 +1,38 @@
+{
+  "name": "@repo/token-broker-test-app",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "ci": "yarn build && yarn preview",
+    "lint": "eslint src --ext ts,tsx",
+    "type-check": "tsc --project tsconfig.json --pretty --noEmit"
+  },
+  "dependencies": {
+    "@okta/auth-foundation": "*",
+    "@okta/spa-oauth2-flows": "*",
+    "@okta/spa-platform": "*",
+    "@repo/env": "*",
+    "@repo/eslint-config": "*",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-router": "^6.24.1",
+    "react-router-dom": "^6.24.1"
+  },
+  "devDependencies": {
+    "@faker-js/faker": "^9.0.1",
+    "@types/react": "18.3.10",
+    "@types/react-dom": "18.3.0",
+    "@vitejs/plugin-react": "^4.2.0",
+    "eslint": "^8.56.0",
+    "typescript": "5.0.3",
+    "vite": "4.3.9",
+    "vite-plugin-linter": "1.2.0",
+    "vite-plugin-mock-server": "^1.3.1",
+    "vite-plugin-svgr": "4.2.0",
+    "vite-tsconfig-paths": "3.5.1"
+  }
+}

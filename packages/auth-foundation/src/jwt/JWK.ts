@@ -42,7 +42,7 @@ function jwkToCryptoAlg (jwk: JWK): SubtleAlgoritm {
 /** @internal */
 export const DefaultJWKValidator: JWKValidator = {
   validate: async (token: JWT, keySet: JWKS): Promise<boolean> => {
-    const jwk = keySet.find(k => k.kid === token.header.kid);
+    const jwk = keySet.find(k => k.kid === token.header?.kid);
 
     if (!jwk) {
       throw new JWTError('Invalid key');
