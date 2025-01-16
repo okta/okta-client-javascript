@@ -274,7 +274,7 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
     return null;
   }
 
-  public find(matcher: (metadata: Token.Metadata) => boolean): Credential[] {
+  public find (matcher: (meta: Token.Metadata) => boolean): Credential[] {
     return this.allIDs().reduce<Credential[]>((acc: Credential[], id: string): Credential[] => {
       const metadata = this.tokenStorage.getMetadata(id);
       if (metadata && matcher(metadata)) {

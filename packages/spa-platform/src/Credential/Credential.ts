@@ -201,15 +201,32 @@ export class Credential implements RequestAuthorizer {
    * Returns all Credential instances where `matcher` function returns `true`
    * 
    * @param matcher - Function which takes `meta` as first argument. Returns `true` if Credential should
-   * be included. `false` otherwise
+   * be included, `false` otherwise
+   * 
+   * *Shorthand* Pass an object with any key in {@link Token.Metadata} and a string value to match on.
    * 
    * @group Static Methods
    * 
    * @example
    * // find Credentials by tag 'foo'
    * Credential.find(meta => meta?.tags?.includes('foo'));
+   * 
+   * // shorthand - find Credentials by tag 'foo'
+   * Credential.find({ tags: 'foo' });
    */
-  public static find (matcher: (meta: Token.Metadata) => boolean): Credential[] {
+  public static find (matcher: ((meta: Token.Metadata) => boolean) | { [key in keyof Token.Metadata]?: string }): Credential[] {
+    if (typeof matcher !== 'function') {
+      const target = { ...matcher };
+      matcher = (meta: Token.Metadata) => {
+        return Object.keys(target).every(key => {
+          if (Array.isArray(meta[key])) {
+            return meta[key].includes(target[key]);
+          }
+          return meta[key] === target[key];
+        });
+      };
+    }
+
     return this.#coordinator.find(matcher);
   }
 

@@ -183,9 +183,16 @@ describe('Credential', () => {
           const c2 = Credential.store(makeTestToken(), ['foo']);
           const c3 = Credential.store(makeTestToken(), ['foo']);
           Credential.store(makeTestToken(), ['bar']);
+
+          // test matcher pattern
           const matcher = meta => meta?.tags?.includes('foo');
           expect(Credential.find(matcher)).toEqual([c1, c2, c3]);
           expect(Credential.find(() => false)).toEqual([]);
+
+          // test object shorthand
+          expect(Credential.find({ tags: 'foo' })).toEqual([c1, c2, c3]);
+          expect(Credential.find({ id: c2.id })).toEqual([c2]);
+          expect(Credential.find({ id: c3.id, tags: 'foo' })).toEqual([c3]);
         });
 
         it('clear', () => {
