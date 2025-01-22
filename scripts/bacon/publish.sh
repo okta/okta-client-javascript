@@ -60,9 +60,12 @@ do
 done
 
 create_log_group "Result"
+PROMOTABLE_VERSIONS=$(echo -e $PROMOTABLE_VERSIONS)
+
 echo -e $PUBLISHED_PACKAGES
 log_custom_message "All Published Packages" "$(echo -e $PUBLISHED_PACKAGES)"
-log_custom_message "Promotion Preview" "$(echo -e $PROMOTABLE_VERSIONS)"
+# log_custom_message "Promotion Preview" "$(echo -e $PROMOTABLE_VERSIONS)"
+log_custom_message "Promotion Preview" "$PROMOTABLE_VERSIONS"
 
 # uploads a publish receipt which contains all packages and versions to be included in a release promotion
 if upload_job_data global publish_receipt "${PROMOTABLE_VERSIONS}"; then
