@@ -61,6 +61,7 @@ done
 
 create_log_group "Result"
 PROMOTABLE_VERSIONS=$(echo -e $PROMOTABLE_VERSIONS)
+PUBLISHED_PACKAGES=$(echo -e $PUBLISHED_PACKAGES)
 
 echo -e $PUBLISHED_PACKAGES
 log_custom_message "All Published Packages" "$(echo -e $PUBLISHED_PACKAGES)"
