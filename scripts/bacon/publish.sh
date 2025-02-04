@@ -68,8 +68,9 @@ log_custom_message "All Published Packages" "$(echo -e $PUBLISHED_PACKAGES)"
 log_custom_message "Promotion Preview" "$PROMOTABLE_VERSIONS"
 
 # uploads a publish receipt which contains all packages and versions to be included in a release promotion
-if upload_job_data global publish_receipt "${PROMOTABLE_VERSIONS}"; then
-  echo "Upload okta-client-javascript publish_receipt=${PROMOTABLE_VERSIONS} to s3!"
+# if upload_job_data global publish_receipt "${PROMOTABLE_VERSIONS}"; then
+if upload_job_data global publish_receipt "${PUBLISHED_PACKAGES}"; then
+  echo "Upload okta-client-javascript publish_receipt=${PUBLISHED_PACKAGES} to s3!"
 else
   # only echo the info since the upload is not crucial
   echo "Fail to upload okta-client-javascript publish_receipt=${PROMOTABLE_VERSIONS} to s3!" >&2
