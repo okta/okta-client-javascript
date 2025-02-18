@@ -118,14 +118,25 @@ export abstract class HostOrchestrator {
 
     if (token instanceof Token) {
       const request = new Request(url, { method });
-
       await token.authorize(request, { dpopNonce: nonce });
-  
+
       const dpop = request.headers.get('dpop');
       const authorization = request.headers.get('authorization');
   
-      if (dpop && authorization) {
-        return { dpop, authorization, tokenType: token.tokenType };
+      if (authorization) {
+        const result: HO.AuthorizeResponse = {
+          authorization,
+          tokenType: token.tokenType 
+        };
+
+        if (token.tokenType === 'DPoP' && dpop) {
+          result.dpop = dpop;
+          return result;
+        }
+
+        if (token.tokenType === 'Bearer') {
+          return result;
+        }
       }
     }
 

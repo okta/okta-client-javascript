@@ -50,7 +50,7 @@ export namespace HostOrchestrator {
 
   export type AuthorizeResponse = {
     tokenType: string;
-    dpop: string;
+    dpop?: string;
     authorization: string;
   } | ErrorResponse;
 

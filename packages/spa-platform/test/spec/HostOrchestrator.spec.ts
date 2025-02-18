@@ -133,7 +133,7 @@ describe('HostOrchestrator', () => {
       it('PING', async () => {
         const reply = jest.fn();
         event.eventName = 'PING';
-        await host.parseRequest(event , reply);
+        await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ message: 'PONG' });
       });
@@ -149,7 +149,7 @@ describe('HostOrchestrator', () => {
         };
 
         // happy path
-        await host.parseRequest(event , reply);
+        await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ token: testToken.toJSON() });
         expect(findTokenSpy).toHaveBeenCalled();
@@ -158,7 +158,7 @@ describe('HostOrchestrator', () => {
         // error case
         findTokenSpy.mockResolvedValue({error: 'failed'});
 
-        await host.parseRequest(event , reply);
+        await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ error: 'Unable to obtain token' });
         expect(findTokenSpy).toHaveBeenCalledTimes(2);
@@ -180,8 +180,20 @@ describe('HostOrchestrator', () => {
           method: 'GET',
         };
 
+        // happy path (non-dpop)
+        const nonDpopToken = new Token(mockTokenResponse());
+        findTokenSpy.mockResolvedValueOnce(nonDpopToken);
+        await host.parseRequest(event, reply);
+        expect(reply).toHaveBeenCalled();
+        expect(reply).toHaveBeenLastCalledWith({
+          tokenType: nonDpopToken.tokenType,
+          authorization: `${nonDpopToken.tokenType} ${nonDpopToken.accessToken}`
+        });
+        expect(findTokenSpy).toHaveBeenCalled();
+        expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
+
         // happy path
-        await host.parseRequest(event , reply);
+        await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({
           tokenType: testToken.tokenType,
@@ -194,28 +206,28 @@ describe('HostOrchestrator', () => {
         // error case 1 - findToken fails
         findTokenSpy.mockResolvedValue({ error: 'failed' });
 
-        await host.parseRequest(event , reply);
+        await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ error: 'Unable to sign request' });
-        expect(findTokenSpy).toHaveBeenCalledTimes(2);
+        expect(findTokenSpy).toHaveBeenCalledTimes(3);
         expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
 
         // error case 2 - dpop header never added (should never occur)
         testToken.dpopSigningAuthority.sign = jest.fn().mockImplementation(req => req);
 
-        await host.parseRequest(event , reply);
+        await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ error: 'Unable to sign request' });
-        expect(findTokenSpy).toHaveBeenCalledTimes(3);
+        expect(findTokenSpy).toHaveBeenCalledTimes(4);
         expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
 
         // error case 3 - request params (url, method) not provided
         event.data = authParams;
 
-        await host.parseRequest(event , reply);
+        await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ error: 'request url or method not provided' });
-        expect(findTokenSpy).toHaveBeenCalledTimes(3);
+        expect(findTokenSpy).toHaveBeenCalledTimes(4);
         expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
       });
 
@@ -230,7 +242,7 @@ describe('HostOrchestrator', () => {
         };
 
         // happy path
-        await host.parseRequest(event , reply);
+        await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ profile: testToken.idToken?.claims });
         expect(findTokenSpy).toHaveBeenCalled();
@@ -239,7 +251,7 @@ describe('HostOrchestrator', () => {
         // error case
         findTokenSpy.mockResolvedValue({ error: 'failed' });
 
-        await host.parseRequest(event , reply);
+        await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ error: 'Unable to find idToken' });
         expect(findTokenSpy).toHaveBeenCalledTimes(2);
