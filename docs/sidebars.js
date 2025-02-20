@@ -123,8 +123,8 @@ const sidebars = {
             },
             {
               type: 'doc',
-              label: 'CredentialOrchestrator',
-              id: 'api/spa-platform/classes/CredentialOrchestrator',
+              label: 'TokenOrchestrator',
+              id: 'api/spa-platform/classes/TokenOrchestrator',
             },
             {
               type: 'category',

@@ -10,7 +10,7 @@ interface FlowCallbackProps {
 
 async function handleAuthorizationCodeFlowResponse () {
   const { token, context } = await signInFlow.resume(window.location.href);
-  console.log({ token, context });
+  console.log('auth code handler: ', { token, context });
 
   const { tags, isDefault } = context;
   const cred = Credential.store(token, tags);

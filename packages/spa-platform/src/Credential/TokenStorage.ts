@@ -129,7 +129,7 @@ export class BrowserTokenStorage implements TokenStorage {
   private static version = 'v2';
 
   #defaultCredentialKey: string = 'okta-default';
-  tokenPrefix: string = `okta-token:${BrowserTokenStorage.version}`;
+  tokenPrefix: string = `oauth-token:${BrowserTokenStorage.version}`;
 
   readonly emitter = new TokenStorageEventEmitter();
 

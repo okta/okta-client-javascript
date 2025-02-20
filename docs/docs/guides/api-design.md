@@ -52,7 +52,7 @@ async function postMessage (msg) {
 TODO: doc events
 
 ### How credentials are obtained
-Under the covers, the `CredentialOrchestrator` abstract class defines how tokens will be obtained to fulfill requests. Consumers of a `CredentialOrchestrator`, like the [`FetchClient`](#sending-authorized-api-requests) should assume any retrieved token is valid, as it's the responsibility of the orchestrator to ensure it is.
+Under the covers, the `TokenOrchestrator` abstract class defines how tokens will be obtained to fulfill requests. Consumers of a `TokenOrchestrator`, like the [`FetchClient`](#sending-authorized-api-requests) should assume any retrieved token is valid, as it's the responsibility of the orchestrator to ensure it is.
 
 The `@okta/spa-platform` library (via `@okta/spa-platform/orchestrator`) provides a few out-of-the-box implementations, which should be sufficient for most use cases.
 

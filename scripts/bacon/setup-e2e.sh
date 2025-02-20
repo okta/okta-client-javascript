@@ -15,6 +15,14 @@ export DPOP_CLIENT_ID=0oa134a2ztzXFBDZU1t8
 export USERNAME=mary@acme.com
 get_terminus_secret "/" PASSWORD PASSWORD
 
+start_e2e_runner () {
+  if ! yarn workspace @repo/wdio-e2e start; then
+    echo "e2e tests failed! Exiting..."
+    log_extra_dir_as_zip ${E2E_LOG_DIR} "e2e-logs.zip"
+    exit ${TEST_FAILURE}
+  fi
+}
+
 if [[ -z "${PASSWORD}" ]]; then
   echo "No PASSWORD has been set! Exiting..."
   exit ${TEST_FAILURE}

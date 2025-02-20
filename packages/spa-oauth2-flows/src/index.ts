@@ -8,6 +8,6 @@ declare const __PKG_VERSION__: string;
 addEnv(`${__PKG_NAME__}/${__PKG_VERSION__}`);
 
 export * from './types';
-export * from './OAuth2Flow';
+export * from './AuthenticationFlow';
 export * from './AuthorizationCodeFlow';
 export * from './SessionLogoutFlow';

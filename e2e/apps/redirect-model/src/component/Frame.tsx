@@ -9,7 +9,7 @@ export function Frame () {
           <Landing />
         </div>
         <div className='flex-1'>
-          <iframe src="http://localhost:8080/embedded" data-e2e="iframe"></iframe>
+          <iframe src="http://localhost:8080" data-e2e="iframe"></iframe>
         </div>
       </div>
     </>

@@ -51,6 +51,12 @@ export function isJWKS (input: unknown): input is JWKS {
 
 export type { ConfigurationParams };
 
+export type OAuth2Params = {
+  issuer?: string | URL;
+  clientId?: string;
+  scopes?: string[];
+};
+
 export type GrantType = 'authorization_code' | 'refresh_token';
 
 export type TokenType = 'Bearer' | 'DPoP';

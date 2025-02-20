@@ -10,6 +10,25 @@ describe('OAuth2Client.Configuration', () => {
     expect(conf).toBeInstanceOf(OAuth2Client.Configuration);
   });
 
+  it('should compare oauth2 params against the set configuration', () => {
+    const conf = new OAuth2Client.Configuration({
+      baseURL: 'https://foo.com',
+      clientId: 'fakeclientid',
+      scopes: 'openid email profile'
+    });
+
+    expect(conf.matches({})).toBe(false);
+    expect(conf.matches({ clientId: 'foo' })).toBe(false);
+    expect(conf.matches({ scopes: ['openid'] })).toBe(false);
+    expect(conf.matches({ issuer: new URL('https://foo.com') })).toBe(true);
+    expect(conf.matches({ scopes: ['openid', 'email', 'profile', 'openid', 'email', 'profile'] })).toBe(true);
+    expect(conf.matches({
+      issuer: 'https://foo.com',
+      clientId: 'fakeclientid',
+      scopes: ['openid', 'email', 'profile']
+    })).toBe(true);
+  });
+
   it('should encode instance to string', () => {
     const conf = new OAuth2Client.Configuration({
       baseURL: 'https://foo.com',

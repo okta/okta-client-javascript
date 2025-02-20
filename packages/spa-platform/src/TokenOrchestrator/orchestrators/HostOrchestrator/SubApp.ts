@@ -73,6 +73,7 @@ export class SubAppOrchestrator extends TokenOrchestrator {
     });
   }
 
+  // TODO: support multiple issuers
   protected getTokenCacheKey (params: TokenOrchestrator.OAuth2Params) {
     const { scopes, clientId } = {...this.authParams, ...params};
 

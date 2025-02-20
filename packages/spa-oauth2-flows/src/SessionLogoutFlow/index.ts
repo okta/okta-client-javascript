@@ -1,14 +1,14 @@
-import type { OAuth2FlowOptions, AuthContext } from '../types';
+import type { AuthContext } from '../types';
 import {
   randomBytes,
   OAuth2Error,
   mergeURLSearchParameters
 } from '@okta/auth-foundation';
 import OAuth2Client from '@okta/auth-foundation/client';
-import { OAuth2Flow } from '../OAuth2Flow';
+import { AuthenticationFlow } from '../AuthenticationFlow';
 
 
-export class SessionLogoutFlow extends OAuth2Flow {
+export class SessionLogoutFlow extends AuthenticationFlow {
   readonly client: OAuth2Client;
   readonly logoutRedirectUri: string;
   readonly additionalParameters: Record<string, string>;
@@ -50,9 +50,9 @@ export class SessionLogoutFlow extends OAuth2Flow {
     return logoutUrl;
   }
 
-  async start (idToken: string, additionalParameters?: Record<string, string>): Promise<URL>;
-  async start (context: SessionLogoutFlow.Context, additionalParameters?: Record<string, string>): Promise<URL>;
-  async start (idToken: string | SessionLogoutFlow.Context, additionalParameters: Record<string, string> = {}): Promise<URL> {
+  public async start (idToken: string, additionalParameters?: Record<string, string>): Promise<URL>;
+  public async start (context: SessionLogoutFlow.Context, additionalParameters?: Record<string, string>): Promise<URL>;
+  public async start (idToken: string | SessionLogoutFlow.Context, additionalParameters: Record<string, string> = {}): Promise<URL> {
     let context: SessionLogoutFlow.Context;
     if (typeof idToken === 'string') {
       context = {
@@ -65,7 +65,7 @@ export class SessionLogoutFlow extends OAuth2Flow {
     }
     context.state ??= randomBytes();    // ensures state value is defined
 
-    this.inProgress = true;
+    this.startFlow();
 
     try {
       const openIdConfig = await this.client.openIdConfiguration();
@@ -97,7 +97,7 @@ export namespace SessionLogoutFlow {
     additionalParameters?: Record<string, string>;
   }
 
-  export type InitOptions = LogoutParams & OAuth2FlowOptions;
+  export type InitOptions = LogoutParams & AuthenticationFlow.Options;
 
   export type Result = {
     state?: string;

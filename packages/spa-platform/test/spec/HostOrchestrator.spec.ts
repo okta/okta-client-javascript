@@ -2,6 +2,7 @@ import { Token } from '@okta/auth-foundation';
 import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
 import {
   HostOrchestrator,
+  TokenOrchestrator,
   TokenOrchestratorError
 } from 'src/TokenOrchestrator';
 import { SecureChannel } from 'src/utils/SecureChannel';
@@ -18,6 +19,12 @@ testToken.dpopSigningAuthority.sign = jest.fn().mockImplementation(async (reques
 
 class MockHost extends HostOrchestrator.Host {
   async findToken(): Promise<Token | HostOrchestrator.ErrorResponse> {
+    return testToken;
+  }
+}
+
+class MockOrchestrator extends TokenOrchestrator {
+  async getToken(): Promise<Token | null> {
     return testToken;
   }
 }
@@ -486,6 +493,20 @@ describe('HostOrchestrator', () => {
       const result = await sub.pingHost();
       expect(parseReqSpy).toHaveBeenCalledTimes(1);
       expect(result).toBe(true);
+    });
+  });
+
+  describe('HostOrchestrator.ProxyHost', () => {
+    it('adapts a TokenOrchestrator into a Host', async () => {
+      const orchestrator = new MockOrchestrator();
+      const host = new HostOrchestrator.ProxyHost('Test', orchestrator);
+      expect(host).toBeInstanceOf(HostOrchestrator.Host);
+      await expect(host.findToken()).resolves.toEqual(testToken);
+    });
+
+    it('throws if a SubApp is provided', () => {
+      const subapp = new HostOrchestrator.SubApp('Test');
+      expect(() => new HostOrchestrator.ProxyHost('Test', subapp)).toThrow(TypeError);
     });
   });
 

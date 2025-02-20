@@ -8,5 +8,13 @@ describe('Equality Utils', () => {
     expect(utils.hasSameValues(a1, a3)).toBe(false);
     expect(utils.hasSameValues(a1, [1])).toBe(false);
   });
+
+  it('doesPartialMatch', () => {
+    const target = { foo: 1, bar: 2 };
+    expect(utils.doesPartialMatch(target, { foo: 1 })).toBe(true);
+    expect(utils.doesPartialMatch(target, { foo: 1, bar: 2 })).toBe(true);
+    expect(utils.doesPartialMatch(target, { baz: 1 })).toBe(false);
+    expect(utils.doesPartialMatch(target, { foo: 2 })).toBe(false);
+  });
 });
 

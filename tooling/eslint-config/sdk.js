@@ -14,6 +14,7 @@ module.exports = {
     ".*.js",
     "node_modules/",
     "dist/",
+    "coverage/"
   ],
   overrides: [
     {
@@ -48,7 +49,14 @@ module.exports = {
       files: [
         'test/spec/**/*'
       ],
+      plugins: [
+        'jest'
+      ],
+      "env": {
+        "jest/globals": true
+      },
       rules: {
+        "jest/no-focused-tests": 2,
         "max-len": 0,
         "max-statements": 0,
         "camelcase": 0,

@@ -1,6 +1,6 @@
 import { OAuth2Error } from '@okta/auth-foundation';
 import OAuth2Client from '@okta/auth-foundation/client';
-import { OAuth2FlowError } from 'src/OAuth2Flow';
+import { AuthenticationFlowError } from 'src/AuthenticationFlow';
 import { AuthorizationCodeFlow } from 'src/AuthorizationCodeFlow';
 import { AuthTransaction } from 'src/AuthTransaction';
 
@@ -41,10 +41,12 @@ describe('AuthorizationCodeFlow', () => {
         const flowStartSpy = jest.fn();
         flow.on('flow_started', flowStartSpy);
 
-        const authorizeUrl = await flow.start();
+        const startPromise = flow.start();
         
         expect(flow.inProgress).toEqual(true);
         expect(flowStartSpy).toHaveBeenCalledTimes(1);
+
+        const authorizeUrl = await startPromise;
 
         expect(authorizeUrl.searchParams.get('client_id')).toEqual(authParams.clientId);
         expect(typeof authorizeUrl.searchParams.get('state')).toBe('string');
@@ -152,8 +154,8 @@ describe('AuthorizationCodeFlow', () => {
       });
 
       it('cannot parse redirect url', async () => {
-        const expectedError1 = new OAuth2FlowError('Failed to parse `code` from redirect url');
-        const expectedError2 = new OAuth2FlowError('Failed to parse `state` from redirect url');
+        const expectedError1 = new AuthenticationFlowError('Failed to parse `code` from redirect url');
+        const expectedError2 = new AuthenticationFlowError('Failed to parse `state` from redirect url');
 
         const redirectUri = new URL(flowParams.redirectUri);
 
@@ -180,7 +182,7 @@ describe('AuthorizationCodeFlow', () => {
       });
 
       it('cannot load stored auth transaction', async () => {
-        const expectedError = new OAuth2FlowError(`Failed to load auth transaction for state ${state}`);
+        const expectedError = new AuthenticationFlowError(`Failed to load auth transaction for state ${state}`);
 
         jest.spyOn(AuthTransaction, 'load').mockResolvedValue(null);
 

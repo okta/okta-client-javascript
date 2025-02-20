@@ -1,5 +1,5 @@
 /* eslint max-len: [2, 145] */
-import type { OAuth2FlowOptions, AuthContext } from '../types';
+import type { AuthContext } from '../types';
 import {
   type OAuth2ErrorResponse,
   type TimeInterval,
@@ -12,7 +12,10 @@ import {
   Token,
 } from '@okta/auth-foundation';
 import OAuth2Client from '@okta/auth-foundation/client';
-import { OAuth2Flow, OAuth2FlowError } from '../OAuth2Flow';
+import {
+  AuthenticationFlow,
+  AuthenticationFlowError
+} from '../AuthenticationFlow';
 import { AuthTransaction } from '../AuthTransaction';
 
 
@@ -40,8 +43,7 @@ function bindOktaPostMessageListener ({
     window.addEventListener('message', handler);
 
     timeoutId = setTimeout(() => {
-      // TODO: Error type?
-      reject(new Error('OAuth flow timed out'));
+      reject(new AuthenticationFlowError('Authentication flow timed out'));
     }, timeout);
   }))
   .finally(() => {
@@ -64,7 +66,7 @@ function bindOktaPostMessageListener ({
  * - Authorization Code Flow: {@link https://developer.okta.com/docs/concepts/oauth-openid/#authorization-code-flow-with-pkce-flow | Concepts}
  * - Authorization Code Flow: {@link https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/#authorization-code-flow | Guide}
  */
-export class AuthorizationCodeFlow extends OAuth2Flow {
+export class AuthorizationCodeFlow extends AuthenticationFlow {
   readonly client: OAuth2Client;
   // readonly context: AuthContext = {};
   readonly redirectUri: string;
@@ -122,10 +124,10 @@ export class AuthorizationCodeFlow extends OAuth2Flow {
     const state = getSearchParam(params, 'state');
 
     if (!code) {
-      throw new OAuth2FlowError('Failed to parse `code` from redirect url');
+      throw new AuthenticationFlowError('Failed to parse `code` from redirect url');
     }
     if (!state) {
-      throw new OAuth2FlowError('Failed to parse `state` from redirect url');
+      throw new AuthenticationFlowError('Failed to parse `state` from redirect url');
     }
 
     // TODO: compare to expected state, can this be done?
@@ -137,7 +139,7 @@ export class AuthorizationCodeFlow extends OAuth2Flow {
   private buildAuthorizeURL (url: string, context: AuthorizationCodeFlow.Context, additionalParameters: Record<string, string>): URL {
     const authorizationUrl = new URL(url);
     authorizationUrl.searchParams.set('client_id', this.client.configuration.clientId);
-    authorizationUrl.searchParams.set('scope', this.client.configuration.scopes);
+    authorizationUrl.searchParams.set('scope', context.scopes?.join(' ') ?? this.client.configuration.scopes);
     authorizationUrl.searchParams.set('state', context.state);
   
     authorizationUrl.searchParams.set('redirect_uri', context.redirectUri);
@@ -167,12 +169,12 @@ export class AuthorizationCodeFlow extends OAuth2Flow {
    * @returns A {@link https://developer.mozilla.org/en-US/docs/Web/API/URL/URL | URL} instance representing `Authorization Server` `/authorize`
    * with all required query parameters
    */
-  async start (
+  public async start (
     meta: AuthorizationCodeFlow.TransactionMeta = {},
     context?: AuthorizationCodeFlow.Context,
     additionalParameters: Record<string, string> = {}
   ): Promise<URL> {
-    this.inProgress = true;
+    this.startFlow();
 
     try {
       const flowContext: AuthorizationCodeFlow.Context = context ?? await AuthorizationCodeFlow.Context();
@@ -225,7 +227,7 @@ export class AuthorizationCodeFlow extends OAuth2Flow {
 
       const context = await AuthTransaction.load(state) as AuthorizationCodeFlow.Context;
       if (!context) {
-        throw new OAuth2FlowError(`Failed to load auth transaction for state ${state}`);
+        throw new AuthenticationFlowError(`Failed to load auth transaction for state ${state}`);
       }
   
       // TODO: does loading the transaction from storage count as a state check?
@@ -287,7 +289,7 @@ export class AuthorizationCodeFlow extends OAuth2Flow {
    * {@link AuthorizationCodeFlow.resume}
    */
   static async PerformRedirect (flow: AuthorizationCodeFlow): Promise<void> {
-    if (!flow.isAuthenticating) {
+    if (!flow.inProgress) {
       // starts flow if it hasn't been started already
       await flow.start();
     }
@@ -356,7 +358,7 @@ export class AuthorizationCodeFlow extends OAuth2Flow {
 
       const { code, state: stateValue } = values;
       if (state !== stateValue) {
-        throw new OAuth2FlowError('OAuth `state` values do not match');
+        throw new AuthenticationFlowError('OAuth `state` values do not match');
       }
 
       return flow.exchangeCodeForTokens(code, context);
@@ -366,18 +368,18 @@ export class AuthorizationCodeFlow extends OAuth2Flow {
       if (document.body.contains(iframe)) {
         iframe.parentElement?.removeChild(iframe);
       }
+      flow.reset();
     }
   }
 }
 
 export namespace AuthorizationCodeFlow {
-
   export type RedirectParams = {
     redirectUri: string | URL;
     additionalParameters?: Record<string, string>;
   };
 
-  export type InitOptions = OAuth2FlowOptions & RedirectParams;
+  export type InitOptions = AuthenticationFlow.Options & RedirectParams;
 
   export interface RedirectValues {
     code: string;
@@ -394,6 +396,7 @@ export namespace AuthorizationCodeFlow {
     pkce: PKCE;
     nonce?: string;
     maxAge?: TimeInterval;
+    scopes?: string[];
   }
 
   export type Result = {

@@ -6,3 +6,13 @@ export function hasSameValues<T> (a1: T[], a2: T[]) {
   const s2: Set<T> = new Set(a2);
   return s1.size === s2.size && ([...s1].every(t => s2.has(t)));
 }
+
+export function doesPartialMatch (target: Record<string, unknown>, partial: Record<string, unknown>): boolean {
+  for (const [key, value] of Object.entries(partial)) {
+    if (target[key] !== value) {
+      return false;
+    }
+  }
+
+  return true;
+}

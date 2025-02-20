@@ -214,14 +214,30 @@ export class Credential implements RequestAuthorizer {
    * // shorthand - find Credentials by tag 'foo'
    * Credential.find({ tags: 'foo' });
    */
-  public static find (matcher: ((meta: Token.Metadata) => boolean) | { [key in keyof Token.Metadata]?: string }): Credential[] {
+  public static find (matcher: ((meta: Token.Metadata) => boolean) | { [key in keyof Token.Metadata]?: string | string[] }): Credential[] {
     if (typeof matcher !== 'function') {
       const target = { ...matcher };
       matcher = (meta: Token.Metadata) => {
         return Object.keys(target).every(key => {
-          if (Array.isArray(meta[key])) {
-            return meta[key].includes(target[key]);
+          if (Array.isArray(target[key])) {
+            // compare array to meta array
+            if (Array.isArray(meta[key])) {
+              // ensure every target value is included in meta array
+              return target[key].every((val: string) => meta[key].includes(val));
+            }
+            // compare array to meta primitive
+            else {
+              throw new TypeError('Cannot compare array to primitive');
+            }
           }
+          else {
+            // compare primitive to meta array
+            if (Array.isArray(meta[key])) {
+              return meta[key].includes(target[key]);
+            }
+          }
+
+          // compare primitive to meta primitive
           return meta[key] === target[key];
         });
       };

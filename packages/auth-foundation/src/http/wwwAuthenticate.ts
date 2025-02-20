@@ -1,6 +1,6 @@
 // TODO: doc this
 
-export interface WWWWAuthenticateError {
+export interface WWWAuthenticateError {
   readonly error: string;
   readonly errorDescription: string;
   // readonly realm?: string;
@@ -8,7 +8,7 @@ export interface WWWWAuthenticateError {
   [key: string]: string;
 }
 
-export function isWWWWAuthenticateError (input: unknown): input is WWWWAuthenticateError {
+export function isWWWAuthenticateError (input: unknown): input is WWWAuthenticateError {
   if (input && typeof input === 'object') {
     const obj = input as Record<string, string>;
     if (obj.error && (obj.scheme || obj.realm)) {
@@ -19,7 +19,7 @@ export function isWWWWAuthenticateError (input: unknown): input is WWWWAuthentic
 }
 
 // parses the www-authenticate header for releveant
-export function parse (header: string): WWWWAuthenticateError | null {
+export function parse (header: string): WWWAuthenticateError | null {
   // header cannot be empty string
   if (!header) {
     return null;

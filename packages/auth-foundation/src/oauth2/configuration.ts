@@ -1,6 +1,6 @@
-import type { ClientAuthentication, APIClientConfiguration, Codable } from '../types';
+import type { ClientAuthentication, APIClientConfiguration, Codable, OAuth2Params } from '../types';
 import { APIClient } from '../http';
-import { buildURL } from '../utils';
+import { buildURL, hasSameValues } from '../utils';
 
 export type ConfigurationParams = {
   baseURL: URL | string;
@@ -24,6 +24,30 @@ export class Configuration extends APIClient.Configuration implements APIClientC
     this.clientId = clientId;
     this.scopes = Array.isArray(scopes) ? scopes.join(' ') : scopes;
     this.authentication = authentication ?? 'none';
+  }
+
+  matches (params: OAuth2Params): boolean {
+    const { issuer, clientId, scopes } = params;
+
+    // special case, don't return true when no actual params were provided to compare against
+    if (Object.keys(params).length === 0) {
+      return false;
+    }
+
+    let matches = true;
+    if (issuer) {
+      matches &&= new URL(issuer).href === this.baseURL.href;
+    }
+
+    if (clientId) {
+      matches &&= clientId === this.clientId;
+    }
+
+    if (scopes) {
+      matches &&= hasSameValues(scopes, this.scopes.split(' '));
+    }
+
+    return matches;
   }
 
   toJSON (): Record<string, unknown> {

@@ -7,10 +7,7 @@ create_log_group "E2E DPoP"
 export TEST_NAME="redirect-model"
 export USE_DPOP="true"
 
-if ! yarn workspace @repo/wdio-e2e start; then
-  echo "e2e tests failed! Exiting..."
-  exit ${TEST_FAILURE}
-fi
+start_e2e_runner
 
 finish_log_group $?
 

@@ -1,5 +1,5 @@
-import type { TokenOrchestrator } from '../../TokenOrchestrator';
-import { TokenInit, AuthSdkError } from '@okta/auth-foundation';
+import { type TokenOrchestrator } from '../../TokenOrchestrator';
+import { TokenInit, AuthSdkError, Token } from '@okta/auth-foundation';
 import { HostOrchestrator as HostApp } from './Host';
 import { SubAppOrchestrator } from './SubApp';
 
@@ -9,6 +9,28 @@ import { SubAppOrchestrator } from './SubApp';
 export namespace HostOrchestrator {
   export abstract class Host extends HostApp {}
   export class SubApp extends SubAppOrchestrator {}
+
+  /**
+   * A utility class to adapt any {@link TokenOrchestrator} instance into a {@link HostOrchestrator.Host}
+   */
+  export class ProxyHost extends HostOrchestrator.Host {
+    constructor (name: string, protected readonly orchestrator: Exclude<TokenOrchestrator, HostOrchestrator.SubApp>) {
+      if (orchestrator instanceof HostOrchestrator.SubApp) {
+        throw new TypeError('HostOrchestrator.SubApp cannot be adapted to a host');
+      }
+
+      super(name);
+    }
+
+    async findToken(params: TokenOrchestrator.OAuth2Params = {}): Promise<Token | ErrorResponse> {
+      const token = await this.orchestrator.getToken(params);
+      if (!token) {
+        return { error: 'unable to retrieve a token' };
+      }
+
+      return token;
+    }
+  }
 
   /**
    * @internal

@@ -196,6 +196,16 @@ describe('OAuth2Client', () => {
         jest.spyOn(token.idToken!, 'verifySignature').mockResolvedValue(false);
         await expect(client.validateToken({}, [], token)).rejects.toThrow(new JWTError('Unable to verify id token signature'));
       });
+
+      it('throws when a non-DPoP is returned when DPoP is expected', async () => {
+        const oauthClient = new OAuth2Client({
+          ...params,
+          dpop: true
+        });
+        const token = new Token(mockTokenResponse());
+        await expect((oauthClient as any).validateToken({}, [], token))
+          .rejects.toThrow(new TokenError(`'${token.tokenType}' token received when DPoP expected`));
+      });
     });
 
     describe('refresh', () => {

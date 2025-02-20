@@ -18,7 +18,7 @@ export type FetchClientInit = {
  * Wrapper around [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) to perform authenticated requests
  * to a resource server
  * 
- * The provided {@link CredentialOrchestrator} is used to retrieve {@link Token}s which match the criteria passed in via
+ * The provided {@link TokenOrchestrator} is used to retrieve {@link Token}s which match the criteria passed in via
  * {@link TokenOrchestrator.OAuth2Params}, like `issuer`, `client` and `scopes`. Once a valid {@link Token} is found, the request is made
  */
 export class FetchClient extends APIClient {
@@ -35,7 +35,7 @@ export class FetchClient extends APIClient {
     const wwwAuthenticate = response.headers.get('www-authenticate');
     if (response.status === 401 && wwwAuthenticate) {
       const error = WWWAuth.parse(wwwAuthenticate);
-      if (WWWAuth.isWWWWAuthenticateError(error) && error.error === 'use_dpop_nonce') {
+      if (WWWAuth.isWWWAuthenticateError(error) && error.error === 'use_dpop_nonce') {
         const nonce = response.headers.get('dpop-nonce');
         if (nonce) {
           return nonce;

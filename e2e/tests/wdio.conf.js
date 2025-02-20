@@ -24,7 +24,7 @@ const browserOptions = {
     args: []
 };
 
-let screenshotCount = 0;
+let failureCount = 0;
 
 if (process.env.CHROME_BINARY) {
   browserOptions.binary = process.env.CHROME_BINARY;
@@ -39,7 +39,8 @@ if (CI) {
         '--whitelisted-ips',
         '--disable-extensions',
         '--verbose',
-        '--disable-dev-shm-usage'
+        '--disable-dev-shm-usage',
+        '--auto-open-devtools-for-tabs'
     ]);
 }
 
@@ -107,7 +108,10 @@ exports.config = {
         // 5 instances get started at a time.
         maxInstances: 1, // all tests use the same user and local storage. they must run in series
         browserName: 'chrome',
-        'goog:chromeOptions': browserOptions
+        'goog:chromeOptions': browserOptions,
+        'goog:loggingPrefs': {
+          'browser': 'ALL'
+        }
         // If outputDir is provided WebdriverIO can capture driver session logs
         // it is possible to configure which logTypes to include/exclude.
         // excludeDriverLogs: ['*'], // pass '*' to exclude all driver session logs
@@ -270,8 +274,15 @@ exports.config = {
      */
     afterTest: async function(test, context, { error, result, duration, passed }) {
       if (CI && error) {
-        screenshotCount += 1;
-        await browser.saveScreenshot(`${process.env.E2E_LOG_DIR}/screeshot${screenshotCount}.png`);
+        failureCount += 1;
+        await browser.saveScreenshot(`${process.env.E2E_LOG_DIR}/failure-${failureCount}.png`);
+        const logs = await browser.getLogs('browser');
+        await fs.writeFile(
+          `${process.env.E2E_LOG_DIR}/failure-${failureCount}-console.log`,
+          `Console Log Failure #${failureCount}:\n${JSON.parse(logs, null, 4)}`
+        );
+        console.log('CONSOLE LOGS: ');
+        console.log(logs);
       }
     },
 

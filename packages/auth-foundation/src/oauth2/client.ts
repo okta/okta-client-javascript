@@ -203,6 +203,10 @@ export class OAuth2Client extends APIClient {
     keySet: JWKS,
     token: Token
   ): Promise<Token | OAuth2ErrorResponse> {
+    if (this.configuration.dpop && token.tokenType !== 'DPoP') {
+      throw new TokenError(`'${token.tokenType}' token received when DPoP expected`);
+    }
+
     if (token.idToken) {
       // eslint-disable-next-line camelcase
       const { issuer, id_token_signing_alg_values_supported } = await this.openIdConfiguration();

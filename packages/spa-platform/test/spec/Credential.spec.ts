@@ -144,7 +144,7 @@ describe('Credential', () => {
           const token = makeTestToken();
           const cred = Credential.store(token, ['test']);
           expect(cred.id).toEqual(token.id);
-          const storageItem = localStorage.getItem(`okta-token:v2:${cred.id}`);
+          const storageItem = localStorage.getItem(`oauth-token:v2:${cred.id}`);
           expect(storageItem).toBeDefined();
           expect(() => JSON.parse(storageItem!)).not.toThrow();
           expect(JSON.parse(storageItem!)).toMatchObject({
@@ -182,6 +182,8 @@ describe('Credential', () => {
           const c1 = Credential.store(makeTestToken(), ['foo']);
           const c2 = Credential.store(makeTestToken(), ['foo']);
           const c3 = Credential.store(makeTestToken(), ['foo']);
+          const c4 = Credential.store(makeTestToken(), ['a', 'b', 'c']);
+          const c5 = Credential.store(makeTestToken(), ['a', 'b']);
           Credential.store(makeTestToken(), ['bar']);
 
           // test matcher pattern
@@ -193,6 +195,9 @@ describe('Credential', () => {
           expect(Credential.find({ tags: 'foo' })).toEqual([c1, c2, c3]);
           expect(Credential.find({ id: c2.id })).toEqual([c2]);
           expect(Credential.find({ id: c3.id, tags: 'foo' })).toEqual([c3]);
+          expect(Credential.find({ tags: ['a', 'b'] })).toEqual([c4, c5]);
+          expect(() => Credential.find({ id: ['a', 'b'] })).toThrow(TypeError);
+          expect(Credential.find({ tags: ['foo', 'bar'] })).toEqual([]);
         });
 
         it('clear', () => {

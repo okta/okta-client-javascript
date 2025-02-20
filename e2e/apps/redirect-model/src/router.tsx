@@ -10,11 +10,11 @@ import { SecureRoute } from '@/component/SecureRoute';
 import { LoginCallback } from '@/component/LoginCallback';
 import { LogoutCallback } from '@/component/LogoutCallback';
 import { Protected } from '@/component/Protected';
-import { Embedded } from '@/component/Embedded';
 import { Frame } from '@/component/Frame';
 import { Messages } from '@/component/Messages';
 import { Frame2 } from '@/component/Frame2';
-import { Downscope } from '@/component/Downscope';
+
+import orchestratorRoutes from '@/apps/orchestrators/routes';
 
 
 export const router = createBrowserRouter([
@@ -37,10 +37,6 @@ export const router = createBrowserRouter([
       {
         path: '/iframe',
         element: <Frame />
-      },
-      {
-        path: '/embedded',
-        element: <Embedded />
       },
       {
         path: '/messages',
@@ -88,17 +84,8 @@ export const router = createBrowserRouter([
         ]
       },
       {
-        path: '/downscope',
-        children: [
-          {
-            path: '',
-            element: <SecureRoute />,
-            children: [{
-              path: '',
-              element: <Downscope />,
-            }]
-          },
-        ]
+        path: '/orchestrator',
+        children: orchestratorRoutes
       }
     ]
   }
