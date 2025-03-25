@@ -282,7 +282,7 @@ const TokenImpl = mCodable(class {
     if (this.tokenType === 'DPoP') {
       const keyPairId = this.context.dpopPairId;
       // .generateDPoPProof() will throw if dpopPairId is undefined
-      await this.dpopSigningAuthority.sign(request, { keyPairId, nonce: dpopNonce });
+      await this.dpopSigningAuthority.sign(request, { keyPairId, nonce: dpopNonce, accessToken: this.accessToken });
     }
 
     request.headers.set('Authorization', `${this.tokenType} ${this.accessToken}`);

@@ -14,6 +14,19 @@ export class HostOrchestratorEventEmitter extends EventEmitter {
   }
 }
 
+function isErrorResponse (input: unknown): input is HO.ErrorResponse {
+  if (input === null) {
+    return false;
+  }
+
+  if (typeof input === 'object' && (input as HO.ErrorResponse).error &&
+      typeof (input as HO.ErrorResponse).error === 'string')
+  {
+    return true;
+  }
+  return false;
+}
+
 export abstract class HostOrchestrator {
   protected readonly emitter = new HostOrchestratorEventEmitter();
   id: string = shortID();
@@ -100,7 +113,10 @@ export abstract class HostOrchestrator {
     const { issuer, clientId, scopes } = event;
     const result = await this.findToken({ issuer, clientId, scopes });
 
-    if (result instanceof Token) {
+    if (isErrorResponse(result)) {
+      return result;
+    }
+    else if (result instanceof Token) {
       return { token: result.toJSON() as TokenInit };
     }
 
@@ -114,9 +130,13 @@ export abstract class HostOrchestrator {
       return { error: 'request url or method not provided' };
     }
 
-    const token = await this.findToken({ issuer, clientId, scopes });
+    const result = await this.findToken({ issuer, clientId, scopes });
 
-    if (token instanceof Token) {
+    if (isErrorResponse(result)) {
+      return result;
+    }
+    else if (result instanceof Token) {
+      const token = result;
       const request = new Request(url, { method });
       await token.authorize(request, { dpopNonce: nonce });
 
@@ -147,7 +167,10 @@ export abstract class HostOrchestrator {
     const { issuer, clientId, scopes } = event;
     const result = await this.findToken({ issuer, clientId, scopes });
 
-    if (result instanceof Token) {
+    if (isErrorResponse(result)) {
+      return result;
+    }
+    else if (result instanceof Token) {
       if (result.idToken?.claims) {
         return { profile: result.idToken.claims };
       }
@@ -156,5 +179,5 @@ export abstract class HostOrchestrator {
     return { error: 'Unable to find idToken' };
   }
 
-  abstract findToken (params: TokenOrchestrator.OAuth2Params): Promise<Token | HO.ErrorResponse>; 
+  abstract findToken (params: TokenOrchestrator.OAuth2Params): Promise<Token | null | HO.ErrorResponse>; 
 }

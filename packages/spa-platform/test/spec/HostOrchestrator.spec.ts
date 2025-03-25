@@ -162,13 +162,22 @@ describe('HostOrchestrator', () => {
         expect(findTokenSpy).toHaveBeenCalled();
         expect(findTokenSpy).toHaveBeenLastCalledWith(event.data);
 
-        // error case
-        findTokenSpy.mockResolvedValue({error: 'failed'});
+        // no token acquired (null)
+        findTokenSpy.mockResolvedValue(null);
 
         await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ error: 'Unable to obtain token' });
         expect(findTokenSpy).toHaveBeenCalledTimes(2);
+        expect(findTokenSpy).toHaveBeenLastCalledWith(event.data);
+
+        // error case
+        findTokenSpy.mockResolvedValue({ error: 'some error occurred' });
+
+        await host.parseRequest(event, reply);
+        expect(reply).toHaveBeenCalled();
+        expect(reply).toHaveBeenLastCalledWith({ error: 'some error occurred'});
+        expect(findTokenSpy).toHaveBeenCalledTimes(3);
         expect(findTokenSpy).toHaveBeenLastCalledWith(event.data);
       });
 
@@ -210,8 +219,8 @@ describe('HostOrchestrator', () => {
         expect(findTokenSpy).toHaveBeenCalled();
         expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
 
-        // error case 1 - findToken fails
-        findTokenSpy.mockResolvedValue({ error: 'failed' });
+        // no token acquired (null)
+        findTokenSpy.mockResolvedValue(null);
 
         await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
@@ -219,13 +228,23 @@ describe('HostOrchestrator', () => {
         expect(findTokenSpy).toHaveBeenCalledTimes(3);
         expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
 
+        // error case 1 - findToken returns error
+        findTokenSpy.mockResolvedValue({ error: 'some error' });
+
+        await host.parseRequest(event, reply);
+        expect(reply).toHaveBeenCalled();
+        expect(reply).toHaveBeenLastCalledWith({ error: 'some error' });
+        expect(findTokenSpy).toHaveBeenCalledTimes(4);
+        expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
+
         // error case 2 - dpop header never added (should never occur)
         testToken.dpopSigningAuthority.sign = jest.fn().mockImplementation(req => req);
+        findTokenSpy.mockResolvedValueOnce(testToken);
 
         await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ error: 'Unable to sign request' });
-        expect(findTokenSpy).toHaveBeenCalledTimes(4);
+        expect(findTokenSpy).toHaveBeenCalledTimes(5);
         expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
 
         // error case 3 - request params (url, method) not provided
@@ -234,7 +253,7 @@ describe('HostOrchestrator', () => {
         await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ error: 'request url or method not provided' });
-        expect(findTokenSpy).toHaveBeenCalledTimes(4);
+        expect(findTokenSpy).toHaveBeenCalledTimes(5);    // error is thrown before .findToken() gets called
         expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
       });
 
@@ -255,13 +274,22 @@ describe('HostOrchestrator', () => {
         expect(findTokenSpy).toHaveBeenCalled();
         expect(findTokenSpy).toHaveBeenLastCalledWith(event.data);
 
-        // error case
-        findTokenSpy.mockResolvedValue({ error: 'failed' });
+        // no token acquired (null)
+        findTokenSpy.mockResolvedValue(null);
 
         await host.parseRequest(event, reply);
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({ error: 'Unable to find idToken' });
         expect(findTokenSpy).toHaveBeenCalledTimes(2);
+        expect(findTokenSpy).toHaveBeenLastCalledWith(event.data);
+
+        // error case
+        findTokenSpy.mockResolvedValue({ error: 'some error' });
+
+        await host.parseRequest(event, reply);
+        expect(reply).toHaveBeenCalled();
+        expect(reply).toHaveBeenLastCalledWith({ error: 'some error' });
+        expect(findTokenSpy).toHaveBeenCalledTimes(3);
         expect(findTokenSpy).toHaveBeenLastCalledWith(event.data);
       });
     });

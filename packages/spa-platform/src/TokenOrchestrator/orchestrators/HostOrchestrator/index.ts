@@ -39,11 +39,11 @@ export namespace HostOrchestrator {
 
   export type HostOptions = {
     allowedOrigins?: string[];
-  }
+  };
 
   export type SubAppOptions = TokenOrchestrator.OAuth2Params & {
     targetOrigin?: string;
-  }
+  };
 
   export type RequestEventName = 'ACTIVATED' | 'PING' | 'TOKEN' | 'AUTHORIZE' | 'PROFILE';
 
@@ -52,7 +52,7 @@ export namespace HostOrchestrator {
     requestId: string;
     subAppId: string;
     data: any;
-  }
+  };
 
   export type ErrorResponse = { error: string; }
 
