@@ -125,6 +125,61 @@ describe('OAuth2Client', () => {
           grant_type: 'authorization_code',
         }).toString());
       });
+
+      it('dpop nonce / cache', async () => {
+        client.configuration.dpop = true;
+        jest.spyOn(client, 'jwks').mockResolvedValue({});
+        jest.spyOn(client.dpopSigningAuthority, 'createDPoPKeyPair').mockResolvedValue('dpopPairId');
+        jest.spyOn(client.dpopSigningAuthority, 'sign').mockImplementation((request) => Promise.resolve(request));
+        fetchSpy.mockResolvedValue(Response.json({
+            token_type: 'DPoP',
+            expires_in: 300,
+            access_token: 'someaccesstokenvalue',
+            scope: 'openid email'
+          },
+          {
+            headers: { 'dpop-nonce': 'nonceuponatime' }
+          }
+        ));
+
+        const tokenRequest1 = new Token.TokenRequest({
+          openIdConfiguration: {
+            issuer: 'https://fake.okta.com',
+            token_endpoint: 'https://fake.okta.com/token'
+          },
+          clientConfiguration: client.configuration,
+          grantType: 'authorization_code',
+        });
+        await client.exchange(tokenRequest1);
+        expect(fetchSpy).toHaveBeenLastCalledWith(expect.any(Request));
+        expect(client.dpopSigningAuthority.sign).toHaveBeenCalledTimes(1);
+        expect(client.dpopSigningAuthority.sign).toHaveBeenLastCalledWith(
+          expect.any(Request),
+          expect.objectContaining({
+            keyPairId: 'dpopPairId'
+          })
+        );
+
+        // subsequent request should use cached nonce
+        const tokenRequest2 = new Token.TokenRequest({
+          openIdConfiguration: {
+            issuer: 'https://fake.okta.com',
+            token_endpoint: 'https://fake.okta.com/token'
+          },
+          clientConfiguration: client.configuration,
+          grantType: 'authorization_code',
+        });
+        await client.exchange(tokenRequest2);
+        expect(fetchSpy).toHaveBeenLastCalledWith(expect.any(Request));
+        expect(client.dpopSigningAuthority.sign).toHaveBeenCalledTimes(2);
+        expect(client.dpopSigningAuthority.sign).toHaveBeenLastCalledWith(
+          expect.any(Request),
+          expect.objectContaining({
+            keyPairId: 'dpopPairId',
+            nonce: 'nonceuponatime'
+          })
+        );
+      });
     });
 
     describe('validateToken', () => {

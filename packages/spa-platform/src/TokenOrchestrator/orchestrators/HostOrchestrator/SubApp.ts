@@ -1,5 +1,5 @@
 import type { HostOrchestrator as HO } from '.';
-import { shortID, Token, TokenInit } from '@okta/auth-foundation';
+import { shortID, Token, TokenInit, ignoreUndefineds } from '@okta/auth-foundation';
 import { validateString } from '@okta/auth-foundation/internal';
 import { TokenOrchestrator, TokenOrchestratorError, TokenOrchestratorEventEmitter } from '../../TokenOrchestrator';
 import { SecureChannel } from '../../../utils/SecureChannel';
@@ -121,7 +121,7 @@ export class SubAppOrchestrator extends TokenOrchestrator {
   }
 
   public async getToken (options: TokenOrchestrator.OAuth2Params = {}): Promise<Token | null> {
-    const authParams = {...this.authParams, ...options};
+    const authParams = {...this.authParams, ...ignoreUndefineds(options)};
     const cacheKey = this.getTokenCacheKey(authParams);
 
     if (this.#tokenCache.has(cacheKey)) {
@@ -149,13 +149,17 @@ export class SubAppOrchestrator extends TokenOrchestrator {
     init?: RequestInit & { dpopNonce?: string; } & TokenOrchestrator.OAuth2Params
   ): Promise<Request> {
     const request = input instanceof Request ? input : new Request(input, init);
-    const { issuer, clientId, scopes, dpopNonce } = {...this.authParams, ...init};
-    const authOptions = { issuer, clientId, scopes, nonce: dpopNonce };
+    const { issuer, clientId, scopes, dpopNonce } = {
+      ...this.authParams,
+      // removes `undefined`
+      ...(ignoreUndefineds({...init}) as { dpopNonce?: string; } & TokenOrchestrator.OAuth2Params)
+    };
+    const authParams = { issuer, clientId, scopes, nonce: dpopNonce };
 
     // TODO: cache dpop values?
 
     const { url, method } = request;
-    const { dpop, authorization, tokenType, error } = await this.broadcast('AUTHORIZE', { url, method, ...authOptions });
+    const { dpop, authorization, tokenType, error } = await this.broadcast('AUTHORIZE', { url, method, ...authParams });
 
     if (error) {
       throw new TokenOrchestratorError(error as string);

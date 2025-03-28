@@ -22,7 +22,17 @@ const switchToFrame = async () => {
   return await browser.switchToFrame(await TokenBrokerApp.iframeSelector);
 };
 
+// NOTE: this is a dpop-protected test app
 describe('Token Broker', () => {
+  let tokenEndpoint;
+  beforeEach(async () => {
+    // Expected calls per app load
+    // 1 - Morodor Token request: 400 (requires dpop nonce)
+    // 2 - Mordor Token retry: 200 (includes dpop nonce)
+    // 3 - Resource Token request: 200 (uses cached nonce)
+    tokenEndpoint = await browser.mock(`${new URL(process.env.ISSUER).origin}/**/v1/token`, { method: 'post' });
+  });
+
   afterEach(async () => {
     await browser.reloadSession();
   });
@@ -36,48 +46,78 @@ describe('Token Broker', () => {
     };
 
     it('makes dpop-protected resource request', async () => {
+      expect(tokenEndpoint.calls.length).toEqual(0);
       await bootstrap();
       await TokenBrokerApp.waitForMessages();
       const message = await TokenBrokerApp.firstMessageSelector.getText();
+      // see explanation by spy definition
+      expect(tokenEndpoint.calls.length).toEqual(3);
+
+      // THEN: refreshes message list
       await TokenBrokerApp.refreshMessagesBtn.click();
       const newMessage = await TokenBrokerApp.firstMessageSelector.getText();
       expect(message).not.toEqual(newMessage);
+      // resource token is available, no new tokens requests are made
+      expect(tokenEndpoint.calls.length).toEqual(3);
     });
 
     it('makes dpop-protected resource request after broker tokens are cleared', async () => {
+      expect(tokenEndpoint.calls.length).toEqual(0);
       await bootstrap();
       await TokenBrokerApp.waitForMessages();
       const message = await TokenBrokerApp.firstMessageSelector.getText();
+      // see explanation by spy definition
+      expect(tokenEndpoint.calls.length).toEqual(3);
+
+      // THEN: removes resource token, refreshes message list
       await TokenBrokerApp.removeBrokerTokensBtn.click();
       await TokenBrokerApp.refreshMessagesBtn.click();
       await performSignIn(true);
       await TokenBrokerApp.waitForMessages();
       const newMessage = await TokenBrokerApp.firstMessageSelector.getText();
       expect(message).not.toEqual(newMessage);
+      // broker makes resource token request, but cached nonce is used (therefore request is successful)
+      expect(tokenEndpoint.calls.length).toEqual(4);
     });
 
     it('makes dpop-protected resource request after all-scope token is revoked', async () => {
+      expect(tokenEndpoint.calls.length).toEqual(0);
       await bootstrap();
       await TokenBrokerApp.waitForMessages();
       const message = await TokenBrokerApp.firstMessageSelector.getText();
+      // see explanation by spy definition
+      expect(tokenEndpoint.calls.length).toEqual(3);
+
+      // THEN: removes mordor token, refreshes message list
       await TokenBrokerApp.revokeMordorTokenBtn.click();
+      await browser.pause(500);    // gives time for revoke to complete
       await TokenBrokerApp.refreshMessagesBtn.click();
       await TokenBrokerApp.waitForMessages();
       const newMessage = await TokenBrokerApp.firstMessageSelector.getText();
       expect(message).not.toEqual(newMessage);
+      // resource token is still available, no new tokens requests are made
+      expect(tokenEndpoint.calls.length).toEqual(3);
     });
 
     it('makes dpop-protected resource request all tokens are cleared', async () => {
+      expect(tokenEndpoint.calls.length).toEqual(0);
       await bootstrap();
       await TokenBrokerApp.waitForMessages();
       const message = await TokenBrokerApp.firstMessageSelector.getText();
+      // see explanation by spy definition
+      expect(tokenEndpoint.calls.length).toEqual(3);
+
+      // THEN: removes mordor token, removes resource token, refresh message list
       await TokenBrokerApp.revokeMordorTokenBtn.click();
+      await browser.pause(500);    // gives time for revoke to complete
       await TokenBrokerApp.removeBrokerTokensBtn.click();
       await TokenBrokerApp.refreshMessagesBtn.click();
       await performSignIn(true);
       await TokenBrokerApp.waitForMessages();
       const newMessage = await TokenBrokerApp.firstMessageSelector.getText();
       expect(message).not.toEqual(newMessage);
+      // requests for a mordor and resource token are made, however they use the cached nonce
+      expect(tokenEndpoint.calls.length).toEqual(5);
     });
   });
 
@@ -94,14 +134,26 @@ describe('Token Broker', () => {
     };
 
     it('makes dpop-protected resource request', async () => {
+      expect(tokenEndpoint.calls.length).toEqual(0);
       const firstMessage = await bootstrap();
+      // see explanation by spy definition
+      expect(tokenEndpoint.calls.length).toEqual(3);
+
+      // THEN: refreshes message list
       await TokenBrokerApp.refreshMessagesBtn.click();
       const newMessage = await TokenBrokerApp.firstMessageSelector.getText();
       expect(firstMessage).not.toEqual(newMessage);
+      // resource token is available, no new tokens requests are made
+      expect(tokenEndpoint.calls.length).toEqual(3);
     });
 
     it('makes dpop-protected resource request after broker tokens are cleared', async () => {
+      expect(tokenEndpoint.calls.length).toEqual(0);
       const firstMessage = await bootstrap();
+      // see explanation by spy definition
+      expect(tokenEndpoint.calls.length).toEqual(3);
+
+      // THEN: removes resource token, refreshes message list
       await browser.switchToParentFrame();
       await TokenBrokerApp.removeBrokerTokensBtn.click();
       await switchToFrame();
@@ -112,23 +164,38 @@ describe('Token Broker', () => {
       await TokenBrokerApp.waitForMessages();
       const newMessage = await TokenBrokerApp.firstMessageSelector.getText();
       expect(firstMessage).not.toEqual(newMessage);
+      // broker makes resource token request, but cached nonce is used (therefore request is successful)
+      expect(tokenEndpoint.calls.length).toEqual(4);
     });
   
     it('makes dpop-protected resource request after all-scope token is revoked', async () => {
+      expect(tokenEndpoint.calls.length).toEqual(0);
       const firstMessage = await bootstrap();
+      // see explanation by spy definition
+      expect(tokenEndpoint.calls.length).toEqual(3);
+
+      // THEN: removes mordor token, refreshes message list
       await browser.switchToParentFrame();
       await TokenBrokerApp.revokeMordorTokenBtn.click();
+      await browser.pause(500);    // gives time for revoke to complete
       await switchToFrame();
       await TokenBrokerApp.refreshMessagesBtn.click();
       await TokenBrokerApp.waitForMessages();
       const newMessage = await TokenBrokerApp.firstMessageSelector.getText();
       expect(firstMessage).not.toEqual(newMessage);
+      // resource token is still available, no new tokens requests are made
+      expect(tokenEndpoint.calls.length).toEqual(3);
     });
 
     it('makes dpop-protected resource request all tokens are cleared', async () => {
+      expect(tokenEndpoint.calls.length).toEqual(0);
       const firstMessage = await bootstrap();
+      // see explanation by spy definition
+      expect(tokenEndpoint.calls.length).toEqual(3);
+
       await browser.switchToParentFrame();
       await TokenBrokerApp.revokeMordorTokenBtn.click();
+      await browser.pause(500);    // gives time for revoke to complete
       await TokenBrokerApp.removeBrokerTokensBtn.click();
       await switchToFrame();
       await TokenBrokerApp.refreshMessagesBtn.click();
@@ -139,6 +206,8 @@ describe('Token Broker', () => {
       await TokenBrokerApp.waitForMessages();
       const newMessage = await TokenBrokerApp.firstMessageSelector.getText();
       expect(firstMessage).not.toEqual(newMessage);
+      // requests for a mordor and resource token are made, however they use the cached nonce
+      expect(tokenEndpoint.calls.length).toEqual(5);
     });
   });
 

@@ -6,8 +6,5 @@
   "private": true,
   "files": [
     "./*"
-  ],
-  "devDependencies": {
-    "@repo/typescript-config": "*"
-  }
+  ]
 }

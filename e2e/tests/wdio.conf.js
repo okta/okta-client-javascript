@@ -21,7 +21,7 @@ const CI = process.env.CI === 'true' || process.env.CI === true;
 const defaultTimeoutInterval = DEBUG ? (24 * 60 * 60 * 1000) : 20000;
 const logLevel = CI ? 'warn' : 'info';
 const browserOptions = {
-    args: []
+    args: ['--auto-open-devtools-for-tabs']
 };
 
 let failureCount = 0;
@@ -40,7 +40,6 @@ if (CI) {
         '--disable-extensions',
         '--verbose',
         '--disable-dev-shm-usage',
-        '--auto-open-devtools-for-tabs'
     ]);
 }
 
@@ -276,10 +275,16 @@ exports.config = {
       if (CI && error) {
         failureCount += 1;
         await browser.saveScreenshot(`${process.env.E2E_LOG_DIR}/failure-${failureCount}.png`);
-        const logs = await browser.getLogs('browser');
+        let log;
+        try {
+          log = JSON.parse(logs, null, 4);
+        }
+        catch (err) {
+          log = logs;
+        }
         await fs.writeFile(
           `${process.env.E2E_LOG_DIR}/failure-${failureCount}-console.log`,
-          `Console Log Failure #${failureCount}:\n${JSON.parse(logs, null, 4)}`
+          `Console Log Failure #${failureCount}:\n${log}`
         );
         console.log('CONSOLE LOGS: ');
         console.log(logs);

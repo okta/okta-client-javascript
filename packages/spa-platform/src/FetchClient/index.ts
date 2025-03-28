@@ -1,7 +1,9 @@
 import {
+  pause,
   WWWAuth,
   APIClient,
-  APIRequest
+  APIRequest,
+  APIClientError
 } from '@okta/auth-foundation';
 import { TokenOrchestrator } from '../TokenOrchestrator';
 
@@ -9,10 +11,6 @@ import { TokenOrchestrator } from '../TokenOrchestrator';
 /**
  * @module FetchClient
  */
-
-export type FetchClientInit = {
-  fetchImpl: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
-}
 
 /**
  * Wrapper around [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) to perform authenticated requests
@@ -24,9 +22,9 @@ export type FetchClientInit = {
 export class FetchClient extends APIClient {
   constructor (
     private readonly orchestrator: TokenOrchestrator,
-    private readonly options: FetchClientInit = { fetchImpl: fetch }
+    options: APIClient.Options = {}
   ) {
-    super();
+    super(options);
   }
 
   // Resource servers return a 401 with www-authenticate and dpop-nonce headers
@@ -40,7 +38,7 @@ export class FetchClient extends APIClient {
         if (nonce) {
           return nonce;
         }
-        // TODO: throw if nonce is required but not returned?
+        throw new APIClientError('DPoP nonce required, but none found');
       }
     }
   }
@@ -51,29 +49,47 @@ export class FetchClient extends APIClient {
   }
 
   protected async processErrorResponse (response: Response, request: APIRequest): Promise<Response> {
-    response = await super.processErrorResponse(response, request);
+    const res = await super.processErrorResponse(response, request);
+    if (response !== res) {
+      // don't handle error twice. If super.processErrorResponse handles the error,
+      // a new response will be returned, therefore return it
+      return res;
+    }
+    response = res;
 
     // TODO: handle acr_vaule error
 
     // http status-based retry attempts are gated by a counter to prevent infinite loops
-    if (request.canRetry()) {
-      if (response.status === 401) {
-        await this.orchestrator.authorize(request);
-        return this.retry(request);
+    if (!response.ok && request.canRetry()) {
+      switch (response.status) {
+        case 401:
+          await this.prepare401Retry(response, request);
+          break;
+        case 429:
+          await this.prepare429Retry(response, request);
+          break;
       }
-      else if (response.status === 429) {
-        // TODO: implement back-off approach?
-        return this.retry(request);
-      }
+
+      return this.retry(request);
     }
 
     return response;
   }
 
-  public async fetch (input: string | URL | Request, init: TokenOrchestrator.OAuth2Params & RequestInit = {}): Promise<Response> {
-    const { fetchImpl, ...fetchInit } = { ...this.options, ...init };
+  protected async prepare401Retry (response: Response, request: APIRequest) {
+    await this.orchestrator.authorize(request);
+  }
 
-    const request = await this.orchestrator.authorize(input, fetchInit);
-    return this.send(request);
+  protected async prepare429Retry (response: Response, request: APIRequest) {
+    await pause(this.getRetryDelay(response, request));
+  }
+
+  public async fetch (input: string | URL | Request, init: TokenOrchestrator.OAuth2Params & RequestInit = {}): Promise<Response> {
+    const { issuer, clientId, scopes, ...fetchInit } = init;
+    const authParams = { issuer, clientId, scopes };
+    const request = input instanceof Request ? input : new Request(input, fetchInit);
+    const dpopNonce = this.getDPoPNonceFromCache(request);
+    await this.orchestrator.authorize(request, { ...authParams, dpopNonce });
+    return super.send(request);
   }
 }

@@ -107,14 +107,14 @@ class TokenBroker extends HostOrchestrator.Host {
     const refreshToken = getMordorToken();
     if (!refreshToken) {
       await signIn();   // will trigger redirect to AS (this promise never resolves)
-      return { error: 'failed to authenticate' }  // should never reached
+      return { error: 'failed to authenticate' };  // should never reached
     }
 
     // attempt a downscope refresh request
     const result = await this.requestAccessToken(refreshToken.id, scopes);
     if (!result) {
       await signIn();   // will trigger redirect to AS (this promise never resolves)
-      return { error: 'failed to authenticate' }  // should never reached
+      return { error: 'failed to authenticate' };  // should never reached
     }
 
     if (isOAuth2ErrorResponse(result)) {

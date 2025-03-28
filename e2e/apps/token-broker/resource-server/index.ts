@@ -1,5 +1,5 @@
 import { default as mockServer } from 'vite-plugin-mock-server';
-import { requireBearerToken } from './middleware';
+import { requireDPoPToken } from './middleware';
 
 // https://github.com/enjoycoding/vite-plugin-mock-server/issues/26
 // NOTE: 'vite-plugin-mock-server' module does not "natively" support running
@@ -20,7 +20,7 @@ export default function (): ReturnType<typeof mockServer> {
     printStartupLog: false,
     mockRootDir: './resource-server/mock',
     middlewares: [
-      requireBearerToken
+      requireDPoPToken
     ]
   });
 

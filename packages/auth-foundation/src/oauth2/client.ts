@@ -17,7 +17,7 @@ import {
   TokenHashValidator
 } from '../jwt';
 import { APIClient, APIRequest } from '../http';
-import { DefaultDPoPSigningAuthority, DPoPSigningAuthority } from './dpop';
+import { DefaultDPoPSigningAuthority, type DPoPSigningAuthority, DPoPNonceCache } from './dpop';
 import { Configuration as ConfigurationConstructor, type ConfigurationParams } from './configuration';
 import { TokenInit, Token } from '../Token';
 import { SynchronizedResult } from '../utils/SynchronizedResult';
@@ -59,6 +59,7 @@ export class OAuth2Client extends APIClient {
   #httpCache: Map<string, JsonRecord> = new Map();
   #pendingRefresh: Map<string, Promise<Token | OAuth2ErrorResponse>> = new Map();
   private readonly queue: PromiseQueue = new PromiseQueue();
+  protected readonly dpopNonceCache: DPoPNonceCache = new DPoPNonceCache.PersistentCache('okta-dpop-nonce');
   readonly emitter: OAuth2ClientEventEmitter = new OAuth2ClientEventEmitter();
   readonly configuration: OAuth2Client.Configuration;
 
@@ -72,16 +73,9 @@ export class OAuth2Client extends APIClient {
       this.configuration = new OAuth2Client.Configuration(params);
     }
   }
-  
-  protected async processResponse (response: Response): Promise<void> {
-    await super.processResponse(response);
-    try {
-      const nonce = response.headers.get('dpop-nonce');
-      if (nonce) {
-        this.dpopSigningAuthority.cacheNonce(new URL(response.url).origin, nonce);
-      }
-    // eslint-disable-next-line no-empty
-    } catch (err) {}
+
+  protected getDPoPNonceCacheKey (request: APIRequest): string {
+    return `${this.configuration.clientId}.${super.getDPoPNonceCacheKey(request)}`;
   }
 
   // Auth Servers return a 400 with dpop-nonce header and a json body identifying the error
@@ -155,9 +149,11 @@ export class OAuth2Client extends APIClient {
   ): Promise<Token | OAuth2ErrorResponse> {
     const request = tokenRequest.prepare();
 
-    const { keyPairId: dpopPairId, dpopNonce } = options;
+    const { keyPairId: dpopPairId } = options;
     if (this.configuration.dpop) {
-      await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce: dpopNonce });
+      // dpop nonce may not be available for this request (undefined), this is expected
+      const nonce = this.getDPoPNonceFromCache(request);
+      await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce });
     }
 
     const response = await this.send(request, { dpopPairId });
@@ -303,9 +299,6 @@ export class OAuth2Client extends APIClient {
   // private async performRefresh (token: Token, clientSettings: Record<string, string>) {
   /* eslint max-statements: [2, 28] */
   private async performRefresh (token: Token, scopes?: string[]) {
-    // TODO: remove, for testing
-    // await (new Promise(resolve => setTimeout(resolve, 5000)));
-
     if (!token.refreshToken) {
       return { error: `Missing token: refreshToken` };
     }
@@ -466,6 +459,5 @@ export namespace OAuth2Client {
   /** @internal */
   export type TokenRequestOptions = {
     keyPairId?: string;
-    dpopNonce?: string;
   };
 }

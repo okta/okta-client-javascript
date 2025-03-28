@@ -225,29 +225,89 @@ describe('Token', () => {
       expect(merged.refreshToken).toEqual(refreshToken);
     });
 
-    it('.authorize', async () => {
-      // Bearer token strategy
-      const t1 = new Token(mockTokenResponse());
-
-      // called with fetch signature (url, RequestInit)
-      const bc1 = await t1.authorize('/foo', { headers: { foo: 'bar' }});
-      expect(bc1).toBeInstanceOf(Request);
-      expect(Object.fromEntries(bc1.headers.entries())).toEqual({
-        foo: 'bar',
-        authorization: `Bearer ${t1.accessToken}`
+    describe('.authorize', () => {
+      it('will authorize a request using bearer tokens', async () => {
+        // Bearer token strategy
+        const t1 = new Token(mockTokenResponse());
+  
+        // called with fetch signature (url, RequestInit)
+        const bc1 = await t1.authorize('/foo', { headers: { foo: 'bar' }});
+        expect(bc1).toBeInstanceOf(Request);
+        expect(Object.fromEntries(bc1.headers.entries())).toEqual({
+          foo: 'bar',
+          authorization: `Bearer ${t1.accessToken}`
+        });
+  
+        // called with Request
+        const req1 = new Request('/foo', { headers: { foo: 'bar' }});
+        const bc2 = await t1.authorize(req1);
+        expect(req1).toBeInstanceOf(Request);
+        expect(bc2).toBe(req1);
+        expect(Object.fromEntries(bc2.headers.entries())).toEqual({
+          foo: 'bar',
+          authorization: `Bearer ${t1.accessToken}`
+        });
       });
 
-      // called with Request
-      const req1 = new Request('/foo', { headers: { foo: 'bar' }});
-      const bc2 = await t1.authorize(req1);
-      expect(req1).toBeInstanceOf(Request);
-      expect(bc2).toBe(req1);
-      expect(Object.fromEntries(bc2.headers.entries())).toEqual({
-        foo: 'bar',
-        authorization: `Bearer ${t1.accessToken}`
-      });
+      it('will authorize a request using dpop-bound tokens', async () => {
+        // DPoP token strategy
+        const token = new Token(mockTokenResponse(null, {
+          tokenType: 'DPoP',
+          context: { dpopPairId: 'dpopPairId' }
+        }));
+        jest.spyOn(token.dpopSigningAuthority, 'sign').mockImplementation((request) => {
+          request.headers.set('dpop', 'dpopproof');
+          return Promise.resolve(request);
+        });
 
-      // TODO: update when dpop is implemented
+        // called with fetch signature (url, RequestInit)
+        const bc1 = await token.authorize('/foo', { headers: { foo: 'bar' }});
+        expect(bc1).toBeInstanceOf(Request);
+        expect(Object.fromEntries(bc1.headers.entries())).toEqual({
+          foo: 'bar',
+          authorization: `DPoP ${token.accessToken}`,
+          dpop: 'dpopproof'
+        });
+        expect(token.dpopSigningAuthority.sign).toHaveBeenCalledTimes(1);
+        expect(token.dpopSigningAuthority.sign).toHaveBeenLastCalledWith(
+          expect.any(Request),
+          expect.objectContaining({ keyPairId: 'dpopPairId', accessToken: token.accessToken })
+        );
+
+        // called with Request
+        const req1 = new Request('/foo', { headers: { foo: 'bar' }});
+        const bc2 = await token.authorize(req1);
+        expect(req1).toBeInstanceOf(Request);
+        expect(bc2).toBe(req1);
+        expect(Object.fromEntries(bc2.headers.entries())).toEqual({
+          foo: 'bar',
+          authorization: `DPoP ${token.accessToken}`,
+          dpop: 'dpopproof'
+        });
+        expect(token.dpopSigningAuthority.sign).toHaveBeenCalledTimes(2);
+        expect(token.dpopSigningAuthority.sign).toHaveBeenLastCalledWith(
+          expect.any(Request),
+          expect.objectContaining({ keyPairId: 'dpopPairId', accessToken: token.accessToken })
+        );
+
+        // called with fetch signature (url, RequestInit) and dpop nonce
+        const bc3 = await token.authorize('/foo', { headers: { foo: 'bar' }, dpopNonce: 'nonceuponatime' });
+        expect(bc3).toBeInstanceOf(Request);
+        expect(Object.fromEntries(bc1.headers.entries())).toEqual({
+          foo: 'bar',
+          authorization: `DPoP ${token.accessToken}`,
+          dpop: 'dpopproof'
+        });
+        expect(token.dpopSigningAuthority.sign).toHaveBeenCalledTimes(3);
+        expect(token.dpopSigningAuthority.sign).toHaveBeenLastCalledWith(
+          expect.any(Request),
+          expect.objectContaining({
+            keyPairId: 'dpopPairId',
+            accessToken: token.accessToken,
+            nonce: 'nonceuponatime'
+          })
+        );
+      });
     });
 
     it('.willBeExpiredIn / .willBeValidIn', () => {

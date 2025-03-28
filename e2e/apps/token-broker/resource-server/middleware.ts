@@ -10,14 +10,16 @@ global.crypto = webcrypto;
 const dpopNonceError = 
   'DPoP error="use_dpop_nonce", error_description="Resource server requires nonce in DPoP proof"';
 
-export const requireBearerToken: MockLayer = async (req, res, next) => {
+const dpopNonce = shortID();
+
+export const requireDPoPToken: MockLayer = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (req.headers.dpop) {
     const jwt = new JWT(req.headers.dpop as string);
   
     if (jwt.payload?.nonce === undefined) {
-      res.setHeader('dpop-nonce', shortID());
+      res.setHeader('dpop-nonce', dpopNonce);
       res.setHeader('www-authenticate', dpopNonceError);
       res.statusCode = 401;
       res.end('Unauthorized');

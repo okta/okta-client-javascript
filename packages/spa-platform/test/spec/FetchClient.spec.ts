@@ -2,6 +2,7 @@ import { TokenOrchestrator } from 'src/TokenOrchestrator';
 import { FetchClient } from 'src/FetchClient';
 import { randStr } from '@repo/jest-helpers/browser/helpers';
 import { makeTestToken } from '../helpers/makeTestResource';
+import { APIClientError } from '@okta/auth-foundation';
 
 
 describe('FetchClient', () => {
@@ -21,18 +22,67 @@ describe('FetchClient', () => {
     context = { client, mockOrchestrator, fetchSpy };
   });
 
-  it('can make a resource request', async () => {
+  it('can make an authenticated resource request', async () => {
     const { client, mockOrchestrator, fetchSpy } = context;
-    jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(makeTestToken());
+    const token = makeTestToken();
+    jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(token);
 
     fetchSpy.mockResolvedValue(Response.json({ foo: 'bar' }));
 
-    const response = await client.fetch('/foo');
+    const response1 = await client.fetch('http://localhost:8080/foo');
+
+    expect(response1).toBeInstanceOf(Response);
+    expect(response1.status).toEqual(200);
+    expect(await response1.json()).toEqual({ foo: 'bar' });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy.mock.lastCall[0].headers.get('authorization')).toEqual(`Bearer ${token.accessToken}`);
+    expect(fetchSpy.mock.lastCall[0].headers.get('dpop')).toBe(null);
+
+    const request = new Request('http://localhost:8080/foo');
+    const response2 = await client.fetch(request);
+
+    expect(response2).toBeInstanceOf(Response);
+    expect(response2.status).toEqual(200);
+    expect(await response2.json()).toEqual({ foo: 'bar' });
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
+    expect(fetchSpy.mock.lastCall[0].headers.get('authorization')).toEqual(`Bearer ${token.accessToken}`);
+    expect(fetchSpy.mock.lastCall[0].headers.get('dpop')).toBe(null);
+
+    // test with a (mocked) dpop-bound token
+    const dpopToken = makeTestToken(null, { tokenType: 'DPoP' });
+    dpopToken.dpopSigningAuthority.sign = jest.fn().mockImplementation(async (request) => {
+      request.headers.set('dpop', 'fakedpopvalue');
+      return request;
+    });
+    jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(dpopToken);
+
+    const response3 = await client.fetch('http://localhost:8080/foo');
+
+    expect(response3).toBeInstanceOf(Response);
+    expect(response3.status).toEqual(200);
+    expect(await response3.json()).toEqual({ foo: 'bar' });
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    expect(fetchSpy.mock.lastCall[0].headers.get('authorization')).toEqual(`DPoP ${dpopToken.accessToken}`);
+    expect(fetchSpy.mock.lastCall[0].headers.get('dpop')).toEqual('fakedpopvalue');
+  });
+
+  it('will use custom fetch implementation', async () => {
+    const { mockOrchestrator, fetchSpy } = context;
+    const token = makeTestToken();
+    jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(token);
+    fetchSpy.mockResolvedValue(Response.json({ foo: 'bar' }));
+
+    const fetchImpl = jest.fn().mockResolvedValue(Response.json({ bar: 'foo' }));
+    const client = new FetchClient(mockOrchestrator, { fetchImpl });
+
+    const response = await client.fetch('http://localhost:8080/foo');
 
     expect(response).toBeInstanceOf(Response);
     expect(response.status).toEqual(200);
-    expect(await response.json()).toEqual({ foo: 'bar' });
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(await response.json()).toEqual({ bar: 'foo' });
+    expect(fetchImpl).toHaveBeenCalled();
+    expect(fetchImpl.mock.lastCall[0].headers.get('authorization')).toEqual(`Bearer ${token.accessToken}`);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('will pass params to upstream methods when provided', async () => {
@@ -41,7 +91,7 @@ describe('FetchClient', () => {
 
     fetchSpy.mockResolvedValue(Response.json({ foo: 'bar' }));
 
-    const response = await client.fetch('/foo', {
+    const response = await client.fetch('http://localhost:8080/foo', {
       clientId: 'foo',
       scopes: ['a', 'b', 'c'],
       method: 'POST',
@@ -55,7 +105,7 @@ describe('FetchClient', () => {
 
     const lastFetchReq = fetchSpy.mock?.lastCall?.[0];
     expect(lastFetchReq).toBeInstanceOf(Request);
-    expect(lastFetchReq.url).toBe('/foo');
+    expect(lastFetchReq.url).toBe('http://localhost:8080/foo');
     expect(lastFetchReq.method).toBe('POST');
     expect(lastFetchReq.redirect).toBe('manual');
 
@@ -72,8 +122,7 @@ describe('FetchClient', () => {
 
     fetchSpy.mockResolvedValue(Response.json({ foo: 'bar' }));
 
-    // TODO: update error
-    await expect(client.fetch('/foo')).rejects.toThrow(new Error('Unable to acquire token to sign request'));
+    await expect(client.fetch('http://localhost:8080/foo')).rejects.toThrow(new Error('Unable to acquire token to sign request'));
 
     expect(orchestratorSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).not.toHaveBeenCalled();
@@ -85,8 +134,7 @@ describe('FetchClient', () => {
 
     fetchSpy.mockRejectedValue(new Error('foo'));
 
-    // TODO: update error
-    await expect(client.fetch('/foo')).rejects.toThrow(new Error('FetchError'));
+    await expect(client.fetch('http://localhost:8080/foo')).rejects.toThrow(new Error('foo'));
 
     expect(orchestratorSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledTimes(1);
@@ -96,10 +144,11 @@ describe('FetchClient', () => {
     it('will retry a limited number of times', async () => {
       const { client, mockOrchestrator, fetchSpy } = context;
       jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(makeTestToken());
+      jest.spyOn(client, 'getRetryDelay').mockReturnValue(0);   // ignore 429 backoff for this test
 
       fetchSpy.mockResolvedValue(new Response(null, { status: 429, statusText: 'Too many requests' }));
 
-      const response = await client.fetch('/foo');
+      const response = await client.fetch('http://localhost:8080/foo');
 
       expect(fetchSpy).toHaveBeenCalledTimes(3);
       expect(response).toBeInstanceOf(Response);
@@ -109,24 +158,54 @@ describe('FetchClient', () => {
     it('will retry on 429', async () => {
       const { client, mockOrchestrator, fetchSpy } = context;
       jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(makeTestToken());
+      jest.spyOn(client, 'getRetryDelay').mockReturnValue(0);   // ignore 429 backoff for this test
 
       fetchSpy
         .mockResolvedValueOnce(new Response(null, { status: 429, statusText: 'Too many requests' }))
         .mockResolvedValueOnce(Response.json({ foo: 'bar' }));
 
-      const response = await client.fetch('/foo');
+      const response = await client.fetch('http://localhost:8080/foo');
 
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       // first request returns 429
-      expect(fetchSpy.mock.calls[0][0].url).toEqual('/foo');
+      expect(fetchSpy.mock.calls[0][0].url).toEqual('http://localhost:8080/foo');
       expect((await fetchSpy.mock.results[0].value).status).toEqual(429);
       // second request succeeds
-      expect(fetchSpy.mock.calls[1][0].url).toEqual('/foo');
+      expect(fetchSpy.mock.calls[1][0].url).toEqual('http://localhost:8080/foo');
       expect((await fetchSpy.mock.results[1].value).status).toEqual(200);
       // fulfills request with retry
       expect(response).toBeInstanceOf(Response);
       expect(response.status).toEqual(200);
       expect(await response.json()).toEqual({ foo: 'bar' });
+    });
+
+    it('will backoff exponentially on 429 errors', async () => {
+      jest.useFakeTimers();
+
+      const { client, mockOrchestrator, fetchSpy } = context;
+      jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(makeTestToken());
+      fetchSpy.mockResolvedValue(new Response(null, { status: 429, statusText: 'Too many requests' }));
+
+      expect(fetchSpy).toHaveBeenCalledTimes(0);
+      const promise = client.fetch('http://localhost:8080/foo');
+      await jest.advanceTimersByTimeAsync(50);    // needs short delay for first fetch has time to fire
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(500);
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      await jest.advanceTimersByTimeAsync(500);
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      await jest.advanceTimersByTimeAsync(1000);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      await jest.advanceTimersByTimeAsync(1000);
+
+      expect(fetchSpy).toHaveBeenCalledTimes(3);
+
+      const response = await promise;
+      expect(response).toBeInstanceOf(Response);
+      
+      jest.useRealTimers();
     });
 
     it('will re-auth and retry on 401', async () => {
@@ -150,7 +229,7 @@ describe('FetchClient', () => {
         .mockResolvedValueOnce(new Response(null, { status: 401, statusText: 'Unauthorized' }))
         .mockResolvedValueOnce(Response.json({ foo: 'bar' }));
 
-      const response = await client.fetch('/foo');
+      const response = await client.fetch('http://localhost:8080/foo');
 
       // see note about how `firstAuthHeader` is obtained
       const secondAuthHeader = fetchSpy.mock.calls[1][0].headers.get('authorization');
@@ -158,10 +237,10 @@ describe('FetchClient', () => {
       expect(orchestratorSpy).toHaveBeenCalledTimes(2);   // 2 tokens will have been fetched
       expect(fetchSpy).toHaveBeenCalledTimes(2);
       // first request returns 401
-      expect(fetchSpy.mock.calls[0][0].url).toEqual('/foo');
+      expect(fetchSpy.mock.calls[0][0].url).toEqual('http://localhost:8080/foo');
       expect((await fetchSpy.mock.results[0].value).status).toEqual(401);
       // second request succeeds
-      expect(fetchSpy.mock.calls[1][0].url).toEqual('/foo');
+      expect(fetchSpy.mock.calls[1][0].url).toEqual('http://localhost:8080/foo');
       expect((await fetchSpy.mock.results[1].value).status).toEqual(200);
 
       // ensures first and second requests truly use different tokens
@@ -180,8 +259,7 @@ describe('FetchClient', () => {
       expect(await response.json()).toEqual({ foo: 'bar' });
     });
 
-    // TODO:
-    xit('will retry on dpop nonce error', async () => {
+    it('will retry on dpop nonce error', async () => {
       const { client, mockOrchestrator, fetchSpy } = context;
 
       let firstAuthHeader;
@@ -201,13 +279,29 @@ describe('FetchClient', () => {
         .mockResolvedValueOnce(Response.json(null, { status: 401, headers: dpopHeaders }))
         .mockResolvedValueOnce(Response.json({ foo: 'bar' }));
 
-      // const response = await client.fetch('/foo');
-      await client.fetch('/foo');
+      // const response = await client.fetch('http://localhost:8080/foo');
+      await client.fetch('http://localhost:8080/foo');
 
       const secondAuthHeader = fetchSpy.mock.calls[1][0].headers.get('authorization');
 
       expect(firstAuthHeader).not.toEqual(secondAuthHeader);
       expect(fetchSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('will throw when dpop nonce is required but not available', async () => {
+      const wwwAuthenticate =
+        'DPoP error="use_dpop_nonce", error_description="Resource server requires nonce in DPoP proof"';
+      
+      const { client, mockOrchestrator, fetchSpy } = context;
+      jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(makeTestToken());
+
+      const headers = new Headers();
+      headers.set('www-authenticate', wwwAuthenticate);
+      fetchSpy
+        .mockResolvedValueOnce(new Response(null, { status: 401, statusText: 'Unauthorized', headers }))
+        .mockResolvedValueOnce(Response.json({ foo: 'bar' }));
+  
+      await expect(client.fetch('http://localhost:8080/foo')).rejects.toThrow(APIClientError);
     });
   });
 

@@ -56,7 +56,6 @@ export async function handleAuthorizationCodeFlowResponse () {
   }
   catch (err) {
     console.log(err);
-    alert((err as Error).message);
     throw err;
   }
 }

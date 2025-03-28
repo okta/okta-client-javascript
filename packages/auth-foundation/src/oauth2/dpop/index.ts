@@ -1,9 +1,12 @@
-import type { DPoPHeaders, DPoPClaims,DPoPProofParams } from './types';
+import type { DPoPHeaders, DPoPClaims, DPoPProofParams } from './types';
 import { b64u, buf, hash, shortID, randomBytes } from '../../crypto';
 import { type DPoPStorage, IndexedDBDPoPStore } from './storage';
+import { DPoPNonceCache } from './nonceCache';
+import { DPoPError } from '../../errors/DPoPError';
 import TimeCoordinator from '../../utils/TimeCoordinator';
 
-export type { DPoPHeaders, DPoPClaims, DPoPProofParams, };
+export { DPoPNonceCache };
+export type { DPoPHeaders, DPoPClaims, DPoPProofParams };
 
 
 // TODO: how to configure this?
@@ -21,15 +24,6 @@ export interface DPoPSigningAuthority {
   deleteDPoPKeyPair: (keyPairId: string) => Promise<void>;
   clearDPoPKeyPairs: () => Promise<void>;
   sign: (request: Request, params: Omit<DPoPProofParams, 'request'>) => Promise<Request>;
-  cacheNonce: (origin: string, nonce: string) => void;
-}
-
-const nonceCache: Map<string, string> = new Map();
-function getNonce (origin: string): string | undefined {
-  return nonceCache.get(origin);
-}
-function cacheNonce (origin: string, nonce: string): void {
-  nonceCache.set(origin, nonce);
 }
 
 /**
@@ -101,6 +95,8 @@ export async function clearDPoPKeyPairs (): Promise<void> {
   return dpopStorage.clear();
 }
 
+
+
 /**
  * TODO: Document method
  * 
@@ -111,14 +107,13 @@ export async function generateDPoPProof (params: DPoPProofParams): Promise<strin
   const { keyPair, keyPairId, request, nonce, accessToken } = params;
 
   if (!keyPair && !keyPairId) {
-    throw new Error('TODO - no dpop PK available');
+    throw new DPoPError('No key pair provided');
   }
 
   // keyPairId cannot be falsey if L40 and keyPair (L45) are falsey
   const dpopKeyPair = keyPair ?? await dpopStorage.get(keyPairId!);
   if (!dpopKeyPair) {
-    // TODO: clean up error
-    throw new Error('No DPoP PK available');
+    throw new DPoPError('Unable to retrieve key pair');
   }
 
   const { kty, crv, e, n, x, y } = await crypto.subtle.exportKey('jwk', dpopKeyPair.publicKey);
@@ -134,13 +129,8 @@ export async function generateDPoPProof (params: DPoPProofParams): Promise<strin
     htu: `${url.origin}${url.pathname}`,
     iat: TimeCoordinator.now().value,
     jti: randomBytes(),
-    nonce: getNonce(url.origin),
+    nonce
   };
-
-  // prioritize using the provided nonce
-  if (nonce) {
-    claims.nonce = nonce;
-  }
 
   // encode access token
   if (accessToken) {
@@ -161,5 +151,4 @@ export const DefaultDPoPSigningAuthority: DPoPSigningAuthority = {
   deleteDPoPKeyPair,
   clearDPoPKeyPairs,
   sign: signRequest,
-  cacheNonce
 };
