@@ -179,6 +179,24 @@ describe('FetchClient', () => {
       expect(await response.json()).toEqual({ foo: 'bar' });
     });
 
+    it('will retry *not* on 400', async () => {
+      const { client, mockOrchestrator, fetchSpy } = context;
+      jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(makeTestToken());
+
+      fetchSpy
+        .mockResolvedValueOnce(new Response(null, { status: 400, statusText: 'Bad Request' }))
+        .mockResolvedValueOnce(Response.json({ foo: 'bar' }));
+
+      const response = await client.fetch('http://localhost:8080/foo');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0][0].url).toEqual('http://localhost:8080/foo');
+      expect((await fetchSpy.mock.results[0].value).status).toEqual(400);
+      expect(response).toBeInstanceOf(Response);
+      expect(response.status).toEqual(400);
+      expect(response.statusText).toEqual('Bad Request');
+    });
+
     it('will backoff exponentially on 429 errors', async () => {
       jest.useFakeTimers();
 

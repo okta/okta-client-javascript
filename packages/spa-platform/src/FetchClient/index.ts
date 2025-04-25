@@ -64,13 +64,11 @@ export class FetchClient extends APIClient {
       switch (response.status) {
         case 401:
           await this.prepare401Retry(response, request);
-          break;
+          return this.retry(request);
         case 429:
           await this.prepare429Retry(response, request);
-          break;
+          return this.retry(request);
       }
-
-      return this.retry(request);
     }
 
     return response;
