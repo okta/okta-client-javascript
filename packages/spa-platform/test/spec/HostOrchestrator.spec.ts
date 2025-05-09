@@ -481,17 +481,53 @@ describe('HostOrchestrator', () => {
         expect(broadcastSpy).toHaveBeenCalled();
       });
 
-      it('returns false after timeout', async () => {
+      it('will continuously ping for host, if not immediately available', async () => {
+        jest.useFakeTimers();
+
+        const sub = new HostOrchestrator.SubApp('Test');
+        const broadcastSpy = jest.spyOn((sub as any), 'broadcast');
+
+        const promise = sub.pingHost();
+        await jest.advanceTimersByTimeAsync(100);
+
+        broadcastSpy.mockResolvedValue({ message: 'PONG' });
+
+        await jest.advanceTimersByTimeAsync(100);
+
+        const result = await promise;
+        expect(result).toBe(true);
+        expect(broadcastSpy).toHaveBeenCalledTimes(3);
+
+        jest.useRealTimers();
+      });
+
+      it('returns false if no response is received', async () => {
         jest.useFakeTimers();
 
         const sub = new HostOrchestrator.SubApp('Test');
         const broadcastSpy = jest.spyOn((sub as any), 'broadcast');
   
         const promise = sub.pingHost();
-        await jest.advanceTimersByTimeAsync(1000);
+        await jest.advanceTimersByTimeAsync(500);
         const result = await promise;
         expect(result).toBe(false);
-        expect(broadcastSpy).toHaveBeenCalled();
+        expect(broadcastSpy).toHaveBeenCalledTimes(5);
+
+        broadcastSpy.mockClear();
+
+        const promise2 = sub.pingHost({ attempts: 3 });
+        await jest.advanceTimersByTimeAsync(300);
+        const result2 = await promise2;
+        expect(result2).toBe(false);
+        expect(broadcastSpy).toHaveBeenCalledTimes(3);
+
+        broadcastSpy.mockClear();
+
+        const promise3 = sub.pingHost({ interval: 50 });
+        await jest.advanceTimersByTimeAsync(250);
+        const result3 = await promise3;
+        expect(result3).toBe(false);
+        expect(broadcastSpy).toHaveBeenCalledTimes(5);
   
         jest.useRealTimers();
       });

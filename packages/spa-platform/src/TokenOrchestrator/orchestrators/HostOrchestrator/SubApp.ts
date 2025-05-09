@@ -87,15 +87,26 @@ export class SubAppOrchestrator extends TokenOrchestrator {
     return clientId ? `${clientId}:${key}` : key;
   }
 
-  public async pingHost (timeout: number = 500): Promise<boolean> {
+  protected async ping (timeout: number = 500): Promise<boolean> {
     try {
       await this.broadcast('PING', { subAppId: this.id }, { timeout });
       return true;
     }
     catch (err) {
-      this.emitter.noHostFound();
       return false;
     }
+  }
+
+  public async pingHost ({ interval = 100, attempts = 5 } = {}): Promise<boolean> {
+    for (let i=0; i<attempts; i++) {
+      const ping = await this.ping(interval);
+      if (ping) {
+        return true;
+      }
+    }
+
+    this.emitter.noHostFound();
+    return false;
   }
 
   protected async requestToken (options: TokenOrchestrator.OAuth2Params): Promise<Token | null> {
