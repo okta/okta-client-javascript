@@ -7,7 +7,7 @@ import type {
 import type { IDTokenValidatorContext } from '../jwt/IDTokenValidator';
 import { isJWKS, isOAuth2ErrorResponse, isOpenIdConfiguration } from '../types';
 import { OAuth2Error, JWTError, TokenError } from '../errors';
-import { validateURL, validateArrayNotEmpty, validateString } from '../internals/validators';
+import { validateURL, validateString } from '../internals/validators';
 import {
   JWT,
   JWKS,
@@ -303,10 +303,6 @@ export class OAuth2Client extends APIClient {
       return { error: `Missing token: refreshToken` };
     }
 
-    if (!validateArrayNotEmpty(scopes)) {
-      return { error: '`scopes` array cannot be empty' };
-    }
-
     // TODO: use clientSettings
 
     this.emitter.tokenWillRefresh(token);
@@ -319,7 +315,10 @@ export class OAuth2Client extends APIClient {
       refreshToken: token.refreshToken
     };
 
-    if (scopes && scopes.length > 0) {
+    if (!scopes) {
+      refreshParams.scope = this.configuration.scopes;
+    }
+    else if (scopes.length > 0) {
       refreshParams.scope = scopes.join(' ');
     }
 
@@ -342,8 +341,10 @@ export class OAuth2Client extends APIClient {
     let newToken: Token;
     let refreshedToken: Token;
 
-    // when refresh is used to produce a downscoped token
-    if (!hasSameValues(response.scopes, token.scopes)) {
+    // when refresh is used to produce a downscoped token via:
+    // 1. providing a sub-set of scopes
+    // 2. providing no scopes (empty array)
+    if (!hasSameValues(response.scopes, token.scopes) || scopes?.length === 0) {
       refreshedToken = new Token({
         ...(token.toJSON() as TokenInit),
         id: token.id,
@@ -352,9 +353,12 @@ export class OAuth2Client extends APIClient {
 
       newToken = new Token({
         ...(response.toJSON() as TokenInit),
+        // token endpoint will return the original scopes during an empty downscope refresh
+        scopes: (scopes?.length ?? -1) >= 1 ? response.scopes : undefined,
         refreshToken: undefined
       });
     }
+    // standard token refresh
     else {
       newToken = response.merge(token);
       refreshedToken = newToken;

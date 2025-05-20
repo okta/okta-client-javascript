@@ -134,7 +134,8 @@ const TokenImpl = mCodable(class {
     const request = new Token.RefreshRequest({
       openIdConfiguration,
       clientConfiguration: client.configuration,
-      refreshToken
+      refreshToken,
+      scope: client.configuration.scopes
     });
 
     const response = await client.exchange(request);
@@ -386,17 +387,19 @@ export namespace Token {
   /** @internal */
   export class RefreshRequest extends Token.TokenRequest {
     id?: string;
-    scope: string;
+    scope?: string;
     refreshToken: string;
 
     constructor (params: RefreshRequestParams) {
       const { openIdConfiguration, clientConfiguration } = params;
       super({ openIdConfiguration, clientConfiguration, grantType: 'refresh_token' });
       this.id = params.id;
-      this.scope = params.scope ?? clientConfiguration.scopes;
+      this.scope = params.scope;
       this.refreshToken = params.refreshToken;
 
-      this.body.set('scope', this.scope);
+      if (this.scope) {
+        this.body.set('scope', this.scope);
+      }
       this.body.set('refresh_token', this.refreshToken);
     }
   }

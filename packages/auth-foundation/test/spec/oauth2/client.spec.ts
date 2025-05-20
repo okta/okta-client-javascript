@@ -429,7 +429,7 @@ describe('OAuth2Client', () => {
         expect(response).toEqual({ error: `Missing token: refreshToken` });
       });
 
-      it('should handle token down scoping', async () => {
+      it('should handle downscoping a token', async () => {
         jest.spyOn(client, 'validateToken').mockResolvedValue(undefined);
 
         const downscoped = new Token(mockTokenResponse(null, { scopes: 'openid', refreshToken: 'foobar' }));
@@ -455,6 +455,37 @@ describe('OAuth2Client', () => {
         });
         expect(newToken).not.toEqual(token);
         expect(newToken.scopes).toEqual(['openid']);
+        expect(newToken.refreshToken).not.toEqual(token.refreshToken);
+        expect(newToken.refreshToken).toEqual(undefined);
+      });
+
+      it('should handle downscoping a refresh token without scopes', async () => {
+        jest.spyOn(client, 'validateToken').mockResolvedValue(undefined);
+
+        const downscoped = new Token(mockTokenResponse(null, { refreshToken: 'foobar' }));
+        jest.spyOn(client, 'sendTokenRequest').mockResolvedValue(downscoped);
+
+        const willRefreshSpy = jest.fn();
+        client.emitter.on('token_will_refresh', willRefreshSpy);
+        const didRefreshSpy = jest.fn();
+        client.emitter.on('token_did_refresh', didRefreshSpy);
+
+        // mock scopes: openid email profile offline_access
+        const token = new Token(mockTokenResponse());
+
+        const newToken = await client.refresh(token, []);
+        expect(willRefreshSpy).toHaveBeenCalledWith({ token });
+        expect(didRefreshSpy).toHaveBeenCalledTimes(1);
+        expect(didRefreshSpy).toHaveBeenCalledWith({
+          token: new Token({
+            ...token.toJSON() as TokenInit,
+            id: token.id,
+            refreshToken: 'foobar'
+          })
+        });
+        expect(newToken).not.toEqual(token);
+        expect(newToken.scope).toEqual(undefined);
+        expect(newToken.scopes).toEqual([]);
         expect(newToken.refreshToken).not.toEqual(token.refreshToken);
         expect(newToken.refreshToken).toEqual(undefined);
       });

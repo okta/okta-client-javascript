@@ -87,7 +87,7 @@ export class SubAppOrchestrator extends TokenOrchestrator {
     return clientId ? `${clientId}:${key}` : key;
   }
 
-  protected async ping (timeout: number = 500): Promise<boolean> {
+  protected async ping (timeout: number): Promise<boolean> {
     try {
       await this.broadcast('PING', { subAppId: this.id }, { timeout });
       return true;
