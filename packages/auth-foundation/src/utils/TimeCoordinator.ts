@@ -83,16 +83,26 @@ export class Timestamp {
  */
 // TODO: implement (post beta)
 class TimeCoordinator {
+  #skew = 0;
+  static #tolerance = 0;
 
   // TODO: adjust from http time headers
   // (backend change needed to allow Date header in CORS requests)
-  get clockSkew () {
-    return 0;
+  get clockSkew (): number {
+    return this.#skew;
+  }
+
+  set clockSkew (skew: number) {
+    this.#skew = skew;
   }
 
   // TODO: accept via config option
-  static get clockTolerance () {
-    return 0;
+  static get clockTolerance (): number {
+    return TimeCoordinator.#tolerance;
+  }
+
+  static set clockTolerance (tolerance: number) {
+    TimeCoordinator.#tolerance = tolerance;
   }
 
   now (): Timestamp {
