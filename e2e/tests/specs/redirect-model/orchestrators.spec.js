@@ -62,6 +62,16 @@ describe('Orchestrators', () => {
       await testOrchestrator('/redirect');
     });
 
+    it('redirect and persist query params', async () => {
+      await testOrchestrator('/redirect?foo=1');
+      await expect(browser).toHaveUrlContaining('http://localhost:8080/orchestrator/redirect?foo=1');
+    });
+
+    it('redirect and persist url hash value', async () => {
+      await testOrchestrator('/redirect#foo');
+      await expect(browser).toHaveUrlContaining('http://localhost:8080/orchestrator/redirect#foo');
+    });
+
     it('silent', async () => {
       await testOrchestrator('/silent');
     });

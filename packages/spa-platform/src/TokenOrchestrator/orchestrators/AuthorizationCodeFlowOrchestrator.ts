@@ -1,4 +1,4 @@
-import { Token, hasSameValues } from '@okta/auth-foundation';
+import { Token, hasSameValues, toRelativeUrl } from '@okta/auth-foundation';
 import { AuthorizationCodeFlow } from '@okta/spa-oauth2-flows';
 import { Credential } from '../../Credential';
 import { TokenOrchestrator, TokenOrchestratorError, TokenOrchestratorEventEmitter } from '../TokenOrchestrator';
@@ -9,7 +9,7 @@ const defaultOptions: AuthorizationCodeFlowOrchestrator.Options = {
   avoidPrompting: false,
   emitBeforeRedirect: true,
   getOriginalUri: () => {
-    return new URL(window.location.href).pathname;
+    return toRelativeUrl(window.location.href);
   }
 };
 
