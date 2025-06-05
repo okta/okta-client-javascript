@@ -140,6 +140,91 @@ describe('FetchClient', () => {
     expect(fetchSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('will skip signing request when `authorizeRequest = false`', async () => {
+    const { client, mockOrchestrator, fetchSpy } = context;
+    const getTokenSpy = jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(makeTestToken());
+
+    fetchSpy.mockResolvedValue(Response.json({ foo: 'bar' }));
+
+    const response = await client.fetch('http://localhost:8080/foo', {
+      clientId: 'foo',
+      scopes: ['a', 'b', 'c'],
+      method: 'POST',
+      redirect: 'manual',
+      authorizeRequest: false
+    });
+
+    expect(response).toBeInstanceOf(Response);
+    expect(response.status).toEqual(200);
+    expect(await response.json()).toEqual({ foo: 'bar' });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+
+    const lastFetchReq = fetchSpy.mock?.lastCall?.[0];
+    expect(lastFetchReq).toBeInstanceOf(Request);
+    expect(lastFetchReq.url).toBe('http://localhost:8080/foo');
+    expect(lastFetchReq.method).toBe('POST');
+    expect(lastFetchReq.redirect).toBe('manual');
+
+    expect(getTokenSpy).not.toHaveBeenCalled();
+  });
+
+  it('will use client default fetch options when updated', async () => {
+    const { client, mockOrchestrator, fetchSpy } = context;
+    const getTokenSpy = jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(makeTestToken());
+
+    fetchSpy.mockResolvedValue(Response.json({ foo: 'bar' }));
+
+    FetchClient.defaultOptions.authorizeRequest = () => false;
+    const response1 = await client.fetch('http://localhost:8080/foo', {
+      clientId: 'foo',
+      scopes: ['a', 'b', 'c'],
+      method: 'POST',
+      redirect: 'manual'
+    });
+
+    expect(response1).toBeInstanceOf(Response);
+    expect(response1.status).toEqual(200);
+    expect(await response1.json()).toEqual({ foo: 'bar' });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(getTokenSpy).toHaveBeenCalledTimes(0);
+
+    getTokenSpy.mockClear();
+    fetchSpy.mockClear();
+
+    FetchClient.defaultOptions.authorizeRequest = () => true;
+    const response2 = await client.fetch('http://localhost:8080/foo', {
+      clientId: 'foo',
+      scopes: ['a', 'b', 'c'],
+      method: 'POST',
+      redirect: 'manual'
+    });
+
+    expect(response2).toBeInstanceOf(Response);
+    expect(response2.status).toEqual(200);
+    expect(await response2.json()).toEqual({ foo: 'bar' });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(getTokenSpy).toHaveBeenCalledTimes(1);
+
+    getTokenSpy.mockClear();
+    fetchSpy.mockClear();
+
+    // should use provided value, rather than default
+    FetchClient.defaultOptions.authorizeRequest = () => true;
+    const response3 = await client.fetch('http://localhost:8080/foo', {
+      clientId: 'foo',
+      scopes: ['a', 'b', 'c'],
+      method: 'POST',
+      redirect: 'manual',
+      authorizeRequest: false
+    });
+
+    expect(response3).toBeInstanceOf(Response);
+    expect(response3.status).toEqual(200);
+    expect(await response3.json()).toEqual({ foo: 'bar' });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(getTokenSpy).toHaveBeenCalledTimes(0);     // not called because authorizeRequest=false
+  });
+
   describe('retries', () => {
     it('will retry a limited number of times', async () => {
       const { client, mockOrchestrator, fetchSpy } = context;

@@ -12,6 +12,14 @@ import { TokenOrchestrator } from '../TokenOrchestrator';
  * @module FetchClient
  */
 
+export type FetchOptions = {
+  /**
+   * When `true`, utilizes the provided {@link TokenOrchestrator} to acquire an access token to sign the outgoing request with the proper
+   * `Authorization` and `Dpop` headers, depending on the {@link TokenType} of the acquired {@link Token}. Defaults to `true`
+   */
+  authorizeRequest: boolean | ((request: Request) => boolean);
+};
+
 /**
  * Wrapper around [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) to perform authenticated requests
  * to a resource server
@@ -26,6 +34,13 @@ export class FetchClient extends APIClient {
   ) {
     super(options);
   }
+
+  /**
+   * default options
+   */
+  static defaultOptions: FetchOptions = {
+    authorizeRequest: true
+  };
 
   // Resource servers return a 401 with www-authenticate and dpop-nonce headers
   // https://datatracker.ietf.org/doc/html/rfc9449#section-9
@@ -82,12 +97,20 @@ export class FetchClient extends APIClient {
     await pause(this.getRetryDelay(response, request));
   }
 
-  public async fetch (input: string | URL | Request, init: TokenOrchestrator.OAuth2Params & RequestInit = {}): Promise<Response> {
-    const { issuer, clientId, scopes, ...fetchInit } = init;
+  public async fetch (
+    input: string | URL | Request,
+    init: TokenOrchestrator.OAuth2Params & RequestInit & Partial<FetchOptions> = {}
+  ): Promise<Response> {
+    const { authorizeRequest, issuer, clientId, scopes, ...fetchInit } = { ...FetchClient.defaultOptions, ...init };
     const authParams = { issuer, clientId, scopes };
     const request = input instanceof Request ? input : new Request(input, fetchInit);
-    const dpopNonce = this.getDPoPNonceFromCache(request);
-    await this.orchestrator.authorize(request, { ...authParams, dpopNonce });
+
+    const shouldAuthorize: boolean = typeof authorizeRequest === 'function' ? authorizeRequest(request) : authorizeRequest;
+    if (shouldAuthorize) {
+      const dpopNonce = this.getDPoPNonceFromCache(request);
+      await this.orchestrator.authorize(request, { ...authParams, dpopNonce });
+    }
+
     return super.send(request);
   }
 }
