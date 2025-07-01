@@ -92,7 +92,7 @@ export interface CredentialCoordinator {
 /** @internal */
 export class CredentialCoordinatorImpl implements CredentialCoordinator {
   readonly emitter: EventEmitter<CredentialCoordinatorEvents> = new EventEmitter();
-  protected readonly expiryTimeouts: { [key: string]: NodeJS.Timeout } = {};
+  protected readonly expiryTimeouts: { [key: string]: ReturnType<typeof setTimeout> } = {};
 
   // see `getDefault` / `setDefault`
   // mimic "lazy" loading value: Cred | null are the "real types"

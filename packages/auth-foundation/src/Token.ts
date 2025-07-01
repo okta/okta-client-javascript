@@ -42,12 +42,18 @@ export type TokenResponse = {
 };
 
 /**
- * JSON representation of token
+ * Required and optional values to construct a {@link Token} instance
  * @group Types
  */
 export type TokenInit = Omit<TokenResponse, 'idToken'> & {
   idToken?: string | JWT;
 };
+
+/**
+ * JSON representation of token (only contains primitive types)
+ * @group Types
+ */
+export type TokenPrimitiveInit = TokenResponse;
 
 /**
  * Internal representation of a OAuth2/OIDC Token.
@@ -66,7 +72,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
   public readonly dpopSigningAuthority: DPoPSigningAuthority = DefaultDPoPSigningAuthority;
 
   /** @internal */
-  public static expiryTimeouts: {[key: string]: NodeJS.Timeout} = {};
+  public static expiryTimeouts: {[key: string]: ReturnType<typeof setTimeout>} = {};
 
   public readonly id: string;
   public readonly issuedAt: Date;

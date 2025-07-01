@@ -53,4 +53,8 @@ describe('SecureChannel', () => {
     expect(onMsgSpy).not.toHaveBeenCalled();
     window.removeEventListener('message', listener);
   });
+
+  it('removes window listener when `.onmessage` is set to null', () => {
+    
+  });
 });

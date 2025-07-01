@@ -3,10 +3,16 @@
  * @internal
  */
 
+import type { JsonRecord, BroadcastChannelLike } from '@okta/auth-foundation';
 import { validateURL } from '@okta/auth-foundation/internal';
 
-type SecureChannelMessage = Record<string, any>;
-type SecureChannelMessageHandler = (event: any) => void;
+export type SecureChannelMessage<M = any> = {
+  name: string;
+  source: string;
+  message: M;
+};
+export type SecureChannelMessageHandler<M extends JsonRecord = JsonRecord, R extends JsonRecord = M> = 
+  (event: { data: M }, reply?: (message: R) => any) => any;
 
 /** @internal */
 const UNIQUE_MESSAGE_KEY = '__SecureChannel__';
@@ -27,7 +33,7 @@ export type SecureChannelOptions = {
  * 
  * Supports cross-origin, but not cross-domain communication
  */
-export class SecureChannel {
+export class SecureChannel<M extends JsonRecord = JsonRecord> implements BroadcastChannelLike<M> {
   /**
    * @internal
    * The origin to be broadcasted on
@@ -42,11 +48,17 @@ export class SecureChannel {
 
   /**
    * @internal
-   * Reference to the message handler function, keeps track of the function
-   * so it can be unbound
+   * The provided message handler (will be wrapped before mount to `window.addEventListener`)
    */
-  #onmessage: SecureChannelMessageHandler | null = null;
-  
+  #onmessage: SecureChannelMessageHandler<M> | null = null;
+
+  /**
+   * @internal
+   * Reference to the wrapper (aka bound) window message handler function
+   * keeps track of the function so it can be unbound
+   */
+  #boundHandler: ((event: MessageEvent<SecureChannelMessage<M>>) => void) | null = null;
+
   constructor (name: string, targetOrigin?: string);
   constructor (name: string, options: SecureChannelOptions);
   constructor (public readonly name: string, init: string | SecureChannelOptions = {}) {
@@ -73,7 +85,7 @@ export class SecureChannel {
     }
   }
 
-  private isTrustedMessage (event): boolean {
+  private isTrustedMessage (event: MessageEvent<SecureChannelMessage<M>>): boolean {
     if (event.isTrusted && event.source &&
       this.#allowedOrigins.includes(new URL(event.origin).origin)
     ) {
@@ -83,7 +95,7 @@ export class SecureChannel {
     return false;
   }
 
-  private isValidMessage (message: SecureChannelMessage): boolean {
+  private isValidMessage (message: SecureChannelMessage<M>): boolean {
     if (
       message && typeof message === 'object' &&
       message.source === UNIQUE_MESSAGE_KEY &&
@@ -95,40 +107,61 @@ export class SecureChannel {
     return false;
   }
 
-  get onmessage (): SecureChannelMessageHandler | null {
+  get boundHandler (): ((event: MessageEvent<SecureChannelMessage<M>>) => any) | null {
+    return this.#boundHandler;
+  }
+
+  set boundHandler (handler: ((event: MessageEvent<SecureChannelMessage<M>>) => any) | null) {
+    if (this.#boundHandler) {
+      window.removeEventListener('message', this.#boundHandler);
+    }
+
+    if (handler === null) {
+      this.#boundHandler = null;
+    }
+    else {
+      window.addEventListener('message', handler);
+    }
+  }
+
+  get onmessage (): SecureChannelMessageHandler<M> | null {
     return this.#onmessage;
   }
 
-  set onmessage (handler: (event: SecureChannelMessage, reply?: SecureChannelMessageHandler) => void) {
-    if (this.#onmessage) {
-      window.removeEventListener('message', this.#onmessage);
+  set onmessage (handler: SecureChannelMessageHandler<M> | null) {
+    if (handler === null) {
+      this.#onmessage = null;
+      this.boundHandler = null;
     }
+    else {
+      this.#onmessage = handler;
 
-    const wrappedHandler = (event: MessageEvent) => {
-      if (!this.isTrustedMessage(event) || !this.isValidMessage(event.data)) {
-        return;
-      }
+      const wrappedHandler = (event: MessageEvent<SecureChannelMessage<M>>) => {
+        if (!this.isTrustedMessage(event) || !this.isValidMessage(event.data)) {
+          return;
+        }
+  
+        event.preventDefault();
+        event.stopPropagation();
+  
+        // pass a `reply` function to the handler to ease responding
+        const reply = (response) => {
+          // event.source exists, confirmed in `isTrustedMessage`
+          event.source!.postMessage({
+            name: event.data.message.requestId ?? event.data.message.messageId,
+            source: UNIQUE_MESSAGE_KEY,
+            message: response
+          }, { targetOrigin: event.origin });
+        };
 
-      event.preventDefault();
-      event.stopPropagation();
-
-      // pass a `reply` function to the handler to ease responding
-      const reply = (response) => {
-        // event.source exists, confirmed in `isTrustedMessage`
-        event.source!.postMessage({
-          name: event.data.message.requestId,
-          source: UNIQUE_MESSAGE_KEY,
-          message: response
-        }, { targetOrigin: event.origin });
+        // wraps `message` in `{ data }` to mimic a `BroadcastChannel` event
+        handler({ data: event.data.message }, reply);
       };
-
-      handler({ data: event.data.message }, reply);
-    };
-    window.addEventListener('message', wrappedHandler);
-    this.#onmessage = wrappedHandler;
+      this.boundHandler = wrappedHandler;
+    }
   }
 
-  postMessage (message: SecureChannelMessage) {
+  postMessage (message: M) {
     if (!this.#targetOrigin) {
       return;
     }
