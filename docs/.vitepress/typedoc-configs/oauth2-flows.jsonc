@@ -1,0 +1,20 @@
+{
+  "extends": "./typedoc.jsonc",
+  "entryPoints": [
+    "../../../packages/oauth2-flows/src"
+  ],
+  "entryPointStrategy": "expand",
+  // "entryPoints": [
+  //   "../../../packages/oauth2-flows/src/index.ts"
+  // ],
+  // "router": "member",
+  // "plugin": ["../plugins/mergeNamespace.mjs"],
+
+  "out": "../../api/oauth2-flows",
+  "excludeReferences": true,
+  "sidebar": {
+    "autoConfiguration": false
+  },
+  "useTsLinkResolution": true,
+  "excludeScopesInPaths": true
+}

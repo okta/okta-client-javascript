@@ -1,0 +1,24 @@
+{
+  "name": "@repo/okta-client-js-docs",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "predocs:auth-foundation": "typedoc --options ./.vitepress/typedoc-configs/auth-foundation.jsonc",
+    "predocs:oauth2-flows": "typedoc --options ./.vitepress/typedoc-configs/oauth2-flows.jsonc",
+    "predocs:spa-platform": "typedoc --options ./.vitepress/typedoc-configs/spa-platform.jsonc",
+    "predocs": "yarn predocs:auth-foundation && yarn predocs:oauth2-flows && yarn predocs:spa-platform",
+    "docs:dev": "vitepress dev",
+    "docs:build": "vitepress build",
+    "docs:preview": "vitepress preview"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "*",
+    "typedoc": "^0.28.9",
+    "typedoc-plugin-markdown": "^4.8.0",
+    "typedoc-plugin-mdn-links": "^5.0.7",
+    "typedoc-plugin-no-inherit": "^1.6.1",
+    "typedoc-vitepress-theme": "^1.1.2",
+    "typescript": "^5.9.2",
+    "vitepress": "^1.6.4"
+  }
+}

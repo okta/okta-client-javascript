@@ -1,0 +1,186 @@
+[
+  {
+    "text": "Platform",
+    "link": "/api/spa-platform/Platform/",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Token",
+        "link": "/api/spa-platform/Platform/classes/Token.md",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Metadata",
+            "link": "/api/spa-platform/Platform/namespaces/Token/type-aliases/Metadata.md"
+          },
+          {
+            "text": "Context",
+            "link": "/api/spa-platform/Platform/namespaces/Token/type-aliases/Context.md"
+          }
+        ]
+      },
+      {
+        "text": "OAuth2Client",
+        "link": "/api/spa-platform/Platform/classes/OAuth2Client.md"
+      },
+      {
+        "text": "Credential",
+        "link": "/api/spa-platform/Platform/classes/Credential.md"
+      },
+      {
+        "text": "Utils",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "clearDPoPKeyPairs",
+            "link": "/api/spa-platform/Platform/functions/clearDPoPKeyPairs.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "text": "OAuth2 Flows",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "AuthorizationCodeFlow",
+        "link": "/api/spa-platform/flows/AuthorizationCodeFlow/classes/AuthorizationCodeFlow.md",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "RedirectValues",
+            "link": "/api/spa-platform/flows/AuthorizationCodeFlow/namespaces/AuthorizationCodeFlow/type-aliases/RedirectValues.md"
+          },
+          {
+            "text": "Result",
+            "link": "/api/spa-platform/flows/AuthorizationCodeFlow/namespaces/AuthorizationCodeFlow/type-aliases/Result.md"
+          },
+          {
+            "text": "Context",
+            "link": "/api/spa-platform/flows/AuthorizationCodeFlow/namespaces/AuthorizationCodeFlow/type-aliases/Context.md"
+          },
+          {
+            "text": "PopupResult",
+            "link": "/api/spa-platform/flows/AuthorizationCodeFlow/namespaces/AuthorizationCodeFlow/type-aliases/PopupResult.md"
+          }
+        ]
+      },
+      {
+        "text": "SessionLogoutFlow",
+        "link": "/api/spa-platform/flows/SessionLogoutFlow/classes/SessionLogoutFlow.md"
+      }
+    ]
+  },
+  {
+    "text": "TokenOrchestrators",
+    "link": "/api/spa-platform/TokenOrchestrators/",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "AuthorizationCodeFlowOrchestrator",
+        "link": "/api/spa-platform/TokenOrchestrators/classes/AuthorizationCodeFlowOrchestrator.md",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Options",
+            "link": "/api/spa-platform/TokenOrchestrators/namespaces/AuthorizationCodeFlowOrchestrator/type-aliases/Options.md"
+          },
+          {
+            "text": "Init",
+            "link": "/api/spa-platform/TokenOrchestrators/namespaces/AuthorizationCodeFlowOrchestrator/type-aliases/Init.md"
+          }
+        ]
+      },
+      {
+        "text": "HostOrchestrator",
+        "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Host",
+            "collapsed": true,
+            "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/classes/Host.md",
+            "items": [
+              {
+                "text": "HostOptions",
+                "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/type-aliases/HostOptions.md"
+              }
+            ]
+          },
+          {
+            "text": "SubApp",
+            "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/classes/SubApp.md",
+            "collapsed": true,
+            "items": [
+              {
+                "text": "SubAppOptions",
+                "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/type-aliases/SubAppOptions.md"
+              }
+            ]
+          },
+          {
+            "text": "ProxyHost",
+            "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/classes/ProxyHost.md"
+          },
+          {
+            "text": "Types",
+            "collapsed": true,
+            "items": [
+              {
+                "text": "RequestEventName",
+                "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/type-aliases/RequestEventName.md"
+              },
+              {
+                "text": "RequestEvent",
+                "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/type-aliases/RequestEvent.md"
+              },
+              {
+                "text": "ErrorResponse",
+                "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/type-aliases/ErrorResponse.md"
+              },
+              {
+                "text": "TokenRequest",
+                "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/type-aliases/TokenRequest.md"
+              },
+              {
+                "text": "TokenResponse",
+                "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/type-aliases/TokenResponse.md"
+              },
+              {
+                "text": "AuthorizeRequest",
+                "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/type-aliases/AuthorizeRequest.md"
+              },
+              {
+                "text": "AuthorizeResponse",
+                "link": "/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/type-aliases/AuthorizeResponse.md"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "text": "FetchClient",
+    "link": "/api/spa-platform/FetchClient/classes/FetchClient.md",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "FetchOptions",
+        "link": "/api/spa-platform/FetchClient/type-aliases/FetchOptions.md"
+      }
+    ]
+  },
+  {
+    "text": "Utils",
+    "link": "/api/spa-platform/Utils/",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "isModernBrowser",
+        "link": "/api/spa-platform/Utils/functions/isModernBrowser.md"
+      }
+    ]
+  }
+]

@@ -1,0 +1,21 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    "lib": [
+      "dom"
+    ],
+    "isolatedModules": false
+  },
+  "include": [
+    "../packages/auth-foundation/src/**/*.js",
+    "../packages/auth-foundation/src/**/*.ts",
+    "../packages/oauth2-flows/src/**/*.js",
+    "../packages/oauth2-flows/src/**/*.ts",
+    "../packages/spa-platform/src/**/*.js",
+    "../packages/spa-platform/src/**/*.ts",
+  ],
+  "exclude": [
+    "*/node_modules",
+    "test"
+  ]
+}

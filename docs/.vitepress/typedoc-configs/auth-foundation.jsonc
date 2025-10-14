@@ -1,0 +1,13 @@
+{
+  "extends": "./typedoc.jsonc",
+  "entryPoints": [
+    "../../../packages/auth-foundation/src"
+  ],
+  "entryPointStrategy": "expand",
+  "exclude": "../../../packages/auth-foundation/src/internals/**",
+  "out": "../../api/auth-foundation",
+  "excludeReferences": true,
+  "sidebar": {
+    "autoConfiguration": true
+  }
+}

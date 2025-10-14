@@ -1,0 +1,59 @@
+{
+  "name": "@okta/okta-client-js",
+  "version": "0.5.0",
+  "private": true,
+  "packageManager": "yarn@1.22.19",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "yarn build:sdks",
+    "build:sdks": "turbo run build --filter=./packages/* --log-order=grouped",
+    "lint": "turbo run --continue --log-order=grouped lint",
+    "test:unit": "turbo run test:unit --filter=./packages/* --log-order=grouped",
+    "test:node": "turbo run test:node --filter=./packages/* --filter=!*platform --log-order=grouped"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "turbo": "2.x"
+  },
+  "resolutions": {
+    "**/jsdom": "^26.1.0"
+  },
+  "workspaces": {
+    "packages": [
+      "packages/*",
+      "docs",
+      "docs2",
+      "tooling/*",
+      "e2e/**/*"
+    ],
+    "nohoist": [
+      "@repo/okta-client-js-docs/**",
+      "**/typedoc",
+      "**/expo",
+      "**/expo/**",
+      "**/expo-*",
+      "**/expo-*/**",
+      "**/@expo/**",
+      "**/@expo/**/**",
+      "**/react-native",
+      "**/react-native/**",
+      "**/@react-navigation/**",
+      "react-native-oidc/@okta/*",
+      "react-native-oidc/@okta/**"
+    ]
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=22.13.1",
+      "onFail": "warn"
+    },
+    "packageManager": {
+      "name": "yarn",
+      "version": ">=1.19.0",
+      "onFail": "warn"
+    }
+  }
+}

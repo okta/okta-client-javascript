@@ -1,0 +1,22 @@
+{
+  "$schema": "https://turbo.build/schema.json",
+  "globalEnv": ["NPM_TOKEN"],
+  "globalDependencies": ["**/.env.*local"],
+  "tasks": {
+    "lint": {
+      "cache": false,
+      "dependsOn": ["^lint"]
+    },
+    "build": {
+      "dependsOn": ["^build"]
+    },
+    "test:unit": {
+      "cache": false,
+      "dependsOn": ["^build"]
+    },
+    "test:node": {
+      "cache": false,
+      "dependsOn": ["^build"]
+    }
+  }
+}

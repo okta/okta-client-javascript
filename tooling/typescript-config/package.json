@@ -1,0 +1,10 @@
+{
+  "name": "@repo/typescript-config",
+  "version": "0.0.0",
+  "private": true,
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "@types/webcrypto": "^0.0.28"
+  }
+}

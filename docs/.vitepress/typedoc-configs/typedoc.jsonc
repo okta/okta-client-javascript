@@ -1,0 +1,36 @@
+{
+  "tsconfig": "../../tsconfig.json",
+  "plugin": [
+    "typedoc-plugin-mdn-links",
+    "typedoc-plugin-no-inherit",
+    "typedoc-plugin-markdown",
+    "typedoc-vitepress-theme"
+    // , "../plugins/mergeNamespace.mjs"
+  ],
+  "groupOrder": [
+    "Initializer",
+    "Constructors",
+    "Factory Methods",
+    "Static Accessors",
+    "Static Methods",
+    "Events",
+    "Properties",
+    "Accessors",
+    "Methods",
+    "OAuth2 Methods",
+    "Helper Methods",
+    "*"
+  ],
+  "sort": ["static-first", "source-order"],
+  "excludeInternal": true,
+  "disableSources": true,
+  "useTsLinkResolution": false,
+  "useCodeBlocks": false,
+  "indexFormat": "table",
+  "parametersFormat": "table",
+  "typeAliasPropertiesFormat": "table",
+  "propertyMembersFormat": "table",
+  "sidebar": {
+    "pretty": true
+  }
+}

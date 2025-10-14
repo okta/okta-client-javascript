@@ -1,0 +1,479 @@
+[
+  {
+    "text": "Core",
+    "link": "/api/auth-foundation/Core/",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Crypto",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "randomBytes",
+            "link": "/api/auth-foundation/Core/functions/randomBytes.md"
+          },
+          {
+            "text": "shortID",
+            "link": "/api/auth-foundation/Core/functions/shortID.md"
+          }
+        ]
+      },
+      {
+        "text": "Errors",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "APIClientError",
+            "link": "/api/auth-foundation/Core/classes/APIClientError.md"
+          },
+          {
+            "text": "AuthSdkError",
+            "link": "/api/auth-foundation/Core/classes/AuthSdkError.md"
+          },
+          {
+            "text": "CredentialError",
+            "link": "/api/auth-foundation/Core/classes/CredentialError.md"
+          },
+          {
+            "text": "DPoPError",
+            "link": "/api/auth-foundation/Core/classes/DPoPError.md"
+          },
+          {
+            "text": "JWTError",
+            "link": "/api/auth-foundation/Core/classes/JWTError.md"
+          },
+          {
+            "text": "OAuth2Error",
+            "link": "/api/auth-foundation/Core/classes/OAuth2Error.md"
+          },
+          {
+            "text": "TokenError",
+            "link": "/api/auth-foundation/Core/classes/TokenError.md"
+          },
+          {
+            "text": "TokenOrchestratorError",
+            "link": "/api/auth-foundation/Core/classes/TokenOrchestratorError.md"
+          }
+        ]
+      },
+      {
+        "text": "EventEmitter",
+        "link": "/api/auth-foundation/Core/classes/EventEmitter.md"
+      },
+      {
+        "text": "JWT",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "JWT",
+            "link": "/api/auth-foundation/Core/classes/JWT.md",
+            "collapsed": true,
+            "items": [
+              {
+                "text": "JWTHeader",
+                "link": "/api/auth-foundation/Core/interfaces/JWTHeader.md"
+              },
+              {
+                "text": "JWTValidator",
+                "link": "/api/auth-foundation/Core/type-aliases/JWTValidator.md"
+              }
+            ]
+          },
+          {
+            "text": "JWK",
+            "link": "/api/auth-foundation/Core/interfaces/JWK.md",
+            "collapsed": true,
+            "items": [
+              {
+                "text": "JWKValidator",
+                "link": "/api/auth-foundation/Core/type-aliases/JWKValidator.md"
+              },
+              {
+                "text": "JWKS",
+                "link": "/api/auth-foundation/Core/type-aliases/JWKS.md"
+              },
+              {
+                "text": "Algorithm",
+                "link": "/api/auth-foundation/Core/namespaces/JWK/type-aliases/Algorithm.md"
+              },
+              {
+                "text": "validator",
+                "link": "/api/auth-foundation/Core/namespaces/JWK/variables/validator.md"
+              }
+            ]
+          },
+          {
+            "text": "TokenHashValidator",
+            "link": "/api/auth-foundation/Core/interfaces/TokenHashValidator.md"
+          },
+          {
+            "text": "IDTokenValidator",
+            "link": "/api/auth-foundation/Core/interfaces/IDTokenValidator.md",
+            "collapsed": true,
+            "items": [
+              {
+                "text": "IDTokenValidatorContext",
+                "link": "/api/auth-foundation/Core/interfaces/IDTokenValidatorContext.md"
+              },
+              {
+                "text": "allValidationChecks",
+                "link": "/api/auth-foundation/Core/namespaces/IDTokenValidator/variables/allValidationChecks.md"
+              },
+              {
+                "text": "ValidationCheck",
+                "link": "/api/auth-foundation/Core/namespaces/IDTokenValidator/type-aliases/ValidationCheck.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Timestamp",
+        "link": "/api/auth-foundation/Core/classes/Timestamp.md"
+      },
+      {
+        "text": "Utils",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "buildURL",
+            "link": "/api/auth-foundation/Core/functions/buildURL.md"
+          },
+          {
+            "text": "hasSameValues",
+            "link": "/api/auth-foundation/Core/functions/hasSameValues.md"
+          },
+          {
+            "text": "doesPartialMatch",
+            "link": "/api/auth-foundation/Core/functions/doesPartialMatch.md"
+          },
+          {
+            "text": "getSearchParam",
+            "link": "/api/auth-foundation/Core/functions/getSearchParam.md"
+          },
+          {
+            "text": "mergeURLSearchParameters",
+            "link": "/api/auth-foundation/Core/functions/mergeURLSearchParameters.md"
+          },
+          {
+            "text": "mergeHeaders",
+            "link": "/api/auth-foundation/Core/functions/mergeHeaders.md"
+          },
+          {
+            "text": "pause",
+            "link": "/api/auth-foundation/Core/functions/pause.md"
+          },
+          {
+            "text": "toRelativeUrl",
+            "link": "/api/auth-foundation/Core/functions/toRelativeUrl.md"
+          }
+        ]
+      },
+      {
+        "text": "Types",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "EpochTimestamp",
+            "link": "/api/auth-foundation/Core/type-aliases/EpochTimestamp.md"
+          },
+          {
+            "text": "Seconds",
+            "link": "/api/auth-foundation/Core/type-aliases/Seconds.md"
+          },
+          {
+            "text": "RawRepresentable",
+            "link": "/api/auth-foundation/Core/interfaces/RawRepresentable.md"
+          },
+          {
+            "text": "Expires",
+            "link": "/api/auth-foundation/Core/interfaces/Expires.md"
+          },
+          {
+            "text": "JSONSerializable",
+            "link": "/api/auth-foundation/Core/interfaces/JSONSerializable.md"
+          },
+          {
+            "text": "RequestAuthorizer",
+            "link": "/api/auth-foundation/Core/interfaces/RequestAuthorizer.md"
+          },
+          {
+            "text": "Broadcaster",
+            "link": "/api/auth-foundation/Core/interfaces/Broadcaster.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Credential",
+    "link": "/api/auth-foundation/Credential/classes/Credential"
+  },
+  {
+    "text": "Token",
+    "link": "/api/auth-foundation/Token/classes/Token.md",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "Context",
+        "link": "/api/auth-foundation/Token/namespaces/Token/type-aliases/Context.md"
+      },
+      {
+        "text": "Metadata",
+        "link": "/api/auth-foundation/Token/namespaces/Token/type-aliases/Metadata.md"
+      },
+      {
+        "text": "RevokeType",
+        "link": "/api/auth-foundation/Token/namespaces/Token/type-aliases/RevokeType.md"
+      },
+      {
+        "text": "Kind",
+        "link": "/api/auth-foundation/Token/namespaces/Token/type-aliases/Kind.md"
+      }, 
+      {
+        "text": "IntrospectResponse",
+        "link": "/api/auth-foundation/Token/namespaces/Token/type-aliases/IntrospectResponse.md"
+      },
+      {
+        "text": "TokenResponse",
+        "link": "/api/auth-foundation/Token/type-aliases/TokenResponse.md"
+      },
+      {
+        "text": "TokenInit",
+        "link": "/api/auth-foundation/Token/type-aliases/TokenInit.md"
+      }
+    ]
+  },
+  {
+    "text": "OAuth2",
+    "link": "/api/auth-foundation/OAuth2/",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "OAuth2Client",
+        "link": "/api/auth-foundation/OAuth2/classes/OAuth2Client.md",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Configuration",
+            "link": "/api/auth-foundation/OAuth2/namespaces/OAuth2Client/classes/Configuration.md",
+            "collapsed": true,
+            "items": [
+              {
+                "text": "ConfigurationParams",
+                "link": "/api/auth-foundation/OAuth2/type-aliases/ConfigurationParams.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "text": "OAuth2Request",
+        "link": "/api/auth-foundation/OAuth2/classes/OAuth2Request.md"
+      },
+      {
+        "text": "UserInfo",
+        "link": "/api/auth-foundation/OAuth2/interfaces/UserInfo.md"
+      },
+      {
+        "text": "DPoP",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "DPoPSigningAuthority",
+            "link": "/api/auth-foundation/OAuth2/interfaces/DPoPSigningAuthority.md"
+          },
+          {
+            "text": "DPoPNonceCache",
+            "link": "/api/auth-foundation/OAuth2/interfaces/DPoPNonceCache.md"
+          },
+          {
+            "text": "DPoPStorage",
+            "link": "/api/auth-foundation/OAuth2/interfaces/DPoPStorage.md"
+          },
+          {
+            "text": "DPoPClaims",
+            "link": "/api/auth-foundation/OAuth2/interfaces/DPoPClaims.md"
+          },
+          {
+            "text": "DPoPHeaders",
+            "link": "/api/auth-foundation/OAuth2/interfaces/DPoPHeaders.md"
+          },
+          {
+            "text": "DPoPProofParams",
+            "link": "/api/auth-foundation/OAuth2/interfaces/DPoPProofParams.md"
+          }
+        ]
+      },
+      {
+        "text": "PKCE",
+        "link": "/api/auth-foundation/OAuth2/type-aliases/PKCE.md",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "generate",
+            "link": "/api/auth-foundation/OAuth2/namespaces/PKCE/variables/generate.md"
+          },
+          {
+            "text": "Challenge",
+            "link": "/api/auth-foundation/OAuth2/namespaces/PKCE/type-aliases/Challenge.md"
+          },
+          {
+            "text": "Verifier",
+            "link": "/api/auth-foundation/OAuth2/namespaces/PKCE/type-aliases/Verifier.md"
+          }
+        ]
+      },
+      {
+        "text": "Types",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "OAuth2ErrorResponse",
+            "link": "/api/auth-foundation/OAuth2/interfaces/OAuth2ErrorResponse.md"
+          },
+          {
+            "text": "OAuth2Params",
+            "link": "/api/auth-foundation/OAuth2/type-aliases/OAuth2Params.md"
+          },
+          {
+            "text": "GrantType",
+            "link": "/api/auth-foundation/OAuth2/type-aliases/GrantType.md"
+          },
+          {
+            "text": "TokenType",
+            "link": "/api/auth-foundation/OAuth2/type-aliases/TokenType.md"
+          },
+          {
+            "text": "ClientAuthentication",
+            "link": "/api/auth-foundation/OAuth2/type-aliases/ClientAuthentication.md"
+          },
+          {
+            "text": "AcrValues",
+            "link": "/api/auth-foundation/OAuth2/type-aliases/AcrValues.md"
+          },
+          {
+            "text": "OktaAcrValues",
+            "link": "/api/auth-foundation/OAuth2/type-aliases/OktaAcrValues.md"
+          }
+        ]
+      },
+      {
+        "text": "Type Predicates",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "isOAuth2ErrorResponse",
+            "link": "/api/auth-foundation/OAuth2/functions/isOAuth2ErrorResponse.md"
+          },
+          {
+            "text": "isOpenIdConfiguration",
+            "link": "/api/auth-foundation/OAuth2/functions/isOpenIdConfiguration.md"
+          },
+          {
+            "text": "isJWK",
+            "link": "/api/auth-foundation/OAuth2/functions/isJWK.md"
+          },
+          {
+            "text": "isJWKS",
+            "link": "/api/auth-foundation/OAuth2/functions/isJWKS.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "text": "Networking",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "APIClient",
+        "link": "/api/auth-foundation/Networking/classes/APIClient.md",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Options",
+            "link": "/api/auth-foundation/Networking/namespaces/APIClient/type-aliases/Options.md"
+          },
+          {
+            "text": "Configuration",
+            "link": "/api/auth-foundation/Networking/namespaces/APIClient/classes/Configuration.md",
+            "collapsed": true,
+            "items": [
+              {
+                "text": "ConfigurationParams",
+                "link": "/api/auth-foundation/Networking/namespaces/APIClient/type-aliases/ConfigurationParams.md"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "text": "APIRequest",
+        "link": "/api/auth-foundation/Networking/classes/APIRequest.md",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "APIRequestInit",
+            "link": "/api/auth-foundation/Networking/type-aliases/APIRequestInit.md"
+          }
+        ]
+      },
+      {
+        "text": "WWWAuthenticate",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "WWWAuthenticateError",
+            "link": "/api/auth-foundation/Networking/interfaces/WWWAuthenticateError.md"
+          },
+          {
+            "text": "isWWWAuthenticateError",
+            "link": "/api/auth-foundation/Networking/functions/isWWWAuthenticateError.md"
+          },
+          {
+            "text": "parse",
+            "link": "/api/auth-foundation/Networking/functions/parse.md"
+          },
+          {
+            "text": "getHeader",
+            "link": "/api/auth-foundation/Networking/functions/getHeader.md"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "text": "TokenOrchestrator",
+    "link": "/api/auth-foundation/TokenOrchestrator/classes/TokenOrchestrator.md",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "extractAuthParams",
+        "link": "/api/auth-foundation/TokenOrchestrator/namespaces/TokenOrchestrator/functions/extractAuthParams.md"
+      },
+      {
+        "text": "AuthorizeParams",
+        "link": "/api/auth-foundation/TokenOrchestrator/namespaces/TokenOrchestrator/type-aliases/AuthorizeParams.md"
+      }
+    ]
+  },
+  {
+    "text": "Customizations",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "CredentialCoordinator",
+        "link": "/api/auth-foundation/Credential/interfaces/CredentialCoordinator.md"
+      },
+      {
+        "text": "CredentialDataSource",
+        "link": "/api/auth-foundation/Credential/interfaces/CredentialDataSource.md"
+      },
+      {
+        "text": "TokenStorage",
+        "link": "/api/auth-foundation/Credential/interfaces/TokenStorage.md"
+      }
+    ]
+  }
+]

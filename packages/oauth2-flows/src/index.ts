@@ -1,0 +1,19 @@
+/**
+ * @packageDocumentation
+ * @internal
+ */
+
+import { addEnv } from '@okta/auth-foundation/internal';
+
+// defined in rollup.config.js
+declare const __PKG_NAME__: string;
+declare const __PKG_VERSION__: string;
+
+// adds package info to OKTA UA string
+addEnv(`${__PKG_NAME__}/${__PKG_VERSION__}`);
+
+export * from './types.ts';
+export * from './AuthenticationFlow.ts';
+export * from './AuthorizationCodeFlow/index.ts';
+export * from './SessionLogoutFlow/index.ts';
+export * from './AuthTransaction.ts';

@@ -1,0 +1,20 @@
+{
+  "extends": "./typedoc.jsonc",
+  "entryPoints": [
+    "../../../packages/spa-platform/src"
+  ],
+  "entryPointStrategy": "expand",
+  "out": "../../api/spa-platform",
+  "excludeReferences": true,
+  "externalSymbolLinkMappings": {
+    "@okta/auth-foundation": {
+      "Credential": "/api/auth-foundation/Credential/classes/Credential",
+      "TokenOrchestrator.AuthorizeParams": "/api/auth-foundation/TokenOrchestrator/namespaces/TokenOrchestrator/type-aliases/AuthorizeParams",
+      "*": "/api/auth-foundation"
+    },
+    "AuthFoundation": {
+      "Credential": "/api/auth-foundation/Credential/classes/Credential",
+      "*": "/api/auth-foundation"
+    }
+  }
+}

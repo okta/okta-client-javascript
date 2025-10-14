@@ -1,0 +1,19 @@
+{
+  "extends": "@repo/typescript-config/jest.json",
+  "compilerOptions": {
+    "paths": {
+      "src/*": ["../src/*"],
+    },
+  },
+  "lib": [
+    "dom"
+  ],
+  "include": [
+    "e2e/**/*.ts",
+    "helpers/**/*.ts",
+    "spec/**/*.ts",
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
