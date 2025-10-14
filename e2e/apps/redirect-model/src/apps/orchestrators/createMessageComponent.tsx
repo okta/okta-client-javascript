@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
+import { MyAccountClient } from '@okta/auth-foundation/myaccount';
 import { Credential, type FetchClient } from '@okta/spa-platform';
+import { oauthConfig } from '../../auth';
+
 
 // NOTE: This HOC-like pattern is just to make the test app less complex
 // The recommended way to do this in a real app is instantinating a singleton
@@ -12,7 +15,10 @@ export function createMessageComponent (fetchClient: FetchClient) {
     const response = await fetchClient.fetch('/api/messages');
     return response.json();
   };
-  
+
+  // @ts-ignore
+  const myaccount = new MyAccountClient(oauthConfig.issuer, fetchClient.orchestrator);
+
   return function Messages () {
     const [messages, setMessages] = useState([]);
     const [error, setError] = useState(false);
@@ -36,6 +42,17 @@ export function createMessageComponent (fetchClient: FetchClient) {
     const handleClearCreds = async () => {
       Credential.clear();
     };
+
+    const getProfile = async () => {
+      try {
+        const profile = await myaccount.getProfile();
+        console.log('getProfile response: ', profile);
+      }
+      catch (err) {
+        console.log('getProfile failed');
+        console.log(err);
+      }
+    }
   
     useEffect(() => {
       if (dataFetched) {
@@ -52,6 +69,7 @@ export function createMessageComponent (fetchClient: FetchClient) {
         <div>
           <button onClick={getMessages} data-e2e="refreshMsgsBtn">Refresh Messages</button>
           <button onClick={handleClearCreds} data-e2e="clearCredentials">Clear Credentials</button>
+          <button onClick={getProfile}>Get Profile</button>
         </div>
         { error && (<p>Please login</p>) }
         { !error && messages.length < 1 && (<div data-e2e="msg-loader">Loading...</div>) }
