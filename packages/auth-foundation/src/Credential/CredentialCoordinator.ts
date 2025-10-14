@@ -109,11 +109,11 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
     this.credentialDataSource = new DefaultCredentialDataSource(CredentialConstructor);
   }
 
-  protected get credentialDataSource (): CredentialDataSource {
+  public get credentialDataSource (): CredentialDataSource {
     return this._credentialDataSource;
   }
 
-  protected set credentialDataSource (dataSource: CredentialDataSource) {
+  public set credentialDataSource (dataSource: CredentialDataSource) {
     const events: (keyof CredentialDataSourceEvents)[] = ['credential_added', 'credential_removed'];
     if (this.credentialDataSource) {
       events.forEach(evt => this.credentialDataSource.emitter.off(evt));
@@ -151,7 +151,7 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
     return this._tokenStorage;
   }
 
-  protected set tokenStorage (tokenStorage: TokenStorage) {
+  public set tokenStorage (tokenStorage: TokenStorage) {
     this._tokenStorage = tokenStorage;
     const events: (keyof TokenStorageEvents)[] = ['default_changed', 'token_replaced'];
 
