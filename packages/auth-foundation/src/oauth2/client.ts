@@ -29,6 +29,7 @@ import { UserInfo } from './requests/UserInfo.ts';
 import { PromiseQueue } from '../utils/PromiseQueue.ts';
 import { EventEmitter } from '../utils/EventEmitter.ts';
 import { hasSameValues } from '../utils/index.ts';
+import TimeCoordinator, { Timestamp } from '../utils/TimeCoordinator.ts';
 
 
 // ref: https://developer.okta.com/docs/reference/api/oidc/
@@ -104,6 +105,18 @@ export class OAuth2Client extends APIClient {
   protected async prepareDPoPNonceRetry (request: APIRequest, nonce: string): Promise<void> {
     const { dpopPairId } = request.context;
     await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce });
+  }
+
+  protected async processResponse(response: Response, request: APIRequest): Promise<void> {
+    await super.processResponse(response, request);
+
+    // NOTE: this logic will not work on CORS requests, the Date header needs to be allowlisted via access-control-expose-headers
+    const dateHeader = response.headers.get('date');
+    if (dateHeader) {
+      const serverTime = Timestamp.from(new Date(dateHeader));
+      const skew = Math.round(serverTime.timeSince(Date.now() / 1000));
+      TimeCoordinator.clockSkew = skew;
+    }
   }
 
   /** @internal */
