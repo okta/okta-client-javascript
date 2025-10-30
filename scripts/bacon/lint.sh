@@ -9,6 +9,11 @@ if ! yarn lint; then
   exit ${TEST_FAILURE}
 fi
 
+if ! yarn lint:lockfile; then
+  echo "linter failed! Exiting..."
+  exit ${TEST_FAILURE}
+fi
+
 finish_log_group $?
 
 exit ${SUCCESS}
