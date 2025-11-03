@@ -2,7 +2,7 @@
   "display": "Jest",
   "compilerOptions": {
     "module": "esnext",
-    "target": "es6",
+    "target": "esnext",
     "allowJs": true,
     "checkJs": true,
     "moduleResolution": "bundler",

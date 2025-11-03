@@ -37,7 +37,7 @@ type BroadcastMessage = { eventName: string, id: string, source: string, value: 
  * 
  * @internal
  */
-export class CredentialCoordinatorImpl extends CredentialCoordinatorBase implements CredentialCoordinator {  
+export class CredentialCoordinatorImpl extends CredentialCoordinatorBase implements CredentialCoordinator {
   // shortID assoicated with instance to prevent listening to messages broadcasted by this instance
   private readonly id: string = shortID();
   private readonly channel: BroadcastChannel = new BroadcastChannel('CredentialCoordinatorImpl');
@@ -60,7 +60,7 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
     return super.tokenStorage;
   }
 
-  protected set tokenStorage (tokenStorage: TokenStorage) {
+  public set tokenStorage (tokenStorage: TokenStorage) {
     if (super.tokenStorage) {
       ([
         'token_added',
