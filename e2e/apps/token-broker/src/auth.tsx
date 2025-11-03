@@ -117,7 +117,7 @@ export const signOut = async () => {
       console.log('starting logout flow', idToken);
       const logoutUrl = await signOutFlow.start(idToken);
       await mainCredential.remove();    // will be revoked via logout call, only needs to be removed from storage
-      window.location.assign(logoutUrl);
+      await SessionLogoutFlow.PerformPostRedirect(logoutUrl);
     }
     else {
       // otherwise revoke the default credential
