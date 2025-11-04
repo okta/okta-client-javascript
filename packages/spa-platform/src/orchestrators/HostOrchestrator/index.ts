@@ -161,7 +161,7 @@ export namespace HostOrchestrator {
     'TOKEN': TokenResponse;
     'AUTHORIZE': AuthorizeResponse;
     'PROFILE': ProfileResponse;
-    'PING': ProfileResponse;
+    'PING': PingResponse;
     'ACTIVATED': object;
   }
 

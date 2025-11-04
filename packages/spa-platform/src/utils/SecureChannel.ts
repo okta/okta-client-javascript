@@ -148,7 +148,7 @@ export class SecureChannel<M extends JsonRecord = JsonRecord> implements Broadca
         const reply = (response) => {
           // event.source exists, confirmed in `isTrustedMessage`
           event.source!.postMessage({
-            name: event.data.message.requestId ?? event.data.message.messageId,
+            name: event.data.message.requestId,
             source: UNIQUE_MESSAGE_KEY,
             message: response
           }, { targetOrigin: event.origin });

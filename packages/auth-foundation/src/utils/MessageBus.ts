@@ -19,7 +19,7 @@ export abstract class MessageBus<M extends TypeMap, R extends TypeMap> {
 
   #channel: MessageBus.ListenerChannel<M[keyof M]> | undefined;
   #pending: Map<string, MessageBus.BusRequest<any, any>> = new Map();
-  #heartbeatInt: ReturnType<typeof setTimeout> | null = null;
+  #heartbeatInt: ReturnType<typeof setInterval> | null = null;
   public heartbeatInterval = 1000;
 
   constructor (
@@ -55,14 +55,14 @@ export abstract class MessageBus<M extends TypeMap, R extends TypeMap> {
   }
 
   send<K extends keyof M & keyof R>(message: M[K], options: MessageBus.BusMessageOptions = {}): MessageBus.BusResponse<R[K]> {
-    const messageId = shortID();
+    const requestId = shortID();
     const requestChannel: MessageBus.ListenerChannel<M[keyof M]> = this.createListenerChannel();
-    const responseChannel: MessageBus.HandlerChannel<R[K]> = this.createHandlerChannel(messageId);
+    const responseChannel: MessageBus.HandlerChannel<R[K]> = this.createHandlerChannel(requestId);
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const request = new MessageBus.BusRequest<M[K], R[K]>({
       __v: MessageBus.BusVersion,
-      id: messageId,
+      id: requestId,
       data: message,
       channel: responseChannel
     });
@@ -136,16 +136,16 @@ export abstract class MessageBus<M extends TypeMap, R extends TypeMap> {
   subscribe<K extends keyof M & keyof R>(handler: MessageBus.MessageHandler) {
     this.#channel = this.createListenerChannel();
     this.#channel.onmessage = async (evt, reply) => {
-      const { messageId, data, __v } = evt.data;
+      const { requestId, data, __v } = evt.data;
 
-      if (!messageId || !data) {
+      if (!requestId || !data) {
         return;
       }
 
-      const responseChannel: MessageBus.HandlerChannel<R[K]> = this.createHandlerChannel(messageId);
+      const responseChannel: MessageBus.HandlerChannel<R[K]> = this.createHandlerChannel(requestId);
       const message = new MessageBus.BusRequest<M[K], R[K]>({
         __v: __v ?? '1',    // "version 1" does not set this value, therefore it will be undefined
-        id: messageId,
+        id: requestId,
         data,
         channel: responseChannel,
         reply
@@ -182,7 +182,7 @@ export abstract class MessageBus<M extends TypeMap, R extends TypeMap> {
         // TODO: what do I do with caught errors?
       }
       finally {
-        this.clearMessage(messageId);
+        this.clearMessage(requestId);
         responseChannel.close();
       }
     };
@@ -234,7 +234,7 @@ export namespace MessageBus {
   /**
    * A channel with the purpose of receiving a request from a Requestor
    */
-  export type ListenerChannel<M extends TypeMap> = BroadcastChannelLike<{ data: M, messageId: string; __v: BusVersions }>;
+  export type ListenerChannel<M extends TypeMap> = BroadcastChannelLike<{ data: M, requestId: string; __v: BusVersions }>;
 
   /**
    * A channel created to communicate the results of a pending request (will be isolated to specific Subscriber and Requestor)
@@ -280,7 +280,7 @@ export namespace MessageBus {
     }
 
     send () {
-      return { messageId: this.id, data: this.data };
+      return { requestId: this.id, data: this.data };
     }
 
     reply (data: S, status: MessageBus.BusRequestStatus): void;
