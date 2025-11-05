@@ -61,12 +61,12 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
 
   activate () {
     this.#bus = new OrchestrationBus(this.name, { allowedOrigins: this.#allowedOrigins });
-    this.#bus.subscribe(async (message) => {
+    this.#bus.subscribe(async (event, reply) => {
       // TODO:
       // return new Promise(resolve => {});   - for testing, will remove before merge
       try {
-        const reply = (msg) => message.reply(msg);
-        await this.parseRequest(message.data, reply);
+        // const reply = (msg) => message.reply(msg);
+        await this.parseRequest(event, reply);
       }
       catch (err) {
         console.log('parseRequest error', err);

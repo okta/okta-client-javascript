@@ -63,7 +63,7 @@ export abstract class MessageBus<M extends TypeMap, R extends TypeMap> {
     const request = new MessageBus.BusRequest<M[K], R[K]>({
       __v: MessageBus.BusVersion,
       id: requestId,
-      data: message,
+      message: message,
       channel: responseChannel
     });
     this.#pending.set(request.id, request);
@@ -133,20 +133,20 @@ export abstract class MessageBus<M extends TypeMap, R extends TypeMap> {
     return { result, cancel };
   }
 
-  subscribe<K extends keyof M & keyof R>(handler: MessageBus.MessageHandler) {
+  subscribe<K extends keyof M & keyof R>(handler: MessageBus.MessageHandler<M, R>) {
     this.#channel = this.createListenerChannel();
     this.#channel.onmessage = async (evt, reply) => {
-      const { requestId, data, __v } = evt.data;
+      const { requestId, __v, ...rest } = evt.data;
 
-      if (!requestId || !data) {
+      if (!requestId) {
         return;
       }
 
       const responseChannel: MessageBus.HandlerChannel<R[K]> = this.createHandlerChannel(requestId);
-      const message = new MessageBus.BusRequest<M[K], R[K]>({
+      const message = new MessageBus.BusRequest<any, any>({
         __v: __v ?? '1',    // "version 1" does not set this value, therefore it will be undefined
         id: requestId,
-        data,
+        message: rest,
         channel: responseChannel,
         reply
       });
@@ -172,7 +172,7 @@ export abstract class MessageBus<M extends TypeMap, R extends TypeMap> {
 
       try {
         message.reply('PENDING');
-        await handler(message, { signal: message.signal });
+        await handler(evt.data, message.reply.bind(message), { signal: message.signal });
       }
       catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') {
@@ -234,7 +234,7 @@ export namespace MessageBus {
   /**
    * A channel with the purpose of receiving a request from a Requestor
    */
-  export type ListenerChannel<M extends TypeMap> = BroadcastChannelLike<{ data: M, requestId: string; __v: BusVersions }>;
+  export type ListenerChannel<M extends TypeMap> = BroadcastChannelLike<M & { requestId: string; __v: BusVersions }>;
 
   /**
    * A channel created to communicate the results of a pending request (will be isolated to specific Subscriber and Requestor)
@@ -252,7 +252,7 @@ export namespace MessageBus {
   export type BusRequestInit<Q extends TypeMap, S extends TypeMap> = {
     __v: BusVersions;
     id: string;
-    data: Q;
+    message: Q;
     channel: HandlerChannel<S>;
     reply?: (response: any) => void;
   };
@@ -266,21 +266,21 @@ export namespace MessageBus {
   export class BusRequest<Q extends TypeMap, S extends TypeMap> {
     public __v: BusRequestInit<Q, S>['__v'];
     public id: BusRequestInit<Q, S>['id'];
-    public data: BusRequestInit<Q, S>['data'];
+    public message: BusRequestInit<Q, S>['message'];
     public channel: BusRequestInit<Q, S>['channel'];
     private replyFn: BusRequestInit<Q, S>['reply'];
     public controller: AbortController = new AbortController();
 
-    constructor ({ id, data, channel, __v, reply }: BusRequestInit<Q, S>) {
+    constructor ({ id, message, channel, __v, reply }: BusRequestInit<Q, S>) {
       this.id = id;
-      this.data = data;
+      this.message = message;
       this.channel = channel;
       this.__v = __v;
       this.replyFn = reply;
     }
 
     send () {
-      return { requestId: this.id, data: this.data };
+      return { requestId: this.id, __v: this.__v, ...this.message };
     }
 
     reply (data: S, status: MessageBus.BusRequestStatus): void;
@@ -333,6 +333,10 @@ export namespace MessageBus {
   /**
    * @internal
    */
-  export type MessageHandler = (message: BusRequest<any, any>, options?: { signal: AbortSignal }) => any;
+  export type MessageHandler<M extends TypeMap, R extends TypeMap> = (
+    message: M[keyof M],
+    reply: (response: R[keyof R]) => any,
+    options?: { signal: AbortSignal }
+  ) => any;
 
 }
