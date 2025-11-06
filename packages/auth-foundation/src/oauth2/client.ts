@@ -6,8 +6,7 @@
 import type {
   OpenIdConfiguration,
   OAuth2ErrorResponse,
-  JsonRecord,
-  AcrValues
+  JsonRecord
 } from '../types/index.ts';
 import type { IDTokenValidatorContext } from '../jwt/IDTokenValidator.ts';
 import { isJWKS, isOAuth2ErrorResponse, isOpenIdConfiguration } from '../types/index.ts';
@@ -167,7 +166,7 @@ export class OAuth2Client extends APIClient {
   ): Promise<Token | OAuth2ErrorResponse> {
     const request = tokenRequest.prepare();
 
-    const acrValues = tokenRequest.acrValues;
+    const { acrValues, maxAge } = tokenRequest;
     const { keyPairId: dpopPairId } = requestContext;
     if (this.configuration.dpop) {
       // dpop nonce may not be available for this request (undefined), this is expected
@@ -186,7 +185,8 @@ export class OAuth2Client extends APIClient {
       issuer: tokenRequest.openIdConfiguration.issuer,
       clientId: this.configuration.clientId,
       scopes: this.configuration.scopes.split(' '),
-      ...(acrValues && { acrValues })
+      ...(acrValues && { acrValues }),
+      ...(maxAge && { maxAge }),
     };
 
     if (this.configuration.dpop && dpopPairId) {
@@ -538,7 +538,6 @@ export namespace OAuth2Client {
   /** @internal */
   export type TokenRequestContext = {
     keyPairId?: string;
-    acrValues?: AcrValues;
   };
 
   /** @internal */

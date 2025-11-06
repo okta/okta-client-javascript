@@ -349,7 +349,6 @@ export namespace AuthorizationCodeFlow {
     code: string;
     redirectUri: string;
     verifier: string;
-    maxAge?: number;
     nonce?: string;
   }
 
@@ -358,16 +357,14 @@ export namespace AuthorizationCodeFlow {
     code: string;
     redirectUri: string;
     verifier: string;
-    maxAge?: number;
     nonce?: string;
 
     constructor (params: AuthorizationCodeFlow.TokenRequestParams) {
-      const { openIdConfiguration, clientConfiguration, acrValues } = params;
-      super({ openIdConfiguration, clientConfiguration, acrValues, grantType: 'authorization_code' });
+      const { openIdConfiguration, clientConfiguration, acrValues, maxAge } = params;
+      super({ openIdConfiguration, clientConfiguration, acrValues, maxAge, grantType: 'authorization_code' });
       this.code = params.code;
       this.redirectUri = params.redirectUri;
       this.verifier = params.verifier;
-      this.maxAge = params.maxAge;
       this.nonce = params.nonce;
 
       this.body.set('redirect_uri', this.redirectUri);

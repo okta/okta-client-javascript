@@ -7,6 +7,7 @@ import {
   type Seconds,
   type JSONSerializable,
   type AcrValues,
+  type TimeInterval,
   isOAuth2ErrorResponse,
   JsonPrimitive,
   JsonRecord,
@@ -343,6 +344,7 @@ export namespace Token {
     scopes: string[];
     dpopPairId?: string;
     acrValues?: AcrValues;
+    maxAge?: TimeInterval;
   };
 
   // https://stackoverflow.com/a/54308812
@@ -353,6 +355,7 @@ export namespace Token {
     scopes: undefined,
     dpopPairId: undefined,
     acrValues: undefined,
+    maxAge: undefined,
   } satisfies Record<(keyof Context), undefined>) as (keyof Context)[];
 
   /**
@@ -399,18 +402,21 @@ export namespace Token {
   export interface TokenRequestParams extends OAuth2Request.RequestParams {
     grantType: GrantType;
     acrValues?: AcrValues;
+    maxAge?: TimeInterval;
   }
 
   /** @internal */
   export class TokenRequest extends OAuth2Request {
     grantType: GrantType;
     acrValues?: AcrValues;
+    maxAge?: TimeInterval;
 
     constructor (params: TokenRequestParams) {
       const { openIdConfiguration, clientConfiguration } = params;
       super({ openIdConfiguration, clientConfiguration });
       this.grantType = params.grantType;
       this.acrValues = params.acrValues;
+      this.maxAge = params.maxAge;
 
       this.headers.set('accept', 'application/json');
       this.headers.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
