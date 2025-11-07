@@ -12,13 +12,13 @@
  * already defined properties (aka doesn't set the value of a key to `undefined`)
  * 
  */
-// NOTE: defining this method with a generic is very difficult in TS and not "worth"
-// much more than casting the result anyway. Either way the caller needs to provide a type
-export function ignoreUndefineds (target: Record<string | number, unknown>): typeof target {
-  const result = {};
+export function ignoreUndefineds<
+  T extends Record<string | number, unknown> = Record<string | number, unknown>
+>(target: T): T {
+  const result = { ...target };
   for (const key in target) {
-    if (target[key] !== undefined) {
-      result[key] = target[key];
+    if (target[key] === undefined) {
+      delete result[key];
     }
   }
 

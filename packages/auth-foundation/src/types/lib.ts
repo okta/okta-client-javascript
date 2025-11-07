@@ -22,6 +22,7 @@ export type JsonPrimitive = string | number | boolean | null;
 export type JsonRecord = { [key in string]?: Json | JsonPrimitive };
 export type JsonArray = (Json | JsonPrimitive)[];
 export type Json = JsonRecord | JsonArray;
+export type SubSet<T extends Record<string, any>, K extends keyof T, R extends T[K]> = Omit<T, K> & { [P in K]: R }
 
 /**
  * A duration of time, in seconds
@@ -71,5 +72,15 @@ export interface RequestAuthorizer {
  * An entity which opens a communication channel (and therefore will need to close the channel)
  */
 export interface Broadcaster {
+  close (): void;
+}
+
+/**
+ * A communication channel which follows a similar API pattern to {@link !BroadcastChannel}
+ */
+export interface BroadcastChannelLike<M extends JsonRecord, E = object> {
+  name: string;
+  onmessage: ((message: { data: M & E }, reply?: (data: M) => any) => any) | null;
+  postMessage (message: M): void;
   close (): void;
 }

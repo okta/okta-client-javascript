@@ -26,7 +26,7 @@ function bindOktaPostMessageListener ({
 }: PostMessageListenerOptions): Promise<AuthorizationCodeFlow.RedirectValues | OAuth2ErrorResponse>
 {
   let handler: (evt: MessageEvent<any>) => void;
-  let timeoutId: NodeJS.Timeout;
+  let timeoutId: ReturnType<typeof setTimeout>;
   return (new Promise<AuthorizationCodeFlow.RedirectValues | OAuth2ErrorResponse>((resolve, reject) => {
     handler = function (e) {
       if (e.origin !== expectedOrigin) {
@@ -45,6 +45,7 @@ function bindOktaPostMessageListener ({
     window.addEventListener('message', handler);
 
     timeoutId = setTimeout(() => {
+      // TODO: timeout
       reject(new AuthenticationFlowError('Authentication flow timed out'));
     }, timeout);
   }))
@@ -200,7 +201,7 @@ export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
    */
   static async PerformInPopup (flow: AuthorizationCodeFlow, popupWindow?: Window): Promise<AuthorizationCodeFlow.PopupResult> {
     let popup: Window | null = null;
-    let interval: NodeJS.Timeout | undefined;
+    let interval: ReturnType<typeof setTimeout> | undefined;
 
     const pollForPopupClosure = (): Promise<{ completed: false, reason: 'closed' }> => {
       return new Promise((resolve) => {
