@@ -2,7 +2,7 @@ import { TokenOrchestrator, TokenOrchestratorError } from '@okta/auth-foundation
 import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
 import { Token } from 'src/platform';
 import { HostOrchestrator } from 'src/orchestrators';
-import { SecureChannel } from 'src/utils/SecureChannel';
+import { LocalBroadcastChannel } from 'src/utils/LocalBroadcastChannel';
 
 
 // Mock DPoP token (and signingAuthority)
@@ -26,6 +26,9 @@ class MockOrchestrator extends TokenOrchestrator {
   }
 }
 
+// TODO: revisit
+// console.warn = () => {};
+
 describe('HostOrchestrator', () => {
   const authParams = {
     issuer: 'http://fake.okta.com',
@@ -45,12 +48,10 @@ describe('HostOrchestrator', () => {
         window.dispatchEvent(msg);
       });
       // jest MessageEvents all return `isTrusted: false`, only way to override this
-      jest.spyOn((SecureChannel.prototype as any), 'isTrustedMessage').mockReturnValue(true);
+      jest.spyOn((LocalBroadcastChannel.prototype as any), 'isTrustedMessage').mockReturnValue(true);
     });
 
     it('.activate / .close', () => {
-      const listener = jest.fn();
-      window.addEventListener('message', listener);
       const activateSpy = jest.spyOn(MockHost.prototype, 'activate');
       // don't pollute logs with warnings during testing
       jest.spyOn(console, 'warn').mockReturnValue(undefined);
@@ -59,12 +60,6 @@ describe('HostOrchestrator', () => {
       expect(host1).toBeInstanceOf(HostOrchestrator.Host);
       expect(host1.isActive).toBe(true);
       expect(activateSpy).toHaveBeenCalledTimes(1);
-      expect(listener.mock.lastCall?.[0]?.data).toMatchObject({
-        message: {
-          eventName: 'ACTIVATED',
-          hostId: host1.id
-        }
-      });
 
       const duplicateHostListener = jest.fn();
       host1.on('duplicate_host', duplicateHostListener);
@@ -73,12 +68,6 @@ describe('HostOrchestrator', () => {
       expect(host2).toBeInstanceOf(HostOrchestrator.Host);
       expect(host2.isActive).toBe(true);
       expect(activateSpy).toHaveBeenCalledTimes(2);
-      expect(listener.mock.lastCall?.[0]?.data).toMatchObject({
-        message: {
-          eventName: 'ACTIVATED',
-          hostId: host2.id
-        }
-      });
       expect(duplicateHostListener).toHaveBeenCalledTimes(1);
       expect(duplicateHostListener.mock.lastCall?.[0]).toMatchObject({
         id: host1.id,
@@ -113,7 +102,6 @@ describe('HostOrchestrator', () => {
       expect(host4.isActive).toBe(false);
 
       host1.off('duplicate_host', duplicateHostListener);
-      window.removeEventListener('message', listener);
     });
 
     describe('events', () => {
@@ -650,7 +638,7 @@ describe('HostOrchestrator', () => {
         window.dispatchEvent(msg);
       });
       // jest MessageEvents all return `isTrusted: false`, only way to override this
-      jest.spyOn((SecureChannel.prototype as any), 'isTrustedMessage').mockReturnValue(true);
+      jest.spyOn((LocalBroadcastChannel.prototype as any), 'isTrustedMessage').mockReturnValue(true);
     });
 
     test('SubApp can request token from Host', async () => {

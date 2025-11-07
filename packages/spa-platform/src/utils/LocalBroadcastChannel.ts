@@ -6,20 +6,23 @@
 import type { JsonRecord, BroadcastChannelLike } from '@okta/auth-foundation';
 import { validateURL } from '@okta/auth-foundation/internal';
 
-export type SecureChannelMessage<M = any> = {
+export type LocalBroadcastChannelMessage<M = any> = {
   name: string;
   source: string;
   message: M;
 };
-export type SecureChannelMessageHandler<M extends JsonRecord = JsonRecord, R extends JsonRecord = M> = 
+export type LocalBroadcastChannelMessageHandler<M extends JsonRecord = JsonRecord, R extends JsonRecord = M> =
   (event: { data: M }, reply?: (message: R) => any) => any;
 
-/** @internal */
+/**
+ * @internal
+ * Historical reasons for this string value, best not to change it
+ */
 const UNIQUE_MESSAGE_KEY = '__SecureChannel__';
 
 const origin = new URL(location.href).origin;
 
-export type SecureChannelOptions = {
+export type LocalBroadcastChannelOptions = {
   targetOrigin?: string;
   allowedOrigins?: string[]
 };
@@ -33,7 +36,7 @@ export type SecureChannelOptions = {
  * 
  * Supports cross-origin, but not cross-domain communication
  */
-export class SecureChannel<M extends JsonRecord = JsonRecord> implements BroadcastChannelLike<M> {
+export class LocalBroadcastChannel<M extends JsonRecord = JsonRecord> implements BroadcastChannelLike<M> {
   /**
    * @internal
    * The origin to be broadcasted on
@@ -50,19 +53,19 @@ export class SecureChannel<M extends JsonRecord = JsonRecord> implements Broadca
    * @internal
    * The provided message handler (will be wrapped before mount to `window.addEventListener`)
    */
-  #onmessage: SecureChannelMessageHandler<M> | null = null;
+  #onmessage: LocalBroadcastChannelMessageHandler<M> | null = null;
 
   /**
    * @internal
    * Reference to the wrapper (aka bound) window message handler function
    * keeps track of the function so it can be unbound
    */
-  #boundHandler: ((event: MessageEvent<SecureChannelMessage<M>>) => void) | null = null;
+  #boundHandler: ((event: MessageEvent<LocalBroadcastChannelMessage<M>>) => void) | null = null;
 
   constructor (name: string, targetOrigin?: string);
-  constructor (name: string, options: SecureChannelOptions);
-  constructor (public readonly name: string, init: string | SecureChannelOptions = {}) {
-    const options: SecureChannelOptions = {};
+  constructor (name: string, options: LocalBroadcastChannelOptions);
+  constructor (public readonly name: string, init: string | LocalBroadcastChannelOptions = {}) {
+    const options: LocalBroadcastChannelOptions = {};
     if (typeof init === 'string') {
       options.targetOrigin = init;
     }
@@ -80,12 +83,10 @@ export class SecureChannel<M extends JsonRecord = JsonRecord> implements Broadca
   }
 
   close () {
-    if (this.#onmessage) {
-      window.removeEventListener('message', this.#onmessage);
-    }
+    this.onmessage = null;
   }
 
-  private isTrustedMessage (event: MessageEvent<SecureChannelMessage<M>>): boolean {
+  private isTrustedMessage (event: MessageEvent<LocalBroadcastChannelMessage<M>>): boolean {
     if (event.isTrusted && event.source &&
       this.#allowedOrigins.includes(new URL(event.origin).origin)
     ) {
@@ -95,7 +96,7 @@ export class SecureChannel<M extends JsonRecord = JsonRecord> implements Broadca
     return false;
   }
 
-  private isValidMessage (message: SecureChannelMessage<M>): boolean {
+  private isValidMessage (message: LocalBroadcastChannelMessage<M>): boolean {
     if (
       message && typeof message === 'object' &&
       message.source === UNIQUE_MESSAGE_KEY &&
@@ -107,11 +108,11 @@ export class SecureChannel<M extends JsonRecord = JsonRecord> implements Broadca
     return false;
   }
 
-  get boundHandler (): ((event: MessageEvent<SecureChannelMessage<M>>) => any) | null {
+  get boundHandler (): ((event: MessageEvent<LocalBroadcastChannelMessage<M>>) => any) | null {
     return this.#boundHandler;
   }
 
-  set boundHandler (handler: ((event: MessageEvent<SecureChannelMessage<M>>) => any) | null) {
+  set boundHandler (handler: ((event: MessageEvent<LocalBroadcastChannelMessage<M>>) => any) | null) {
     if (this.#boundHandler) {
       window.removeEventListener('message', this.#boundHandler);
     }
@@ -120,15 +121,16 @@ export class SecureChannel<M extends JsonRecord = JsonRecord> implements Broadca
       this.#boundHandler = null;
     }
     else {
-      window.addEventListener('message', handler);
+      this.#boundHandler = handler;
+      window.addEventListener('message', this.#boundHandler);
     }
   }
 
-  get onmessage (): SecureChannelMessageHandler<M> | null {
+  get onmessage (): LocalBroadcastChannelMessageHandler<M> | null {
     return this.#onmessage;
   }
 
-  set onmessage (handler: SecureChannelMessageHandler<M> | null) {
+  set onmessage (handler: LocalBroadcastChannelMessageHandler<M> | null) {
     if (handler === null) {
       this.#onmessage = null;
       this.boundHandler = null;
@@ -136,7 +138,7 @@ export class SecureChannel<M extends JsonRecord = JsonRecord> implements Broadca
     else {
       this.#onmessage = handler;
 
-      const wrappedHandler = (event: MessageEvent<SecureChannelMessage<M>>) => {
+      const wrappedHandler = (event: MessageEvent<LocalBroadcastChannelMessage<M>>) => {
         if (!this.isTrustedMessage(event) || !this.isValidMessage(event.data)) {
           return;
         }

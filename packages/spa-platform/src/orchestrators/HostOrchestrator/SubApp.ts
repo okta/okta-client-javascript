@@ -9,7 +9,7 @@ import {
 } from '@okta/auth-foundation';
 import { validateString } from '@okta/auth-foundation/internal';
 import { Token } from '../../platform/index.ts';
-import { OrchestrationBus } from './OrchestrationBus.ts';
+import { OrchestrationBridge } from './OrchestrationBridge.ts';
 
 
 export type SubAppBroadcastOptions = {
@@ -51,7 +51,7 @@ export class SubAppOrchestrator extends TokenOrchestrator {
     data: HO.RequestEvent[K]['data'],
     options: SubAppBroadcastOptions = { timeout: this.defaultTimeout }
   ): Promise<HO.ResponseEvent[K]> {
-    const bus = new OrchestrationBus(this.name, { targetOrigin: this.#targetOrigin });
+    const bus = new OrchestrationBridge(this.name, { targetOrigin: this.#targetOrigin });
     const { result } = bus.send({
       eventName,
       data,

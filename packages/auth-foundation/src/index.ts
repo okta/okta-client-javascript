@@ -11,7 +11,7 @@ export * from './errors/index.ts';
 export * from './utils/index.ts';
 export * from './utils/EventEmitter.ts';
 export * from './utils/TimeCoordinator.ts';
-export * from './utils/MessageBus.ts';
+export * from './utils/TaskBridge.ts';
 
 // crypto / jwt
 export { randomBytes, shortID } from './crypto/index.ts';

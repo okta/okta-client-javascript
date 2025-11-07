@@ -3,12 +3,11 @@ import {
   shortID,
   type TokenPrimitiveInit,
   EventEmitter,
-  Emitter,
+  type Emitter,
   TokenOrchestrator
 } from '@okta/auth-foundation';
 import { Token } from '../../platform/index.ts';
-import { SecureChannel } from '../../utils/SecureChannel.ts';
-import { OrchestrationBus } from './OrchestrationBus.ts';
+import { OrchestrationBridge } from './OrchestrationBridge.ts';
 
 
 function isErrorResponse (input: unknown): input is HO.ErrorResponse {
@@ -27,8 +26,7 @@ function isErrorResponse (input: unknown): input is HO.ErrorResponse {
 export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
   protected readonly emitter: EventEmitter<HO.HostEvents> = new EventEmitter();
   id: string = shortID();
-  #channel: SecureChannel | null = null;
-  #bus: OrchestrationBus | null = null;
+  #bridge: OrchestrationBridge | null = null;
   #allowedOrigins: string[] = [ new URL(location.href).origin ];
 
   constructor (protected readonly name: string, options: HO.HostOptions = {}) {
@@ -52,7 +50,7 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
   }
 
   get isActive () {
-    return this.#channel !== null;
+    return this.#bridge !== null;
   }
 
   protected shouldActive (): boolean {
@@ -60,8 +58,8 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
   }
 
   activate () {
-    this.#bus = new OrchestrationBus(this.name, { allowedOrigins: this.#allowedOrigins });
-    this.#bus.subscribe(async (event, reply) => {
+    this.#bridge = new OrchestrationBridge(this.name, { allowedOrigins: this.#allowedOrigins });
+    this.#bridge.subscribe(async (event, reply) => {
       // TODO:
       // return new Promise(resolve => {});   - for testing, will remove before merge
       try {
@@ -73,7 +71,7 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
         // TODO: probably should throw here?
       }
     });
-    this.#bus.send({
+    this.#bridge.send({
       eventName: 'ACTIVATED',
       hostId: this.id,
       data: undefined
@@ -81,8 +79,8 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
   }
 
   close () {
-    this.#channel?.close();
-    this.#channel = null;
+    this.#bridge?.close();
+    this.#bridge = null;
   }
 
   protected async parseRequest<K extends keyof HO.RequestEvent>(request: HO.RequestEvent[K], replyFn) {
