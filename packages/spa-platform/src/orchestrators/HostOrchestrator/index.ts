@@ -6,8 +6,8 @@
 import {
   type TokenOrchestrator,
   type AcrValues,
-  type TokenInit,
   type JsonRecord,
+  type TokenPrimitiveInit,
   Token
 } from '@okta/auth-foundation';
 import { HostOrchestrator as HostApp } from './Host.ts';
@@ -68,8 +68,8 @@ export namespace HostOrchestrator {
   export type HostEvents = {
     'duplicate_host': { id: string, duplicateId: string };
     'login_prompt_required': Record<string, any>;
-    'request_received': { request: RequestEvent };
-    'request_fulfilled': { request: RequestEvent, response: Response };
+    'request_received': { request: RequestEvent[keyof RequestEvent] };
+    'request_fulfilled': { request: RequestEvent[keyof RequestEvent], response: ResponseEvent[keyof ResponseEvent] };
   };
 
   /**
@@ -89,9 +89,7 @@ export namespace HostOrchestrator {
   /**
    * @group Types
    */
-  export type RequestEventPayloads = {
-    'ACTIVATED': undefined;
-    'PING': undefined;
+  export type TokenRequestEventPayloads = {
     'TOKEN': TokenRequest;
     'AUTHORIZE': AuthorizeRequest;
     'PROFILE': TokenRequest;
@@ -99,16 +97,73 @@ export namespace HostOrchestrator {
 
   /**
    * @group Types
+   * Payload for "host_activated" events. 
+   * Sent once a {@link HostOrchestrator.Host} instantiates. Used to detect multiple hosts
    */
-  export type RequestEvent = {
-    [K in keyof RequestEventPayloads]: { eventName: K; data: RequestEventPayloads[K] } &
-    {
+  export type ActivatedEvent = {
+    eventName: 'ACTIVATED';
+    hostId: string;
+    data: undefined;
+  };
+
+  /**
+   * @group Types
+   */
+  export type PingEvent = {
+    eventName: 'PING';
+    data: undefined;
+  };
+
+  /**
+   * @group Types
+   * Lose typing of the request event object structure. Provides slightly more type-safety than
+   * using `any` or `unknown` like most generic messaging APIs
+   */
+  export type RequestEvent = ({
+    [K in keyof TokenRequestEventPayloads]: { 
+      eventName: K;
+      data: TokenRequestEventPayloads[K];
       requestId: string;
       subAppId: string;
     }
-  }[keyof RequestEventPayloads];
+  }
+  & {
+    ACTIVATED: ActivatedEvent;
+    PING: PingEvent;
+  }
+);
 
-  export type Response = ErrorResponse | PingResponse | TokenResponse | AuthorizeResponse | ProfileResponse;
+  /**
+   * @group Types
+   */
+  export type TokenRequest = {
+    issuer?: string;
+    clientId?: string;
+    scopes?: string[];
+    acrValues?: AcrValues,
+    maxAge?: number
+  };
+
+  /**
+   * @group Types
+   */
+  export type AuthorizeRequest = TokenRequest & {
+    url?: string;
+    method?: string;
+    nonce?: string;
+  };
+
+  /**
+   * @group Types
+   * Map of responses from a HostOrchestrator request event
+   */
+  export type ResponseEvent = {
+    'TOKEN': TokenResponse;
+    'AUTHORIZE': AuthorizeResponse;
+    'PROFILE': ProfileResponse;
+    'PING': PingResponse;
+    'ACTIVATED': object;
+  }
 
   /**
    * @group Types
@@ -123,27 +178,7 @@ export namespace HostOrchestrator {
   /**
    * @group Types
    */
-  export type TokenRequest = {
-    issuer: string;
-    clientId: string;
-    scopes: string[];
-    acrValues?: AcrValues,
-    maxAge?: number
-  };
-
-  /**
-   * @group Types
-   */
-  export type TokenResponse = { token: TokenInit } | ErrorResponse;
-
-  /**
-   * @group Types
-   */
-  export type AuthorizeRequest = TokenRequest & {
-    url: string;
-    method: string;
-    nonce?: string;
-  };
+  export type TokenResponse = { token: TokenPrimitiveInit } | ErrorResponse;
 
   /**
    * @group Types

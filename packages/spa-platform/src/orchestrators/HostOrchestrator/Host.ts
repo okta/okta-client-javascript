@@ -1,13 +1,13 @@
 import type { HostOrchestrator as HO } from './index.ts';
 import {
   shortID,
-  TokenInit,
+  type TokenPrimitiveInit,
   EventEmitter,
-  Emitter,
+  type Emitter,
   TokenOrchestrator
 } from '@okta/auth-foundation';
 import { Token } from '../../platform/index.ts';
-import { SecureChannel } from '../../utils/SecureChannel.ts';
+import { OrchestrationBridge } from './OrchestrationBridge.ts';
 
 
 function isErrorResponse (input: unknown): input is HO.ErrorResponse {
@@ -26,7 +26,7 @@ function isErrorResponse (input: unknown): input is HO.ErrorResponse {
 export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
   protected readonly emitter: EventEmitter<HO.HostEvents> = new EventEmitter();
   id: string = shortID();
-  #channel: SecureChannel | null = null;
+  #bridge: OrchestrationBridge | null = null;
   #allowedOrigins: string[] = [ new URL(location.href).origin ];
 
   constructor (protected readonly name: string, options: HO.HostOptions = {}) {
@@ -50,7 +50,7 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
   }
 
   get isActive () {
-    return this.#channel !== null;
+    return this.#bridge !== null;
   }
 
   protected shouldActive (): boolean {
@@ -58,29 +58,36 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
   }
 
   activate () {
-    this.#channel = new SecureChannel(this.name, {
-      targetOrigin: new URL(location.href).origin,
-      allowedOrigins: this.#allowedOrigins
+    this.#bridge = new OrchestrationBridge(this.name, { allowedOrigins: this.#allowedOrigins });
+    this.#bridge.subscribe(async (event, reply) => {
+      // TODO:
+      // return new Promise(resolve => {});   - for testing, will remove before merge
+      try {
+        // const reply = (msg) => message.reply(msg);
+        await this.parseRequest(event, reply);
+      }
+      catch (err) {
+        console.log('parseRequest error', err);
+        // TODO: probably should throw here?
+      }
     });
-    this.#channel.onmessage = async (event, reply) => {
-      await this.parseRequest(event.data, reply);
-    };
-    this.#channel.postMessage({
+    this.#bridge.send({
       eventName: 'ACTIVATED',
-      hostId: this.id
-    });
+      hostId: this.id,
+      data: undefined
+    }, { timeout: null });
   }
 
   close () {
-    this.#channel?.close();
-    this.#channel = null;
+    this.#bridge?.close();
+    this.#bridge = null;
   }
 
-  protected async parseRequest (request: HO.RequestEvent, replyFn) {
+  protected async parseRequest<K extends keyof HO.RequestEvent>(request: HO.RequestEvent[K], replyFn) {
     this.emitter.emit('request_received', { request });
-    const { eventName, data } = request;
+    const { eventName } = request;
 
-    let response: HO.Response;
+    let response: HO.ResponseEvent[keyof HO.ResponseEvent];
     switch (eventName) {
       case 'ACTIVATED':
         return this.handleHostActivated(request);
@@ -88,13 +95,13 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
         response = { message: 'PONG' } satisfies HO.PingResponse;
         break;
       case 'TOKEN':
-        response = await this.handleTokenRequest(data);
+        response = await this.handleTokenRequest(request.data);
         break;
       case 'AUTHORIZE':
-        response = await this.handleAuthorizeRequest(data);
+        response = await this.handleAuthorizeRequest(request.data);
         break;
       case 'PROFILE':
-        response = await this.handleProfileRequest(data);
+        response = await this.handleProfileRequest(request.data);
         break;
       default:
         response = { error: 'Unknown eventName provided' } satisfies HO.ErrorResponse;
@@ -104,7 +111,7 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
     return replyFn(response);
   }
 
-  protected handleHostActivated ({ hostId }: any) {
+  protected handleHostActivated ({ hostId }: HO.ActivatedEvent) {
     if (hostId !== this.id) {
       console.warn('Multiple HostOrchestrators are active on this page!');
       this.emitter.emit('duplicate_host', { id: this.id, duplicateId: hostId });
@@ -119,7 +126,7 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
       return result;
     }
     else if (result instanceof Token) {
-      return { token: result.toJSON() as TokenInit };
+      return { token: result.toJSON() as TokenPrimitiveInit };
     }
 
     return { error: 'Unable to obtain token' };

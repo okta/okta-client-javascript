@@ -14,6 +14,7 @@ addEnv(`${__PKG_NAME__}/${__PKG_VERSION__}`);
 
 export * from './types.ts';
 export * from './AuthenticationFlow.ts';
+export * from './LogoutFlow.ts';
 export * from './AuthorizationCodeFlow/index.ts';
 export * from './SessionLogoutFlow/index.ts';
 export * from './AuthTransaction.ts';

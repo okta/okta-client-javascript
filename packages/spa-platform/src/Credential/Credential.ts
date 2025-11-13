@@ -7,7 +7,6 @@ import {
   Credential as CredentialBase,
   type RequestAuthorizer,
   type JSONSerializable,
-  type CredentialCoordinator,
 } from '@okta/auth-foundation';
 import { CredentialCoordinatorImpl } from './CredentialCoordinator.ts';
 
@@ -19,7 +18,9 @@ import { CredentialCoordinatorImpl } from './CredentialCoordinator.ts';
  * @noInheritDoc
  */
 export class Credential extends CredentialBase implements RequestAuthorizer, JSONSerializable {
-  protected static readonly coordinator: CredentialCoordinator = new CredentialCoordinatorImpl(this);
+  static {
+    this.coordinator = new CredentialCoordinatorImpl(this);
+  }
 
   /**
    * Closes the underlying BroadcastChannel, useful for testing environments to avoid open handles

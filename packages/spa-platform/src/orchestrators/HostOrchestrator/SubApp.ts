@@ -1,7 +1,7 @@
 import type { HostOrchestrator as HO } from './index.ts';
 import {
   shortID,
-  TokenInit,
+  type SubSet,
   ignoreUndefineds,
   TokenOrchestrator,
   TokenOrchestratorError,
@@ -9,11 +9,21 @@ import {
 } from '@okta/auth-foundation';
 import { validateString } from '@okta/auth-foundation/internal';
 import { Token } from '../../platform/index.ts';
-import { SecureChannel } from '../../utils/SecureChannel.ts';
+import { OrchestrationBridge } from './OrchestrationBridge.ts';
 
 
 export type SubAppBroadcastOptions = {
   timeout: number;
+}
+
+function toPrimitiveParams (
+  authParams: TokenOrchestrator.AuthorizeParams
+): SubSet<TokenOrchestrator.AuthorizeParams, 'issuer', string | undefined> {
+  let issuer = authParams.issuer;
+  if (issuer && issuer instanceof URL) {
+    issuer = issuer.href;
+  }
+  return { ...authParams, issuer };
 }
 
 // TODO: doc this?
@@ -36,39 +46,19 @@ export class SubAppOrchestrator extends TokenOrchestrator {
     this.authParams = {...authParams, scopes };
   }
 
-  // TODO: how does this clean up after itself? does it need a .close() method?
-  // public close (): void {}
-
-  protected async broadcast (
-    eventName: string,
-    data: Record<string, unknown>,
+  protected async broadcast<K extends keyof HO.RequestEvent & keyof HO.ResponseEvent> (
+    eventName: K,
+    data: HO.RequestEvent[K]['data'],
     options: SubAppBroadcastOptions = { timeout: this.defaultTimeout }
-  ): Promise<Record<string, unknown>> {
-    const requestId = shortID();
-    const channel = new SecureChannel(this.name, this.#targetOrigin);
+  ): Promise<HO.ResponseEvent[K]> {
+    const bus = new OrchestrationBridge(this.name, { targetOrigin: this.#targetOrigin });
+    const { result } = bus.send({
+      eventName,
+      data,
+      subAppId: this.id
+    } as HO.RequestEvent[K], { ...options });
 
-    return new Promise<Record<string, unknown>>((resolve, reject) => {
-      const responseChannel = new SecureChannel(requestId, { allowedOrigins: [ this.#targetOrigin ]});
-
-      const timeoutId = setTimeout(() => {
-        responseChannel.close();
-        reject(new TokenOrchestratorError('timeout'));
-      }, options.timeout);
-
-      responseChannel.onmessage = ({ data }) => {
-        responseChannel.close();
-        clearTimeout(timeoutId);
-        resolve(data);
-      };
-
-      channel.postMessage({
-        eventName,
-        requestId,
-        subAppId: this.id,
-        data,
-      });
-      channel.close();
-    });
+    return await result;
   }
 
   // TODO: support multiple issuers
@@ -87,7 +77,7 @@ export class SubAppOrchestrator extends TokenOrchestrator {
 
   protected async ping (timeout: number): Promise<boolean> {
     try {
-      await this.broadcast('PING', { subAppId: this.id }, { timeout });
+      await this.broadcast('PING', undefined, { timeout });
       return true;
     }
     catch (err) {
@@ -110,14 +100,15 @@ export class SubAppOrchestrator extends TokenOrchestrator {
   protected async requestToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null> {
     const cacheKey = this.getTokenCacheKey(params);
     try {
-      const { token: tokenInit, error } = await this.broadcast('TOKEN', params);
+      const response = await this.broadcast('TOKEN', toPrimitiveParams(params));
 
-      if (error) {
-        throw new TokenOrchestratorError(error as string);
+      // `in` syntax required for TS to infer type
+      if ('error' in response) {
+        throw new TokenOrchestratorError(response.error);
       }
 
-      if (tokenInit) {
-        const token = new Token(tokenInit as TokenInit);
+      if (response.token) {
+        const token = new Token(response.token);
         this.#tokenCache.set(this.getTokenCacheKey(params), token);
         return token;
       }
@@ -164,18 +155,21 @@ export class SubAppOrchestrator extends TokenOrchestrator {
     const { issuer, clientId, scopes, acrValues, maxAge, dpopNonce } = {
       ...this.authParams,
       // removes `undefined`
-      ...(ignoreUndefineds({...init}) as { dpopNonce?: string; } & TokenOrchestrator.AuthorizeParams)
+      ...ignoreUndefineds({...init})
     };
     const authParams = { issuer, clientId, scopes, acrValues, maxAge, nonce: dpopNonce };
 
     // TODO: cache dpop values?
 
     const { url, method } = request;
-    const { dpop, authorization, tokenType, error } = await this.broadcast('AUTHORIZE', { url, method, ...authParams });
+    const response = await this.broadcast('AUTHORIZE', { url, method, ...(toPrimitiveParams(authParams)) });
 
-    if (error) {
-      throw new TokenOrchestratorError(error as string);
+    // `in` syntax required for TS to infer type
+    if ('error' in response) {
+      throw new TokenOrchestratorError(response.error);
     }
+
+    const { dpop, authorization, tokenType } = response;
 
     if (tokenType === 'DPoP') {
       if (!validateString(dpop)) {

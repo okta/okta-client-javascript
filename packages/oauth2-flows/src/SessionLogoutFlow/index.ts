@@ -9,7 +9,7 @@ import {
   mergeURLSearchParameters
 } from '@okta/auth-foundation';
 import OAuth2Client from '@okta/auth-foundation/client';
-import { AuthenticationFlow } from '../AuthenticationFlow.ts';
+import { LogoutFlow } from '../LogoutFlow.ts';
 
 
 /**
@@ -32,7 +32,7 @@ import { AuthenticationFlow } from '../AuthenticationFlow.ts';
  * - https://developer.okta.com/docs/api/openapi/okta-oauth/oauth/tag/OrgAS/#tag/OrgAS/operation/logoutWithPost
  * - https://openid.net/specs/openid-connect-rpinitiated-1_0.html
  */
-export class SessionLogoutFlow extends AuthenticationFlow {
+export class SessionLogoutFlow extends LogoutFlow {
   readonly client: OAuth2Client;
   readonly logoutRedirectUri: string;
   readonly additionalParameters: Record<string, string>;
@@ -121,7 +121,7 @@ export namespace SessionLogoutFlow {
     additionalParameters?: Record<string, string>;
   }
 
-  export type InitOptions = LogoutParams & AuthenticationFlow.Options;
+  export type InitOptions = LogoutParams & LogoutFlow.Options;
 
   export type Result = {
     state?: string;

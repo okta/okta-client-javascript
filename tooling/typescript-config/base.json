@@ -5,7 +5,7 @@
     "types": ["node"],
     "composite": false,
     "module": "nodenext",
-    "target": "es6",
+    "target": "es2022",
     "allowJs": true,
     "checkJs": true,
     "moduleResolution": "nodenext",
@@ -24,6 +24,7 @@
     "skipLibCheck": true,
     "isolatedModules": true,
     "allowImportingTsExtensions": true,
-    "rewriteRelativeImportExtensions": true
+    "rewriteRelativeImportExtensions": true,
+    "importHelpers": true
   }
 }

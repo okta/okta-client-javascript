@@ -37,12 +37,12 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   protected static _coordinator: CredentialCoordinator =  new CredentialCoordinatorImpl(this);
 
   /** @internal */
-  protected static get coordinator (): CredentialCoordinator {
+  public static get coordinator (): CredentialCoordinator {
     return this._coordinator;
   }
 
   /** @internal */
-  protected static set coordinator (coordinator: CredentialCoordinator) {
+  public static set coordinator (coordinator: CredentialCoordinator) {
     const previousCoordinator = this.coordinator;
 
     this._coordinator = coordinator;
