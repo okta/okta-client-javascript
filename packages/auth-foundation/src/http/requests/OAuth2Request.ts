@@ -5,7 +5,7 @@
 
 import type { OpenIdConfiguration } from '../../types/index.ts';
 import type { OAuth2Client } from '../../oauth2/client.ts';
-
+import { APIRequest } from './APIRequest.ts';
 
 /**
  * @group OAuth2Request
@@ -25,14 +25,15 @@ export abstract class OAuth2Request {
 
   public abstract get url (): string;
 
-  public prepare (): Request {
+  public prepare (context: object = {}): APIRequest {
     const url = new URL(this.url);
-    return new Request(url, {
+    return new APIRequest(url, {
       method: 'POST',
       // calling `.toString()` is required for RN. The default impl of `URLSearchParams` in RN doesn't
       // convert the object to a string body. Calling `.toString()` directly seems to fix the issue
       body: this.body.toString(),
-      headers: this.headers
+      headers: this.headers,
+      context
     });
   }
 }
