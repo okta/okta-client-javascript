@@ -6,55 +6,18 @@
 import type { JsonRecord, JSONSerializable } from '../types/index.ts';
 import { DPoPNonceCache } from '../oauth2/dpop/nonceCache.ts';
 import { getOktaUserAgent } from './oktaUserAgent.ts';
+import { APIRequest } from './requests/APIRequest.ts';
 import { mergeHeaders } from '../utils/index.ts';
 import { EventEmitter } from '../utils/EventEmitter.ts';
 import { APIClientError } from '../errors/index.ts';
 
+export * from './requests/APIRequest.ts';
 export * from './requests/OAuth2Request.ts';
 
 /** @internal */
 function assertReadableResponse(response: Response) {
   if (response.bodyUsed) {
     throw new TypeError('"response" body has been used already');
-  }
-}
-
-/**
- * @group APIClient
- */
-export type APIRequestInit = RequestInit & { context?: Record<string, any> };
-
-/**
- * @group APIClient
- */
-export class APIRequest extends Request {
-  static MaxRetryAttempts = 2;
-
-  #retriesRemaining: number = APIRequest.MaxRetryAttempts;
-  readonly context: Record<string, any>;
-
-  constructor (input: string | URL | Request, init: APIRequestInit = {}) {
-    const { context, ...requestInit } = init;
-    super(input, input instanceof Request ? undefined : requestInit);
-    this.context = context ?? {};
-  }
-
-  get retryAttempt () {
-    return APIRequest.MaxRetryAttempts - this.#retriesRemaining;
-  }
-
-  canRetry (): boolean {
-    return this.#retriesRemaining > 0;
-  }
-
-  markRetry (): void {
-    this.#retriesRemaining--;
-  }
-
-  clone (): APIRequest {
-    const clone = new APIRequest(super.clone(), { context: this.context });
-    clone.#retriesRemaining = this.#retriesRemaining;
-    return clone;
   }
 }
 
@@ -121,13 +84,12 @@ export abstract class APIClient {
     }
   }
 
-  protected async applyInterceptors (request: Request): Promise<Request> {
-    let req: Request = request;
+  protected async applyInterceptors (request: APIRequest): Promise<Request> {
+    let req = request;
 
     for (const interceptor of this.interceptors) {
       // ensures `req` has a value, in case an interceptor fails to return a `Request` instance
-      const newReq = await interceptor(req);
-      req = newReq instanceof Request ? newReq : req;
+      req = await interceptor(req);
     }
 
     return req;
@@ -175,9 +137,7 @@ export abstract class APIClient {
     return await fetchFn(request);
   }
 
-  protected async send (req: Request | APIRequest, context: Record<string, any> = {}): Promise<Response> {
-    const request = req instanceof APIRequest ? req : new APIRequest(req, { context });
-
+  protected async send (request: APIRequest): Promise<Response> {
     const { authorizeRequest } = { ...this.defaultRequestOptions, ...request.context };
     const shouldAuthorize: boolean = typeof authorizeRequest === 'function' ? authorizeRequest(request) : authorizeRequest;
 
@@ -238,8 +198,8 @@ export abstract class APIClient {
     return Math.pow(2, request.retryAttempt) * 1000;
   }
 
-  public async fetch (input: string | URL | Request, init?: RequestInit): Promise<Response> {
-    const request = input instanceof Request ? input : new Request(input, init);
+  public async fetch (...args: ConstructorParameters<typeof APIRequest>): Promise<Response> {
+    const request = new APIRequest(...args);
     return this.send(request);
   }
 }
@@ -281,7 +241,7 @@ export namespace APIClient {
     authorizeRequest: boolean | ((request: APIRequest) => boolean);
   };
 
-  export type RequestInterceptor = (request: Request) => (Promise<Request> | Request);
+  export type RequestInterceptor = (request: APIRequest) => (Promise<APIRequest> | APIRequest);
 
   export type Events = {
     /**

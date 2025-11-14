@@ -164,17 +164,18 @@ export class OAuth2Client extends APIClient {
     tokenRequest: Token.TokenRequest,
     requestContext: OAuth2Client.TokenRequestContext = {}
   ): Promise<Token | OAuth2ErrorResponse> {
-    const request = tokenRequest.prepare();
+    const { keyPairId: dpopPairId } = requestContext;
+    const request = tokenRequest.prepare({ dpopPairId });
 
     const { acrValues, maxAge } = tokenRequest;
-    const { keyPairId: dpopPairId } = requestContext;
+
     if (this.configuration.dpop) {
       // dpop nonce may not be available for this request (undefined), this is expected
       const nonce = await this.getDPoPNonceFromCache(request);
       await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce });
     }
 
-    const response = await this.send(request, { dpopPairId });
+    const response = await this.send(request);
     const json = await response.json();
 
     if (isOAuth2ErrorResponse(json)) {

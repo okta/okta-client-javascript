@@ -109,10 +109,7 @@ export class FetchClient extends APIClient {
     init: TokenOrchestrator.AuthorizeParams & RequestInit & Partial<APIClient.RequestOptions> = {}
   ): Promise<Response> {
     const { authParams, rest: { authorizeRequest, ...fetchInit } } = TokenOrchestrator.extractAuthParams(init);
-
-    const request = input instanceof Request ? input : new Request(input, fetchInit);
-    const context: Record<string, any> = { ...authParams, ...(authorizeRequest !== undefined && { authorizeRequest }) };
-
-    return this.send(request, context);
+    const context = { ...authParams, ...(authorizeRequest !== undefined && { authorizeRequest }) };
+    return super.fetch(input, { ...fetchInit, context });
   }
 }
