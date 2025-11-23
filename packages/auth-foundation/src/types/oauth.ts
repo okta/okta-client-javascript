@@ -34,7 +34,7 @@ export interface OAuth2ErrorResponse {
  */
 // TODO: move location?
 export function isOAuth2ErrorResponse (input: unknown): input is OAuth2ErrorResponse {
-  if (typeof input === 'object' && (input as OAuth2ErrorResponse).error) {
+  if (input && typeof input === 'object' && 'error' in input) {
     return true;
   }
   return false;
@@ -47,7 +47,7 @@ export { OpenIdConfiguration };
  * @group Types
  */
 export function isOpenIdConfiguration (input: unknown): input is OpenIdConfiguration {
-  if (typeof input === 'object' && (input as OpenIdConfiguration).issuer) {
+  if (input && typeof input === 'object' && 'issuer' in input) {
     return true;
   }
   return false;
@@ -59,9 +59,8 @@ export function isOpenIdConfiguration (input: unknown): input is OpenIdConfigura
  * @group Types
  */
 export function isJWK (input: unknown): input is JWK {
-  if (typeof input === 'object') {
-    const obj = input as JWK;
-    if (obj.alg && obj.kid) {
+  if (input && typeof input === 'object') {
+    if ('alg' in input && 'kid' in input) {
       return true;
     }
   }
@@ -88,9 +87,10 @@ export type { ConfigurationParams };
  * @group Types
  */
 export type OAuth2Params = {
-  issuer?: string | URL;
-  clientId?: string;
-  scopes?: string[];
+  issuer: string | URL;
+  clientId: string;
+  scopes: string | string[];
+  dpop?: boolean;
 };
 
 /**

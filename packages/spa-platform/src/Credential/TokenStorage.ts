@@ -184,6 +184,7 @@ export class BrowserTokenStorage implements TokenStorage {
     const { token, metadata } = stored;
     // extract Token.Context values from Metadata (which includes additional key/values)
     const context = Token.extractContext(metadata);
+    // TODO: confirm client info, should be added to storage
     return new Token({ id, ...token, context });
   }
 

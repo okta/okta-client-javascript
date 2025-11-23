@@ -8,33 +8,44 @@ import type {
   APIClientConfiguration,
   JSONSerializable,
   JsonRecord,
-  OAuth2Params
+  OAuth2Params,
+  DiscrimUnion
 } from '../types/index.ts';
 import { APIClient } from '../http/index.ts';
 import { buildURL, hasSameValues } from '../utils/index.ts';
 import { validateURL } from '../internals/index.ts';
 
 
-/**
- * @group Configuration
- */
-export type ConfigurationParams = {
+export type ClientConfigurationOptions = {
   baseURL: URL | string;
-  clientId: string;
-  scopes: string | string[];
-  authentication?: ClientAuthentication;
   discoveryURL?: URL | string;
-  dpop?: boolean;
+  authentication?: ClientAuthentication;
   allowHTTP?: boolean;
 };
+
+
+/**
+ * @group Configuration
+ * @useDeclaredType
+ */
+export type ConfigurationParams = DiscrimUnion<OAuth2Params & ClientConfigurationOptions, 'issuer' | 'baseURL'>
+// export type ConfigurationParams = {
+//   baseURL: URL | string;
+//   clientId: string;
+//   scopes: string | string[];
+//   authentication?: ClientAuthentication;
+//   discoveryURL?: URL | string;
+//   dpop?: boolean;
+//   allowHTTP?: boolean;
+// };
 
 /**
  * @group Configuration
  */
 export class Configuration extends APIClient.Configuration implements APIClientConfiguration, JSONSerializable {
-  public baseURL: URL;
-  public discoveryURL: URL;
-  public clientId: string;
+  public readonly issuer: URL;
+  public readonly discoveryURL: URL;
+  public readonly clientId: string;
   public scopes: string;
   public authentication: ClientAuthentication = 'none';
   /**
@@ -42,19 +53,28 @@ export class Configuration extends APIClient.Configuration implements APIClientC
    */
   public allowHTTP: boolean = false;
 
+  public static Defaults: Partial<ConfigurationParams> = {};
+
   constructor (params: ConfigurationParams) {
-    const { baseURL, discoveryURL, clientId, scopes, authentication, dpop, allowHTTP } = params;
+    const { baseURL, issuer, discoveryURL, clientId, scopes, authentication, dpop, allowHTTP } = { ...Configuration.Defaults, ...params };
     if (!validateURL(baseURL, allowHTTP)) {
       throw new TypeError('Invalid baseURL');
     }
 
     super({ dpop });
-    this.baseURL = new URL(baseURL);
+    this.issuer = new URL(issuer ?? baseURL);    // one of them must be defined via Discriminated Union
     this.discoveryURL = discoveryURL ? new URL(discoveryURL) : buildURL(this.baseURL, '/.well-known/openid-configuration');
     this.clientId = clientId;
     this.scopes = Array.isArray(scopes) ? scopes.join(' ') : scopes;
     this.authentication = authentication ?? 'none';
     this.allowHTTP = allowHTTP ?? false;
+  }
+
+  /**
+   * Alias to {@link issuer} for backwards compatibility 
+   */
+  get baseURL (): URL {
+    return this.baseURL;
   }
 
   matches (params: OAuth2Params): boolean {
@@ -75,21 +95,32 @@ export class Configuration extends APIClient.Configuration implements APIClientC
     }
 
     if (scopes) {
-      matches &&= hasSameValues(scopes, this.scopes.split(' '));
+      const s = Array.isArray(scopes) ? scopes : scopes.split(' ');
+      matches &&= hasSameValues(s, this.scopes.split(' '));
     }
 
     return matches;
   }
 
   toJSON (): JsonRecord {
-    const { baseURL, discoveryURL, clientId, scopes, authentication } = this;
+    const { issuer, discoveryURL, clientId, scopes, authentication, allowHTTP } = this;
     return {
       ...super.toJSON(),
-      baseURL: baseURL.href,
+      issuer: issuer.href,
       discoveryURL: discoveryURL.href,
       clientId,
       scopes,
-      authentication
+      authentication,
+      allowHTTP
     };
+  }
+
+  serialize (includeAuthParams: boolean = false): JsonRecord {
+    if (!includeAuthParams) {
+      return this.toJSON();
+    }
+
+    const { discoveryURL, authentication, allowHTTP } = this.toJSON();
+    return { discoveryURL, authentication, allowHTTP };
   }
 }

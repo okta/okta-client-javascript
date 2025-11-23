@@ -19,8 +19,7 @@ export interface WWWAuthenticateError {
  */
 export function isWWWAuthenticateError (input: unknown): input is WWWAuthenticateError {
   if (input && typeof input === 'object') {
-    const obj = input as Record<string, string>;
-    if (obj.error && (obj.scheme || obj.realm)) {
+    if ('error' in input && ('scheme' in input || 'realm' in input)) {
       return true;
     }
   }

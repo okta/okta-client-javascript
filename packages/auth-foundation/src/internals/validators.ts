@@ -5,11 +5,11 @@
 
 // generic function argument or response validators
 
-export function validateString(input: unknown): input is string {
+export function validateString (input: unknown): input is string {
   return typeof input === 'string' && input.length !== 0;
 }
 
-export function validateURL(input: unknown, allowHttp = false): boolean {
+export function validateURL (input: unknown, allowHttp = false): boolean {
   if (!validateString(input)) {
     return false;
   }

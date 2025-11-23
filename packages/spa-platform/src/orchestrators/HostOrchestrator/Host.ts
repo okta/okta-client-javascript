@@ -11,14 +11,8 @@ import { OrchestrationBridge } from './OrchestrationBridge.ts';
 
 
 function isErrorResponse (input: unknown): input is HO.ErrorResponse {
-  if (input === null) {
-    return false;
-  }
-
-  if (typeof input === 'object' && (input as HO.ErrorResponse).error &&
-      typeof (input as HO.ErrorResponse).error === 'string')
-  {
-    return true;
+  if (input && typeof input === 'object' && 'error' in input) {
+    return typeof input.error === 'string';
   }
   return false;
 }
