@@ -125,7 +125,7 @@ export interface APIClientConfiguration {
  * 
  * @group Types
  */
-export type AcrValues = string | string[];
+export type AcrValues = OktaAcrValues | string | string[];
 
 /**
  * Possible `acr_values` of Okta Authorization Servers

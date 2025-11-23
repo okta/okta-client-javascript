@@ -23,31 +23,13 @@ export type JsonRecord = { [key in string]?: Json | JsonPrimitive };
 export type JsonArray = (Json | JsonPrimitive)[];
 export type Json = JsonRecord | JsonArray;
 
-export type Primitives<T> = {
-  [K in keyof T]:
-    // If T[K] is "something | undefined", map undefined along.
-    undefined extends T[K] ?
-      (T[K] extends Date ? number | undefined :
-      T[K] extends URL ? string | undefined :
-      T[K] extends JsonPrimitive ? T[K] :
-      T[K] extends Array<infer U> ? Array<Primitives<U>> | undefined :
-      T[K] extends object ? Primitives<T[K]> | undefined :
-      never)
-    :
-      (T[K] extends Date ? number :
-      T[K] extends URL ? string :
-      T[K] extends JsonPrimitive ? T[K] :
-      T[K] extends Array<infer U> ? Array<Primitives<U>> :
-      T[K] extends object ? Primitives<T[K]> :
-      never)
-}
 
 /** @internal */
 export type SubSet<T extends Record<string, any>, K extends keyof T, R extends T[K]> = Omit<T, K> & { [P in K]: R }
-/** 
+/**
  * @internal
  * Discrimintated Union
- * 
+ *
  * Required<Pick<T, K>> – The property K is required.
  * Partial<Record<Exclude<Keys, K>, undefined>> – All other keys in the union are explicitly set undefined (or omitted).
  * Omit<T, Keys> – All extra properties outside of Keys are freely allowed.

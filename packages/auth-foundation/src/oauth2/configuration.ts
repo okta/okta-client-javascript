@@ -16,28 +16,21 @@ import { buildURL, hasSameValues } from '../utils/index.ts';
 import { validateURL } from '../internals/index.ts';
 
 
-export type ClientConfigurationOptions = {
+export type OAuth2ClientConfigurations = DiscrimUnion<OAuth2Params & {
   baseURL: URL | string;
   discoveryURL?: URL | string;
+}, 'issuer' | 'baseURL'>;
+
+export type OAuth2ClientOptions = {
   authentication?: ClientAuthentication;
   allowHTTP?: boolean;
-};
-
+}
 
 /**
  * @group Configuration
  * @useDeclaredType
  */
-export type ConfigurationParams = DiscrimUnion<OAuth2Params & ClientConfigurationOptions, 'issuer' | 'baseURL'>
-// export type ConfigurationParams = {
-//   baseURL: URL | string;
-//   clientId: string;
-//   scopes: string | string[];
-//   authentication?: ClientAuthentication;
-//   discoveryURL?: URL | string;
-//   dpop?: boolean;
-//   allowHTTP?: boolean;
-// };
+export type ConfigurationParams = OAuth2ClientConfigurations & OAuth2ClientOptions;
 
 /**
  * @group Configuration
@@ -53,10 +46,22 @@ export class Configuration extends APIClient.Configuration implements APIClientC
    */
   public allowHTTP: boolean = false;
 
-  public static Defaults: Partial<ConfigurationParams> = {};
+  public static DefaultOptions: Required<OAuth2ClientOptions> = {
+    allowHTTP: false,
+    authentication: 'none'
+  };
 
   constructor (params: ConfigurationParams) {
-    const { baseURL, issuer, discoveryURL, clientId, scopes, authentication, dpop, allowHTTP } = { ...Configuration.Defaults, ...params };
+    const {
+      baseURL,
+      issuer,
+      discoveryURL,
+      clientId,
+      scopes,
+      authentication,
+      dpop,
+      allowHTTP
+    } = { ...Configuration.DefaultOptions, ...params };
     if (!validateURL(baseURL, allowHTTP)) {
       throw new TypeError('Invalid baseURL');
     }
@@ -66,12 +71,14 @@ export class Configuration extends APIClient.Configuration implements APIClientC
     this.discoveryURL = discoveryURL ? new URL(discoveryURL) : buildURL(this.baseURL, '/.well-known/openid-configuration');
     this.clientId = clientId;
     this.scopes = Array.isArray(scopes) ? scopes.join(' ') : scopes;
-    this.authentication = authentication ?? 'none';
-    this.allowHTTP = allowHTTP ?? false;
+
+    // default values are set in `static DefaultOptions`
+    this.authentication = authentication;
+    this.allowHTTP = allowHTTP
   }
 
   /**
-   * Alias to {@link issuer} for backwards compatibility 
+   * Alias to {@link issuer} for backwards compatibility
    */
   get baseURL (): URL {
     return this.baseURL;
@@ -113,14 +120,5 @@ export class Configuration extends APIClient.Configuration implements APIClientC
       authentication,
       allowHTTP
     };
-  }
-
-  serialize (includeAuthParams: boolean = false): JsonRecord {
-    if (!includeAuthParams) {
-      return this.toJSON();
-    }
-
-    const { discoveryURL, authentication, allowHTTP } = this.toJSON();
-    return { discoveryURL, authentication, allowHTTP };
   }
 }

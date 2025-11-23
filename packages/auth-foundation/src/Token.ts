@@ -10,11 +10,9 @@ import {
   type TimeInterval,
   type JsonPrimitive,
   type JsonRecord,
-  type Primitives,
   isOAuth2ErrorResponse,
 } from './types/index.ts';
 import type { OAuth2Client } from './oauth2/client.ts';
-import type { ConfigurationParams } from './oauth2/configuration.ts';
 import { OAuth2Error } from './errors/index.ts';
 import { validateURL } from './internals/validators.ts';
 import { shortID } from './crypto/index.ts';
@@ -137,18 +135,6 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
     if (!this.context?.scopes || !Array.isArray(this.context.scopes)) {
       this.context.scopes = [...this.scopes];
     }
-
-    if (this.context.clientSettings) {
-      this.context.clientSettings = Object.keys(this.context.clientSettings).reduce(
-        (acc, key) => {
-          if (!this.context[key]) {
-            acc[key] = this.context.clientSettings![key]
-          }
-          return acc;
-        },
-        {}
-      )
-    };
   }
 
   /**
@@ -258,7 +244,6 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
    * Converts a {@link Token.Token | Token} instance to an serializable object literal representation
    */
   toJSON (): JsonRecord {
-  // toJSON (): Primitives<TokenInit> {
     const {
       tokenType,
       expiresIn,
@@ -269,7 +254,6 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
     } = this;
 
     const value: JsonRecord = {
-    // const value: Primitives<TokenInit> = {
       tokenType,
       expiresIn,
       issuedAt: issuedAt.valueOf(),
@@ -351,7 +335,10 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
  * @group Token
  */
 export namespace Token {
-  type _Context = {
+  /**
+   * Context used to request the token
+   */
+  export type Context = {
     issuer: string;
     clientId: string;
     scopes: string[];
@@ -359,20 +346,6 @@ export namespace Token {
     acrValues?: AcrValues;
     maxAge?: TimeInterval;
   };
-
-  /**
-   * Context used to request the token
-   */
-  export type Context = _Context & { clientSettings?: Omit<ConfigurationParams, keyof _Context> };
-  // export type Context = {
-  //   issuer: string;
-  //   clientId: string;
-  //   scopes: string[];
-  //   dpopPairId?: string;
-  //   acrValues?: AcrValues;
-  //   maxAge?: TimeInterval;
-  //   clientSettings?: Partial<ConfigurationParams>;
-  // };
 
   // https://stackoverflow.com/a/54308812
   // A clever way of utilizing TS to ensure this array contains all keys of `Context`
@@ -383,7 +356,6 @@ export namespace Token {
     dpopPairId: undefined,
     acrValues: undefined,
     maxAge: undefined,
-    clientSettings: undefined,
   } satisfies Record<(keyof Context), undefined>) as (keyof Context)[];
 
   /**
