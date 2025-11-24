@@ -1,5 +1,4 @@
 import { ConfigurationParams } from 'src/types';
-import { APIClient } from 'src/http';
 import { OAuth2Client } from 'src/oauth2/client';
 
 describe('OAuth2Client.Configuration', () => {
