@@ -46,7 +46,8 @@ export class Configuration extends APIClient.Configuration implements APIClientC
    */
   public allowHTTP: boolean = false;
 
-  public static DefaultOptions: Required<OAuth2ClientOptions> = {
+  public static DefaultOptions: Required<OAuth2ClientOptions> & typeof APIClient.Configuration.DefaultOptions = {
+    ...APIClient.Configuration.DefaultOptions,
     allowHTTP: false,
     authentication: 'none'
   };
@@ -62,26 +63,27 @@ export class Configuration extends APIClient.Configuration implements APIClientC
       dpop,
       allowHTTP
     } = { ...Configuration.DefaultOptions, ...params };
-    if (!validateURL(baseURL, allowHTTP)) {
+    const url = issuer ?? baseURL;            // one of them must be defined via Discriminated Union
+    if (!validateURL(url, allowHTTP)) {
       throw new TypeError('Invalid baseURL');
     }
 
     super({ dpop });
-    this.issuer = new URL(issuer ?? baseURL);    // one of them must be defined via Discriminated Union
+    this.issuer = new URL(url);
     this.discoveryURL = discoveryURL ? new URL(discoveryURL) : buildURL(this.baseURL, '/.well-known/openid-configuration');
     this.clientId = clientId;
     this.scopes = Array.isArray(scopes) ? scopes.join(' ') : scopes;
 
     // default values are set in `static DefaultOptions`
     this.authentication = authentication;
-    this.allowHTTP = allowHTTP
+    this.allowHTTP = allowHTTP;
   }
 
   /**
    * Alias to {@link issuer} for backwards compatibility
    */
   get baseURL (): URL {
-    return this.baseURL;
+    return this.issuer;
   }
 
   matches (params: OAuth2Params): boolean {
