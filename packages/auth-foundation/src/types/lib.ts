@@ -22,7 +22,22 @@ export type JsonPrimitive = string | number | boolean | null;
 export type JsonRecord = { [key in string]?: Json | JsonPrimitive };
 export type JsonArray = (Json | JsonPrimitive)[];
 export type Json = JsonRecord | JsonArray;
+
+
+/** @internal */
 export type SubSet<T extends Record<string, any>, K extends keyof T, R extends T[K]> = Omit<T, K> & { [P in K]: R }
+/**
+ * @internal
+ * Discrimintated Union
+ *
+ * Required<Pick<T, K>> – The property K is required.
+ * Partial<Record<Exclude<Keys, K>, undefined>> – All other keys in the union are explicitly set undefined (or omitted).
+ * Omit<T, Keys> – All extra properties outside of Keys are freely allowed.
+ * The union [K in Keys] ... [Keys] generates one type for each allowed key.
+ */
+export type DiscrimUnion<T, Keys extends keyof T = keyof T> = {
+  [K in Keys]: Required<Pick<T, K>> & Partial<Record<Exclude<Keys, K>, undefined>> &  Omit<T, Keys>
+}[Keys];
 
 /**
  * A duration of time, in seconds

@@ -108,6 +108,7 @@ export class SubAppOrchestrator extends TokenOrchestrator {
       }
 
       if (response.token) {
+        // TODO: is client info relevant here? Do I have it?
         const token = new Token(response.token);
         this.#tokenCache.set(this.getTokenCacheKey(params), token);
         return token;

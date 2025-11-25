@@ -188,6 +188,8 @@ export class OAuth2Client extends APIClient {
       scopes: this.configuration.scopes.split(' '),
       ...(acrValues && { acrValues }),
       ...(maxAge && { maxAge }),
+      // TODO: client info
+      // clientSettings: tokenRequest.clientConfiguration.serialize()
     };
 
     if (this.configuration.dpop && dpopPairId) {

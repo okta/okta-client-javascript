@@ -8,9 +8,9 @@ import {
   type JSONSerializable,
   type AcrValues,
   type TimeInterval,
+  type JsonPrimitive,
+  type JsonRecord,
   isOAuth2ErrorResponse,
-  JsonPrimitive,
-  JsonRecord,
 } from './types/index.ts';
 import type { OAuth2Client } from './oauth2/client.ts';
 import { OAuth2Error } from './errors/index.ts';
@@ -284,7 +284,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
     // TODO: add deviceSecret at some point (ref: Token+Internal.swift)
     // Note: awkward because placeholder
     if (!(!this.refreshToken && !!token.refreshToken)) {
-      return this as unknown as Token;    // casting required due to mixin pattern (ugh)
+      return this;
     }
 
     return Token.create({
