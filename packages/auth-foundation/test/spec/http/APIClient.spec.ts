@@ -48,6 +48,22 @@ describe('APIClient', () => {
     expect(lastArg.headers.get('X-Okta-User-Agent-Extended')).toEqual('fake-useragent');
   });
 
+  it('should be able to change default configuration values via `static DefaultOptions`', () => {
+    const c1 = new MockAPIClient();
+    expect(c1.configuration.dpop).toEqual(false);
+    expect(c1.configuration.fetchImpl).toEqual(undefined);
+
+    // override default configurations
+    APIClient.Configuration.DefaultOptions.dpop = true;
+    const c2 = new MockAPIClient();
+    expect(c2.configuration.dpop).toEqual(true);
+    expect(c2.configuration.fetchImpl).toEqual(undefined);
+
+    const c3 = new MockAPIClient({ dpop: false });    // ensure explicit configuration takes precedence
+    expect(c3.configuration.dpop).toEqual(false);
+    expect(c3.configuration.fetchImpl).toEqual(undefined);
+  });
+
   describe('methods', () => {
     let client;
     beforeEach(() => {

@@ -107,7 +107,7 @@ describe('CredentialCoordinatorImpl', () => {
       expect(cred).toBeInstanceOf(Credential);
       await expect(cc.tokenStorage.get(cred.id)).resolves.toBeDefined();
       await expect(cc.tokenStorage.get(cred.id)).resolves.toEqual(token);
-      const { baseURL: issuer, clientId, scopes } = oauthClient.configuration.toJSON();
+      const { issuer, clientId, scopes } = oauthClient.configuration.toJSON();
       await expect(cc.tokenStorage.getMetadata(cred.id)).resolves.toEqual({
         id: cred.id,
         claims: expect.any(Object),

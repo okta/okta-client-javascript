@@ -218,8 +218,12 @@ export namespace APIClient {
     public dpop: boolean = false;
     public fetchImpl?: typeof fetch;
 
+    public static DefaultOptions: { dpop: boolean, fetchImpl?: typeof fetch } = {
+      dpop: false,
+    } satisfies APIClient.ConfigurationParams;    // using `satisfies` to maintain parity between types
+
     constructor (params: APIClient.ConfigurationParams) {
-      const { dpop, fetchImpl } = params;
+      const { dpop, fetchImpl } = { ...Configuration.DefaultOptions, ...params };
 
       this.dpop = dpop ?? false;
       this.fetchImpl = fetchImpl;

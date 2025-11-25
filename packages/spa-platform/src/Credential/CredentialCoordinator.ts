@@ -136,6 +136,7 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
         }
       }
       else {
+        // TODO: confirm client info
         const token = new Token({ ...value, id } as TokenInit);
 
         if (eventName === 'credential_removed') {
