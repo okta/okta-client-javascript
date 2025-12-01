@@ -16,6 +16,7 @@ import {
   randomBytes,
   mergeURLSearchParameters,
   Token,
+  AuthSdkError,
 } from '@okta/auth-foundation';
 import OAuth2Client from '@okta/auth-foundation/client';
 import {
@@ -262,13 +263,15 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
       if (!context) {
         throw new AuthenticationFlowError(`Failed to load auth transaction for state ${state}`);
       }
-  
-      // TODO: does loading the transaction from storage count as a state check?
+      this.context = context;
   
       const result = await this.exchangeCodeForTokens(code, context);
       return result;
     }
     catch (err) {
+      if (this.context && err instanceof AuthSdkError) {
+        err.context = this.context;
+      }
       this.emitter.emit('flow_errored', { error: err });
       throw err;
     }
