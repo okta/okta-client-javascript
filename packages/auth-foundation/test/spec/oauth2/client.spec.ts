@@ -511,6 +511,7 @@ describe('OAuth2Client', () => {
         expect(newToken.scopes).toEqual(['openid']);
         expect(newToken.refreshToken).not.toEqual(token.refreshToken);
         expect(newToken.refreshToken).toEqual(undefined);
+        expect(newToken.scopes).toEqual(newToken.context.scopes);
       });
 
       it('should handle downscoping a refresh token without scopes', async () => {
