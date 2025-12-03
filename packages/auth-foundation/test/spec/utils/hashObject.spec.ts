@@ -23,5 +23,10 @@ describe('objectHash', () => {
     await expect(hashObject(obj5)).resolves.not.toEqual(hash2);
 
     await expect(hashObject({})).resolves.toEqual('RBNvo1WzZ4oRRq0W9-hknpT7T8If536DEMBg9hyq_4o');
+
+    const arrayHash = await hashObject({ foo: [ 1, 2, 3 ] });
+    await expect(hashObject({ foo: [ 1, 2, 3 ] })).resolves.toEqual(arrayHash);
+    await expect(hashObject({ foo: [ 3, 2, 1 ] })).resolves.toEqual(arrayHash);
+    await expect(hashObject({ foo: [ 1 ] })).resolves.not.toEqual(arrayHash);
   });
 });

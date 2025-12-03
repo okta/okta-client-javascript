@@ -8,6 +8,9 @@ import { hash } from '../crypto/index.ts';
 function stableStringify(obj: Record<string, any>): string {
   const result: Record<string, any> = {};
   for (const key of Object.keys(obj).sort()) {
+    if (Array.isArray(obj[key])) {
+      result[key] = obj[key].sort();
+    }
     result[key] = obj[key];
   }
   return JSON.stringify(result);

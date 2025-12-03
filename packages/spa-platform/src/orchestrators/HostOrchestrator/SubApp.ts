@@ -62,9 +62,9 @@ export class SubAppOrchestrator extends TokenOrchestrator {
     return await result;
   }
 
-  // TODO: support multiple issuers
   protected getTokenCacheKey (params: TokenOrchestrator.AuthorizeParams): Promise<string> {
-    return hashObject({...this.authParams, ...params});
+    const { scopes, ...rest } = { ...this.authParams, ...params };
+    return hashObject({ ...rest, scopes: scopes?.sort() });
   }
 
   protected async ping (timeout: number): Promise<boolean> {
