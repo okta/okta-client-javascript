@@ -185,7 +185,7 @@ export class OAuth2Client extends APIClient {
     const tokenContext: Token.Context = {
       issuer: tokenRequest.openIdConfiguration.issuer,
       clientId: this.configuration.clientId,
-      scopes: this.configuration.scopes.split(' '),   // TODO: revisit this maybe? Possible collision with returned scopes
+      scopes: (json.scope ?? this.configuration.scopes).split(' '),
       ...(acrValues && { acrValues }),
       ...(maxAge && { maxAge }),
       // TODO: client info

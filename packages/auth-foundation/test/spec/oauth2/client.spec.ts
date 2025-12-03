@@ -488,7 +488,7 @@ describe('OAuth2Client', () => {
 
         const downscoped = new Token(mockTokenResponse(null, { scopes: 'openid', refreshToken: 'foobar' }));
         jest.spyOn(client, 'sendTokenRequest').mockResolvedValue(downscoped);
-        
+
         const willRefreshSpy = jest.fn();
         client.emitter.on('token_will_refresh', willRefreshSpy);
         const didRefreshSpy = jest.fn();
@@ -512,6 +512,7 @@ describe('OAuth2Client', () => {
         expect(newToken.refreshToken).not.toEqual(token.refreshToken);
         expect(newToken.refreshToken).toEqual(undefined);
         expect(newToken.scopes).toEqual(newToken.context.scopes);
+        expect(newToken.scopes.join(' ')).not.toEqual(client.configuration.scopes);
       });
 
       it('should handle downscoping a refresh token without scopes', async () => {
