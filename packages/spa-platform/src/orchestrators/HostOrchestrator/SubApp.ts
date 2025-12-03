@@ -5,7 +5,8 @@ import {
   ignoreUndefineds,
   TokenOrchestrator,
   TokenOrchestratorError,
-  EventEmitter
+  EventEmitter,
+  hashObject
 } from '@okta/auth-foundation';
 import { validateString } from '@okta/auth-foundation/internal';
 import { Token } from '../../platform/index.ts';
@@ -62,17 +63,8 @@ export class SubAppOrchestrator extends TokenOrchestrator {
   }
 
   // TODO: support multiple issuers
-  protected getTokenCacheKey (params: TokenOrchestrator.AuthorizeParams) {
-    const { scopes, clientId } = {...this.authParams, ...params};
-
-    // if no scopes are provided, key by clientId. If no clientId is provided, this orchestrator can only request
-    // single token (from an oauth params perspective), it defaults to whatever token is returned by the host
-    if (!scopes) {
-      return clientId ? clientId : 'DEFAULT';
-    }
-
-    let key = scopes.sort().join(' ');
-    return clientId ? `${clientId}:${key}` : key;
+  protected getTokenCacheKey (params: TokenOrchestrator.AuthorizeParams): Promise<string> {
+    return hashObject({...this.authParams, ...params});
   }
 
   protected async ping (timeout: number): Promise<boolean> {
@@ -98,7 +90,7 @@ export class SubAppOrchestrator extends TokenOrchestrator {
   }
 
   protected async requestToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null> {
-    const cacheKey = this.getTokenCacheKey(params);
+    const cacheKey = await this.getTokenCacheKey(params);
     try {
       const response = await this.broadcast('TOKEN', toPrimitiveParams(params));
 
@@ -109,7 +101,7 @@ export class SubAppOrchestrator extends TokenOrchestrator {
 
       if (response.token) {
         const token = new Token(response.token);
-        this.#tokenCache.set(this.getTokenCacheKey(params), token);
+        this.#tokenCache.set(cacheKey, token);
         return token;
       }
 
@@ -125,7 +117,7 @@ export class SubAppOrchestrator extends TokenOrchestrator {
    */
   public async getToken (params: TokenOrchestrator.AuthorizeParams = {}): Promise<Token | null> {
     const authParams = {...this.authParams, ...ignoreUndefineds(params)};
-    const cacheKey = this.getTokenCacheKey(authParams);
+    const cacheKey = await this.getTokenCacheKey(authParams);
 
     if (this.#tokenCache.has(cacheKey)) {
       const token = this.#tokenCache.get(cacheKey)!;
