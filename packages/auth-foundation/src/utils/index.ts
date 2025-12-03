@@ -10,3 +10,4 @@ export * from './getSearchParam.ts';
 export * from './pause.ts';
 export * from './ignoreUndefineds.ts';
 export * from './toRelativeUrl.ts';
+export * from './hashObject.ts';

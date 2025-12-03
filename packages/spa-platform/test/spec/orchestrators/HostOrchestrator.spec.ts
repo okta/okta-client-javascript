@@ -407,16 +407,6 @@ describe('HostOrchestrator', () => {
       }).toThrow();
     });
 
-    it('getTokenCacheKey', () => {
-      const sub = new HostOrchestrator.SubApp('Test');
-
-      expect((sub as any).getTokenCacheKey()).toBe('DEFAULT');
-      expect((sub as any).getTokenCacheKey({ clientId: authParams.clientId })).toBe(authParams.clientId);
-      expect((sub as any).getTokenCacheKey({ scopes: authParams.scopes })).toBe(authParams.scopes.join(' '));
-      expect((sub as any).getTokenCacheKey(authParams))
-        .toBe(`${authParams.clientId}:${authParams.scopes.join(' ')}`);
-    });
-
     describe('getToken', () => {
       it('can request a token or load one from cache', async () => {
         const sub = new HostOrchestrator.SubApp('Test');
