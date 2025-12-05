@@ -320,7 +320,7 @@ export class BrowserTokenStorage implements TokenStorage {
       try {
         const { token, metadata } = JSON.parse(raw);
         const { context, ...t } = token;
-        return { token: t, metadata: { ...metadata, ...context }};
+        return { token: t, metadata: { ...context, ...metadata }};
       }
       catch (err) {
         // if payload is malformed, just remove
