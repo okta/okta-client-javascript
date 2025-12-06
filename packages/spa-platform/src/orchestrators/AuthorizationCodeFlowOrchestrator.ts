@@ -29,7 +29,7 @@ const defaultOptions: AuthorizationCodeFlowOrchestrator.Options = {
  * {@link https://developer.okta.com/docs/concepts/oauth-openid/#authorization-code-flow-with-pkce-flow | Authorization Code Flow }
  * @public
  */
-export class AuthorizationCodeFlowOrchestrator extends TokenOrchestrator {
+export class AuthorizationCodeFlowOrchestrator extends TokenOrchestrator<AuthorizationCodeFlowOrchestrator.Events> {
   protected readonly emitter: EventEmitter<AuthorizationCodeFlowOrchestrator.Events> = new EventEmitter();
   options: AuthorizationCodeFlowOrchestrator.Options = defaultOptions;
 
