@@ -1,6 +1,6 @@
 {
   "name": "@okta/okta-client-js",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "private": true,
   "packageManager": "yarn@1.22.19",
   "engines": {
