@@ -9,6 +9,7 @@ import {
   type OAuth2ErrorResponse,
   type TimeInterval,
   type AcrValues,
+  type JsonRecord,
   PKCE,
   OAuth2Error,
   isOAuth2ErrorResponse,
@@ -194,14 +195,14 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
   /**
    * Initiates an Authorization Code flow
    * 
-   * @param meta - A map of key/values to be loaded upon redirect from `Authorization Server` back to `Web App`
+   * @param stateData - A map of key/values to be loaded upon redirect from `Authorization Server` back to `Web App`
    * @param context - **Optional.** {@link AuthorizationCodeFlow.Context} can be provided. One will be created if none is provided
    * @param additionalParameters - **Optional.** A map of URL query parameters to be added to the `/authorize` request
    * @returns A {@link https://developer.mozilla.org/en-US/docs/Web/API/URL/URL | URL} instance representing `Authorization Server` `/authorize`
    * with all required query parameters
    */
   public async start (
-    meta: AuthorizationCodeFlow.TransactionMeta = {},
+    stateData: JsonRecord = {},
     context: Partial<AuthorizationCodeFlow.Context> = {},
     additionalParameters: Record<string, string> = {}
   ): Promise<URL> {
@@ -213,7 +214,7 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
       const openIdConfig = await this.client.openIdConfiguration();
 
       flowContext.redirectUri = this.redirectUri;
-      flowContext.meta = meta;
+      flowContext.meta = stateData;
 
       if (!openIdConfig.authorization_endpoint) {
         throw new OAuth2Error('Missing `authorization_endpoint` from ./well-known config');
@@ -325,8 +326,6 @@ export namespace AuthorizationCodeFlow {
     code: string;
     state: string;
   }
-
-  export type TransactionMeta = Record<string, string>;
 
   /**
    * Values needed to initiate an Authorization Code flow

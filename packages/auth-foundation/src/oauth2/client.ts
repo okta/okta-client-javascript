@@ -36,7 +36,7 @@ import { hasSameValues } from '../utils/index.ts';
  * @group OAuth2Client
  * @noInheritDoc
  */
-export class OAuth2Client extends APIClient {
+export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> extends APIClient<E> {
   /**
    * @group Customizations
    */
@@ -57,7 +57,7 @@ export class OAuth2Client extends APIClient {
   /** @internal */
   protected readonly queue: PromiseQueue = new PromiseQueue();
 
-  readonly emitter: EventEmitter<OAuth2Client.Events> = new EventEmitter();
+  readonly emitter: EventEmitter<E> = new EventEmitter();
   readonly configuration: OAuth2Client.Configuration;
 
   constructor (params: ConfigurationParams | OAuth2Client.Configuration) {

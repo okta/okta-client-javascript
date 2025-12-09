@@ -24,9 +24,9 @@ function assertReadableResponse(response: Response) {
 /**
  * @group APIClient
  */
-export abstract class APIClient {
+export abstract class APIClient<E extends APIClient.Events = APIClient.Events> {
   readonly configuration: APIClient.Configuration;
-  readonly emitter: EventEmitter<APIClient.Events> = new EventEmitter();
+  readonly emitter: EventEmitter<E> = new EventEmitter();
   protected readonly dpopNonceCache: DPoPNonceCache = new DPoPNonceCache.InMemoryCache();
   protected readonly interceptors: APIClient.RequestInterceptor[] = [];
 

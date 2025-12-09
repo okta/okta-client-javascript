@@ -17,8 +17,8 @@ function isErrorResponse (input: unknown): input is HO.ErrorResponse {
   return false;
 }
 
-export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
-  protected readonly emitter: EventEmitter<HO.HostEvents> = new EventEmitter();
+export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> implements Emitter<E> {
+  protected readonly emitter: EventEmitter<E> = new EventEmitter();
   id: string = shortID();
   #bridge: OrchestrationBridge | null = null;
   #allowedOrigins: string[] = [ new URL(location.href).origin ];
@@ -35,11 +35,11 @@ export abstract class HostOrchestrator implements Emitter<HO.HostEvents> {
     }
   }
 
-  on (...args: Parameters<EventEmitter<HO.HostEvents>['on']>) {
+  on (...args: Parameters<EventEmitter<E>['on']>) {
     return this.emitter.on(...args);
   }
 
-  off (...args: Parameters<EventEmitter<HO.HostEvents>['off']>) {
+  off (...args: Parameters<EventEmitter<E>['off']>) {
     return this.emitter.off(...args);
   }
 
