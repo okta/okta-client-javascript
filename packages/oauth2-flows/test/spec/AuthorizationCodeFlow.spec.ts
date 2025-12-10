@@ -98,7 +98,7 @@ describe('AuthorizationCodeFlow', () => {
 
       const state = 'somestatevalue';
       const code = 'somecodevalue';
-      const context = { state, pkce: 'pkcecodechallenge' };
+      const context = { state, pkce: 'pkcecodechallenge', foo: 'bar' };
 
       beforeEach(() => {
         flow = new AuthorizationCodeFlow(client, flowParams);
@@ -214,6 +214,7 @@ describe('AuthorizationCodeFlow', () => {
       it('cannot exchange code for tokens', async () => {
         const oauthError = new OAuth2Error('some_oauth_error');
         spies.exchange.mockRejectedValue(oauthError);
+        expect(oauthError.context).toEqual({});
 
         const redirectUri = new URL(flowParams.redirectUri);
         redirectUri.searchParams.set('code', code);
@@ -222,6 +223,8 @@ describe('AuthorizationCodeFlow', () => {
         await expect(flow.resume(redirectUri.href)).rejects.toThrow(oauthError);
 
         expect(flow.inProgress).toEqual(false);
+        expect(flow.context).toEqual(null);   // flow.context will be cleared in `finally` block (via this.reset())
+        expect(oauthError.context).toEqual(context);    // error will be updated to contain flow context
         expect(spies.start).toHaveBeenCalledTimes(1);
         expect(spies.stop).toHaveBeenCalledTimes(1);
         expect(spies.error).toHaveBeenCalledTimes(1);

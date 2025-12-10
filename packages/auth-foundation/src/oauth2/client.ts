@@ -36,7 +36,7 @@ import { hasSameValues } from '../utils/index.ts';
  * @group OAuth2Client
  * @noInheritDoc
  */
-export class OAuth2Client extends APIClient {
+export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> extends APIClient<E> {
   /**
    * @group Customizations
    */
@@ -57,7 +57,7 @@ export class OAuth2Client extends APIClient {
   /** @internal */
   protected readonly queue: PromiseQueue = new PromiseQueue();
 
-  readonly emitter: EventEmitter<OAuth2Client.Events> = new EventEmitter();
+  readonly emitter: EventEmitter<E> = new EventEmitter();
   readonly configuration: OAuth2Client.Configuration;
 
   constructor (params: ConfigurationParams | OAuth2Client.Configuration) {
@@ -185,7 +185,7 @@ export class OAuth2Client extends APIClient {
     const tokenContext: Token.Context = {
       issuer: tokenRequest.openIdConfiguration.issuer,
       clientId: this.configuration.clientId,
-      scopes: this.configuration.scopes.split(' '),
+      scopes: (json.scope ?? this.configuration.scopes).split(' '),
       ...(acrValues && { acrValues }),
       ...(maxAge && { maxAge }),
       // TODO: client info

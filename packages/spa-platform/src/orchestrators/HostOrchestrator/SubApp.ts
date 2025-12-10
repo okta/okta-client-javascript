@@ -28,10 +28,10 @@ function toPrimitiveParams (
 }
 
 // TODO: doc this?
-export class SubAppOrchestrator extends TokenOrchestrator {
+export class SubAppOrchestrator<E extends HO.SubAppEvents = HO.SubAppEvents> extends TokenOrchestrator<E> {
   readonly id = shortID();
   protected readonly authParams: TokenOrchestrator.AuthorizeParams;
-  protected readonly emitter: EventEmitter<HO.SubAppEvents> = new EventEmitter();
+  protected readonly emitter: EventEmitter<E> = new EventEmitter();
   public defaultTimeout = 5000;
 
   #targetOrigin: string = new URL(location.origin).origin;

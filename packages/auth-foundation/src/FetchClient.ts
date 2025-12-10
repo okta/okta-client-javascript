@@ -16,7 +16,7 @@ import { pause } from './utils/index.ts';
  * The provided {@link TokenOrchestrator} is used to retrieve {@link Token}s which match the criteria passed in via
  * {@link TokenOrchestrator.AuthorizeParams}, like `issuer`, `client` and `scopes`. Once a valid {@link Token} is found, the request is made
  */
-export class FetchClient extends APIClient {
+export class FetchClient<E extends APIClient.Events = APIClient.Events> extends APIClient<E> {
 
   constructor (
     private readonly orchestrator: TokenOrchestrator,
