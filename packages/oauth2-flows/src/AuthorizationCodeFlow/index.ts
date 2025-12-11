@@ -91,11 +91,12 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
     this.additionalParameters = additionalParameters ?? {};
   }
 
+  /** Alias for {@link AuthorizationCodeFlow.inProgess} */
   public get isAuthenticating (): boolean {
     return this.inProgress;
   }
 
-  reset () {
+  public reset () {
     super.reset();
     this.context = null;
     this.authorizeUrl = null;
@@ -193,7 +194,7 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
   }
 
   /**
-   * Initiates an Authorization Code flow
+   * Initiates an Authorization Code flow. Prepares PKCE data and generates an `/authorize` URL
    * 
    * @param stateData - A map of key/values to be loaded upon redirect from `Authorization Server` back to `Web App`
    * @param context - **Optional.** {@link AuthorizationCodeFlow.Context} can be provided. One will be created if none is provided
@@ -237,13 +238,18 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
   }
 
   /**
-   * Continues an Authorization Code flow. Used when handling the redirect back to the `Web App` from an `Authorization Server`
+   * Continues an Authorization Code flow. Used when handling the redirect from an `Authorization Server`
    * 
    * @remarks
    * This method will only be used with `Redirect Model`
    * 
-   * @param redirectUri 
-   * @returns 
+   * @param redirectUri - The `url` the `Authorization Server` redirected to. The query parameters will be parsed and used to continue the flow.
+   * @returns The validated {@link Token} received during the code exchange and the `context` associated with the flow, including the `stateData` values
+   * provided in {@link AuthorizationCodeFlow.start}
+   * @throws {@link AuthenticationFlowError} - Thrown when a transaction cannot be found for the provided `state` value
+   * @throws {@link OAuth2Error} - Thrown when an OAuth2 error is returned by the `Authorization Server` during code exchange
+   * @throws {@link DPoPError} - Thrown when an issued occurs during code exchange related to DPoP private key generation
+   * @throws {@link JWTError} - Thrown when tokens received from code exchange cannot be validated
    */
   async resume (redirectUri?: string): Promise<AuthorizationCodeFlow.Result> {
     this.inProgress = true;

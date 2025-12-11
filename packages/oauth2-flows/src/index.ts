@@ -1,6 +1,5 @@
 /**
- * @packageDocumentation
- * @internal
+ * @module Core
  */
 
 import { addEnv } from '@okta/auth-foundation/internal';

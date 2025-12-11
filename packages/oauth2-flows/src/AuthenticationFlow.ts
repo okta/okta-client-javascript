@@ -1,11 +1,17 @@
 /**
- * @module Core
+ * @module
+ * @mergeModuleWith Core
  */
 
-import { EventEmitter, Emitter, AuthSdkError } from '@okta/auth-foundation';
+import {
+  type Emitter,
+  EventEmitter,
+  AuthSdkError
+} from '@okta/auth-foundation';
 
 
 /**
+ * @noInheritDoc
  * @group Errors
  */
 export class AuthenticationFlowError extends AuthSdkError {}
@@ -35,6 +41,9 @@ export abstract class AuthenticationFlow<E extends AuthenticationFlowEvents = Au
     this.emitter.off(...args);
   }
   
+  /**
+   * Indicates whether the flow instance is currently in progress
+   */
   public get inProgress (): boolean {
     return this.#inProgress;
   }
@@ -49,6 +58,9 @@ export abstract class AuthenticationFlow<E extends AuthenticationFlowEvents = Au
     }
   }
 
+  /**
+   * Resets the flow instance to a fresh state
+   */
   public reset () {
     this.inProgress = false;
   }

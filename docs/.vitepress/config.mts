@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress'
 import authFoundationSidebar from './typedoc-configs/auth-foundation-sidebar.json';
 import oauth2FlowsSiderbar from './typedoc-configs/oauth2-flow-sidebar.json';
 import spaPlatformSidebar from './typedoc-configs/spa-platform-sidebar.json';
-
+import foo from '../api/oauth2-flows/typedoc-sidebar.json';
 
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
@@ -32,7 +32,7 @@ export default defineConfig({
         text: `v${minorVersion} (beta)`,
         items: [
           // TODO: update before public release
-          { text: 'Changelog', link: 'https://github.com/okta/okta-auth-js/blob/master/CHANGELOG.md' }
+          { text: 'Changelog', link: 'https://github.com/okta/okta-client-javascript/blob/master/CHANGELOG.md' }
         ]
       }
     ],
@@ -99,7 +99,7 @@ export default defineConfig({
         {
           text: 'oauth2-flows',
           link: '/api/oauth2-flows/',
-          items: oauth2FlowsSiderbar
+          items: foo
         },
         {
           text: 'spa-platform',
@@ -110,7 +110,7 @@ export default defineConfig({
     },
 
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/vuejs/vitepress' }
+      { icon: 'github', link: 'https://github.com/okta/okta-client-javascript' }
     ]
   },
   ignoreDeadLinks: true

@@ -9,6 +9,7 @@ import { JsonRecord } from '../types/lib.ts';
  * Base Error class for all errors defined within Okta Client JavaScript
  * 
  * @group Errors
+ * @noInheritDoc
  */
 export class AuthSdkError extends Error {
   /**

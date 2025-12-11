@@ -1,5 +1,6 @@
 /**
- * @module Core
+ * @module
+ * @mergeModuleWith Core
  */
 
 import { AuthSdkError } from '@okta/auth-foundation';

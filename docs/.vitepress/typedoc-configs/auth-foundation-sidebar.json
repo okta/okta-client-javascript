@@ -459,6 +459,10 @@
     ]
   },
   {
+    "text": "FetchClient",
+    "link": "/api/auth-foundation/FetchClient/classes/FetchClient.md"
+  },
+  {
     "text": "Customizations",
     "collapsed": true,
     "items": [

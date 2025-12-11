@@ -8,7 +8,7 @@ export function load (app) {
       // console.log('page', page)
       const { children, childrenIncludingDocuments, ...model } = page.model;
       console.log(model)
-      console.log(model?.typeHierarchy?.types)
+      // console.log(model?.typeHierarchy?.types)
       console.log('filename', page.filename);
     }
   });

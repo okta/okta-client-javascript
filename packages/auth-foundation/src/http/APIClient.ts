@@ -55,7 +55,8 @@ export abstract class APIClient<E extends APIClient.Events = APIClient.Events> {
   }
 
   /**
-   * Registers an {@link APIClient.RequestInterceptor} on the {@link APIClient}
+   * Registers an {@link Networking.APIClient.RequestInterceptor | APIClient.RequestInterceptor} on the
+   * {@link Networking.APIClient | APIClient}
    * 
    * @example
    * const interceptor = (request: Request) => {
@@ -69,7 +70,8 @@ export abstract class APIClient<E extends APIClient.Events = APIClient.Events> {
   }
 
   /**
-   * Unregisters an {@link APIClient.RequestInterceptor} on the {@link APIClient}
+   * Unregisters an {@link Networking.APIClient.RequestInterceptor | APIClient.RequestInterceptor} on the
+   * {@link Networking.APIClient | APIClient}
    * 
    * @example
    * const interceptor = (request: Request) => { ... };
@@ -240,7 +242,7 @@ export namespace APIClient {
   export type RequestOptions = {
     /**
      * When `true`, utilizes the provided {@link TokenOrchestrator} to acquire an access token to sign the outgoing request with the proper
-     * `Authorization` and `Dpop` headers, depending on the {@link TokenType} of the acquired {@link Token}. Defaults to `true`
+     * `Authorization` and `Dpop` headers, depending on the {@link OAuth2.TokenType} of the acquired {@link Token}. Defaults to `true`
      */
     authorizeRequest: boolean | ((request: APIRequest) => boolean);
   };
@@ -260,7 +262,7 @@ export namespace APIClient {
      */
     'did_send': { request: Request, response: Response },
     /**
-     * Fired after a {@link fetch} call fails to complete (`TypeError: Failed to fetch`)
+     * Fired after a {@link !fetch} call fails to complete (`TypeError: Failed to fetch`)
      */
     'network_failure': { request: Request, error: APIClientError, cause: Error }
   };

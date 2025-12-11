@@ -1,11 +1,11 @@
 {
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
-    "lib": [
-      "dom"
-    ],
     "isolatedModules": false
   },
+  "lib": [
+    "dom"
+  ],
   "include": [
     "../packages/auth-foundation/src/**/*.js",
     "../packages/auth-foundation/src/**/*.ts",

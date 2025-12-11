@@ -13,7 +13,7 @@
   "out": "../../api/oauth2-flows",
   "excludeReferences": true,
   "sidebar": {
-    "autoConfiguration": false
+    "autoConfiguration": true
   },
   "useTsLinkResolution": true,
   "excludeScopesInPaths": true
