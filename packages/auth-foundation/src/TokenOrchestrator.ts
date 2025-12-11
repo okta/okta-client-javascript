@@ -23,14 +23,14 @@ import { EventEmitter } from './utils/EventEmitter.ts';
  *
  * @see {@link FetchClient}
  */
-export abstract class TokenOrchestrator implements RequestAuthorizer {
-  protected readonly emitter: EventEmitter<TokenOrchestrator.Events> = new EventEmitter();
+export abstract class TokenOrchestrator<E extends TokenOrchestrator.Events = TokenOrchestrator.Events> implements RequestAuthorizer {
+  protected readonly emitter: EventEmitter<E> = new EventEmitter();
 
-  on (...args: Parameters<EventEmitter<TokenOrchestrator.Events>['on']>) {
+  on (...args: Parameters<EventEmitter<E>['on']>) {
     return this.emitter.on(...args);
   }
 
-  off (...args: Parameters<EventEmitter<TokenOrchestrator.Events>['off']>) {
+  off (...args: Parameters<EventEmitter<E>['off']>) {
     return this.emitter.off(...args);
   }
 

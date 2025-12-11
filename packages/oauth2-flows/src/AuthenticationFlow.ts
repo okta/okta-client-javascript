@@ -22,16 +22,16 @@ export type AuthenticationFlowEvents = {
 /**
  * Abstract class representing an authentication flow
  */
-export abstract class AuthenticationFlow implements Emitter<AuthenticationFlowEvents> {
-  protected readonly emitter: EventEmitter<AuthenticationFlowEvents> = new EventEmitter();
+export abstract class AuthenticationFlow<E extends AuthenticationFlowEvents = AuthenticationFlowEvents> implements Emitter<E> {
+  protected readonly emitter: EventEmitter<E> = new EventEmitter();
   protected pending: boolean = false;
   #inProgress: boolean = false;
 
-  on (...args: Parameters<EventEmitter<AuthenticationFlowEvents>['on']>): void {
+  on (...args: Parameters<EventEmitter<E>['on']>): void {
     this.emitter.on(...args);
   }
 
-  off (...args: Parameters<EventEmitter<AuthenticationFlowEvents>['off']>): void {
+  off (...args: Parameters<EventEmitter<E>['off']>): void {
     this.emitter.off(...args);
   }
   

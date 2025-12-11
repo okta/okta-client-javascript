@@ -22,7 +22,7 @@ export namespace HostOrchestrator {
    * 
    * @group Host
    */
-  export abstract class Host extends HostApp {}
+  export abstract class Host<E extends HostEvents = HostEvents> extends HostApp<E> {}
 
   /**
    * A {@link AuthFoundation!TokenOrchestrator | TokenOrchestrator} instance which delegates all {@link Platform.Token | Token}
@@ -30,13 +30,13 @@ export namespace HostOrchestrator {
    * 
    * @group SubApp
    */
-  export class SubApp extends SubAppOrchestrator {}
+  export class SubApp<E extends SubAppEvents = SubAppEvents> extends SubAppOrchestrator<E> {}
 
   /**
    * A utility class to adapt any {@link AuthFoundation!TokenOrchestrator | TokenOrchestrator} instance into a {@link HostOrchestrator.Host}
    * @group ProxyHost
    */
-  export class ProxyHost extends HostOrchestrator.Host {
+  export class ProxyHost<E extends HostEvents = HostEvents> extends HostOrchestrator.Host<E> {
     constructor (name: string, protected readonly orchestrator: Exclude<TokenOrchestrator, HostOrchestrator.SubApp>) {
       if (orchestrator instanceof HostOrchestrator.SubApp) {
         throw new TypeError('HostOrchestrator.SubApp cannot be adapted to a host');
