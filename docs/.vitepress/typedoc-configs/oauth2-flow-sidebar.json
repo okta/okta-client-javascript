@@ -1,76 +1,82 @@
 [
   {
-    "text": "Core",
-    "link": "/api/oauth2-flows/Core/",
-    "collapsed": true,
-    "items": [
-      {
-        "text": "AuthenticationFlow",
-        "collapsed": true,
-        "link": "/api/oauth2-flows/Core/classes/AuthenticationFlow.md",
-        "items": [
-          {
-            "text": "Options",
-            "link": "/api/oauth2-flows/Core/namespaces/AuthenticationFlow/interfaces/Options.md"
-          }
-        ]
-      },
-      {
-        "text": "AuthenticationFlowError",
-        "link": "/api/oauth2-flows/Core/classes/AuthenticationFlowError.md"
-      },
-      {
-        "text": "TransactionStorage",
-        "link": "/api/oauth2-flows/Core/interfaces/TransactionStorage.md"
-      }
-    ]
-  },
-  {
     "text": "AuthorizationCodeFlow",
-    "link": "/api/oauth2-flows/AuthorizationCodeFlow/classes/AuthorizationCodeFlow.md",
+    "link": "/api/oauth2-flows/AuthorizationCodeFlow.md",
     "collapsed": true,
     "items": [
       {
-        "text": "RedirectValues",
-        "link": "/api/oauth2-flows/AuthorizationCodeFlow/namespaces/AuthorizationCodeFlow/interfaces/RedirectValues.md"
+        "text": "Class",
+        "link": "/api/oauth2-flows/AuthorizationCodeFlow/AuthorizationCodeFlow.md"
       },
       {
-        "text": "Context",
-        "link": "/api/oauth2-flows/AuthorizationCodeFlow/namespaces/AuthorizationCodeFlow/interfaces/Context.md"
+        "text": "Namespace",
+        "link": "/api/oauth2-flows/AuthorizationCodeFlow/AuthorizationCodeFlow-1.md"
       }
     ]
   },
   {
     "text": "SessionLogoutFlow",
-    "link": "/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow.md",
+    "link": "/api/oauth2-flows/SessionLogoutFlow.md",
     "collapsed": true,
     "items": [
       {
-        "text": "Context",
-        "link": "/api/oauth2-flows/SessionLogoutFlow/namespaces/SessionLogoutFlow/interfaces/Context.md"
+        "text": "Class",
+        "link": "/api/oauth2-flows/SessionLogoutFlow/SessionLogoutFlow.md"
       },
       {
-        "text": "LogoutParams",
-        "link": "/api/oauth2-flows/SessionLogoutFlow/namespaces/SessionLogoutFlow/type-aliases/LogoutParams.md"
-      },
-      {
-        "text": "InitOptions",
-        "link": "/api/oauth2-flows/SessionLogoutFlow/namespaces/SessionLogoutFlow/type-aliases/InitOptions.md"
-      },
-      {
-        "text": "Result",
-        "link": "/api/oauth2-flows/SessionLogoutFlow/namespaces/SessionLogoutFlow/type-aliases/Result.md"
+        "text": "Namespace",
+        "link": "/api/oauth2-flows/SessionLogoutFlow/SessionLogoutFlow-1.md"
       }
     ]
   },
   {
-    "text": "Types",
-    "link": "/api/oauth2-flows/Types/",
+    "text": "Core",
+    "link": "/api/oauth2-flows/Core.md",
     "collapsed": true,
     "items": [
       {
-        "text": "AuthContext",
-        "link": "/api/oauth2-flows/Types/type-aliases/AuthContext.md"
+        "text": "Base Flows",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "LogoutFlow",
+            "link": "/api/oauth2-flows/Core/LogoutFlow.md"
+          }
+        ]
+      },
+      {
+        "text": "Errors",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "AuthenticationFlowError",
+            "link": "/api/oauth2-flows/Core/AuthenticationFlowError.md"
+          },
+          {
+            "text": "LogoutFlowError",
+            "link": "/api/oauth2-flows/Core/LogoutFlowError.md"
+          }
+        ]
+      },
+      {
+        "text": "EventEmitter",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "AuthenticationFlowEvents",
+            "link": "/api/oauth2-flows/Core/AuthenticationFlowEvents.md"
+          }
+        ]
+      },
+      {
+        "text": "Types",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "TransactionStorage",
+            "link": "/api/oauth2-flows/Core/TransactionStorage.md"
+          }
+        ]
       }
     ]
   }

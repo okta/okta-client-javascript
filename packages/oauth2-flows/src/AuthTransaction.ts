@@ -6,7 +6,10 @@
 import { randomBytes, type JsonRecord } from '@okta/auth-foundation';
 import { AuthContext } from './types.ts';
 
-
+/**
+ * Defines the storage layer for authentication transactions
+ * @group Types
+ */
 export interface TransactionStorage {
   get (key: string): Promise<JsonRecord | undefined>
   add (key: string, item: JsonRecord): Promise<void>;

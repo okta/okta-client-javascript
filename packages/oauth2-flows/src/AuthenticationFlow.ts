@@ -27,6 +27,8 @@ export type AuthenticationFlowEvents = {
 
 /**
  * Abstract class representing an authentication flow
+ * 
+ * @group Base Flows
  */
 export abstract class AuthenticationFlow<E extends AuthenticationFlowEvents = AuthenticationFlowEvents> implements Emitter<E> {
   protected readonly emitter: EventEmitter<E> = new EventEmitter();
@@ -75,7 +77,7 @@ export abstract class AuthenticationFlow<E extends AuthenticationFlowEvents = Au
 }
 
 export namespace AuthenticationFlow {
-  export interface Options {
+  export interface Init {
     issuer: string | URL;
     clientId: string;
     scopes: string | string[];

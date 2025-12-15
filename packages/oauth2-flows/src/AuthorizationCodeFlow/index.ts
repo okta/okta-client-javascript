@@ -66,14 +66,14 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
   readonly redirectUri: string;
   readonly additionalParameters: Record<string, string>;
 
-  protected context: AuthorizationCodeFlow.Context | null = null;
-  protected authorizeUrl: URL | null = null;
+  #context: AuthorizationCodeFlow.Context | null = null;
+  #authorizeUrl: URL | null = null;
 
-  constructor (options: AuthorizationCodeFlow.InitOptions);
+  constructor (params: AuthorizationCodeFlow.InitParams);
   constructor (client: OAuth2Client, options: AuthorizationCodeFlow.RedirectParams);
   constructor (
-    client: OAuth2Client | AuthorizationCodeFlow.InitOptions,
-    options?: AuthorizationCodeFlow.InitOptions | AuthorizationCodeFlow.RedirectParams
+    client: OAuth2Client | AuthorizationCodeFlow.InitParams,
+    params?: AuthorizationCodeFlow.InitParams | AuthorizationCodeFlow.RedirectParams
   ) {
     super();
     if (client instanceof OAuth2Client) {
@@ -82,13 +82,29 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
     else {
       const { issuer, redirectUri, additionalParameters, ...oauth2Params } = client;
       this.client = new OAuth2Client({ baseURL: issuer, ...oauth2Params });
-      options = { redirectUri, additionalParameters };
+      params = { redirectUri, additionalParameters };
     }
 
-    const { redirectUri, additionalParameters } = options as AuthorizationCodeFlow.RedirectParams;
+    const { redirectUri, additionalParameters } = params as AuthorizationCodeFlow.RedirectParams;
 
     this.redirectUri = (new URL(redirectUri)).href;
     this.additionalParameters = additionalParameters ?? {};
+  }
+
+  public get context (): AuthorizationCodeFlow.Context | null {
+    return this.#context;
+  }
+
+  protected set context (context: AuthorizationCodeFlow.Context | null) {
+    this.#context = context;
+  }
+
+  public get authorizeUrl (): URL | null {
+    return this.#authorizeUrl;
+  }
+
+  protected set authorizeUrl (url: URL | null) {
+    this.#authorizeUrl = url;
   }
 
   /** Alias for {@link AuthorizationCodeFlow.inProgess} */
@@ -320,14 +336,26 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
   }
 }
 
+/**
+ * Types associated with {@link AuthorizationCodeFlow}
+ */
 export namespace AuthorizationCodeFlow {
+  /**
+   * Unique parameters for {@link AuthorizationCodeFlow}
+   */
   export type RedirectParams = {
     redirectUri: string | URL;
     additionalParameters?: Record<string, string>;
   };
 
-  export type InitOptions = AuthenticationFlow.Options & RedirectParams;
+  /**
+   * Initialization parameters for {@link AuthorizationCodeFlow}
+   */
+  export type InitParams = AuthenticationFlow.Init & RedirectParams;
 
+  /**
+   * Resulting happy-path values from a post-authentication {@link AuthorizationCodeFlow} redirect
+   */
   export interface RedirectValues {
     code: string;
     state: string;
@@ -347,6 +375,9 @@ export namespace AuthorizationCodeFlow {
     acrValues?: AcrValues;
   }
 
+  /**
+   * Resulting values of a successful end-to-end {@link AuthorizationCodeFlow} flow
+   */
   export type Result = {
     token: Token;
     context: Record<string, any>;
