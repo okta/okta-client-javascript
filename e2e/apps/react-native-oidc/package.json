@@ -1,6 +1,6 @@
 {
   "name": "@repo/react-native-oidc",
-  "main": "expo-router/entry",
+  "main": "index.js",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
@@ -14,6 +14,7 @@
     "@expo/vector-icons": "^15.0.3",
     "@okta/auth-foundation": "*",
     "@okta/oauth2-flows": "*",
+    "@okta/react-native-webcrypto": "*",
     "@react-navigation/bottom-tabs": "^7.3.10",
     "@react-navigation/elements": "^2.3.8",
     "@react-navigation/native": "^7.1.6",

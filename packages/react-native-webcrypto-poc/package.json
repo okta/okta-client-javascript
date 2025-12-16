@@ -1,7 +1,0 @@
-{
-  "name": "@okta/react-native-webcrypto-poc",
-  "version": "0.0.1",
-  "peerDependencies": {
-    "expo-cryto": "^13.0.0"
-  }
-}
