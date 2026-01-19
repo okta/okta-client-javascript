@@ -1,2 +1,2 @@
-export { moduleWebCryptoPollyfill } from "./WebCryptoPolyfill";
-export { getWebCryptoNativeBridge } from "./NativeBridge";
+export { moduleWebCryptoPollyfill } from "./webCrypto/WebCryptoPolyfill";
+export { getWebCryptoNativeBridge } from "./webCrypto/WebCryptoNativeBridge";

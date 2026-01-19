@@ -1,4 +1,4 @@
-import { getWebCryptoNativeBridge } from "./NativeBridge";
+import { getWebCryptoNativeBridge } from "./WebCryptoNativeBridge";
 
 function bytesToBase64(bytes: Uint8Array): string {
   let s = "";
@@ -22,6 +22,27 @@ function base64ToBytes(b64: string): Uint8Array {
   }
 
   return out;
+}
+
+function abToBase64(data: ArrayBuffer | ArrayBufferView): string {
+  const u8 =
+    data instanceof ArrayBuffer
+      ? new Uint8Array(data)
+      : new Uint8Array(
+          data.buffer as ArrayBuffer,
+          data.byteOffset,
+          data.byteLength
+        );
+
+  return bytesToBase64(u8);
+}
+
+function base64ToAb(b64: string): ArrayBuffer {
+  const u8 = base64ToBytes(b64);
+  const out = new Uint8Array(u8.length);
+  out.set(u8);
+
+  return out.buffer;
 }
 
 export function moduleWebCryptoPollyfill() {
@@ -50,6 +71,53 @@ export function moduleWebCryptoPollyfill() {
       hashBytes.byteOffset,
       hashBytes.byteOffset + hashBytes.byteLength
     );
+  };
+
+  g.crypto.subtle.generateKey = async (
+    algorithm: any,
+    extractable: boolean,
+    keyUsages: string[]
+  ) => {
+    const res = await bridge.generateKey(algorithm, extractable, keyUsages);
+
+    return res as any;
+  };
+
+  g.crypto.subtle.importKey = async (
+    format: string,
+    keyData: ArrayBuffer | ArrayBufferView | JsonWebKey,
+    algorithm: any,
+    extractable: boolean,
+    keyUsages: string[]
+  ) => {
+    let payload: string;
+
+    if (format === "jwk") {
+      payload = JSON.stringify(keyData);
+    } else {
+      payload = abToBase64(keyData as ArrayBuffer | ArrayBufferView);
+    }
+
+    const key = await bridge.importKey(
+      format as any,
+      payload,
+      algorithm,
+      extractable,
+      keyUsages
+    );
+
+    return key as any;
+  };
+
+  g.crypto.subtle.sign = async (
+    algorithm: any,
+    key: any,
+    data: ArrayBuffer | ArrayBufferView
+  ) => {
+    const dataB64 = abToBase64(data);
+    const sigB64 = await bridge.sign(algorithm, key, dataB64);
+
+    return base64ToAb(sigB64);
   };
 
   g.crypto.getRandomValues = (typedArray: ArrayBufferView) => {

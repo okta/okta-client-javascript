@@ -31,4 +31,8 @@ export default ({ config }: ConfigContext) => ({
   android: {
     package: "com.anonymous.reporeactnativeoidc",
   },
+  ios: {
+    ...(config.ios ?? {}),
+    bundleIdentifier: "com.anonymous.reporeactnativeoidc",
+  },
 });
