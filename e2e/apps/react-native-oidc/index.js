@@ -1,4 +1,4 @@
-import { moduleWebCryptoPollyfill } from "@okta/react-native-webcrypto";
+import { moduleWebCryptoPollyfill } from "@okta/react-native";
 console.log("TESTSSSSSS");
 
 moduleWebCryptoPollyfill();

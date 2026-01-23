@@ -3,9 +3,9 @@ require "json"
 package = JSON.parse(File.read(File.join(__dir__, "package.json")))
 
 Pod::Spec.new do |s|
-    s.name         = "react-native-webcrypto"
+    s.name         = "okta-react-native"
     s.version      = package["version"]
-    s.summary      = package["description"] || "WebCrypto helper for React Native"
+    s.summary      = package["description"] || "WebCrypto and Secure Storage helper for React Native"
     s.license      = package["license"] || "MIT"
     s.authors      = package["author"] || "Okta"
     s.homepage     = "https://github.com/okta/okta-client-javascript"

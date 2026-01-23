@@ -1,6 +1,6 @@
 import { getWebCryptoNativeBridge } from "./WebCryptoNativeBridge";
 
-function bytesToBase64(bytes: Uint8Array): string {
+export function bytesToBase64(bytes: Uint8Array): string {
   let s = "";
   for (let i = 0; i < bytes.length; i++) {
     s += String.fromCharCode(bytes[i]);
@@ -31,7 +31,7 @@ function abToBase64(data: ArrayBuffer | ArrayBufferView): string {
       : new Uint8Array(
           data.buffer as ArrayBuffer,
           data.byteOffset,
-          data.byteLength
+          data.byteLength,
         );
 
   return bytesToBase64(u8);
@@ -69,14 +69,14 @@ export function moduleWebCryptoPollyfill() {
 
     return hashBytes.buffer.slice(
       hashBytes.byteOffset,
-      hashBytes.byteOffset + hashBytes.byteLength
+      hashBytes.byteOffset + hashBytes.byteLength,
     );
   };
 
   g.crypto.subtle.generateKey = async (
     algorithm: any,
     extractable: boolean,
-    keyUsages: string[]
+    keyUsages: string[],
   ) => {
     const res = await bridge.generateKey(algorithm, extractable, keyUsages);
 
@@ -88,7 +88,7 @@ export function moduleWebCryptoPollyfill() {
     keyData: ArrayBuffer | ArrayBufferView | JsonWebKey,
     algorithm: any,
     extractable: boolean,
-    keyUsages: string[]
+    keyUsages: string[],
   ) => {
     let payload: string;
 
@@ -103,7 +103,7 @@ export function moduleWebCryptoPollyfill() {
       payload,
       algorithm,
       extractable,
-      keyUsages
+      keyUsages,
     );
 
     return key as any;
@@ -112,7 +112,7 @@ export function moduleWebCryptoPollyfill() {
   g.crypto.subtle.sign = async (
     algorithm: any,
     key: any,
-    data: ArrayBuffer | ArrayBufferView
+    data: ArrayBuffer | ArrayBufferView,
   ) => {
     const dataB64 = abToBase64(data);
     const sigB64 = await bridge.sign(algorithm, key, dataB64);
@@ -133,7 +133,7 @@ export function moduleWebCryptoPollyfill() {
     if (length > 65536) {
       throw new DOMException(
         "The requested length exceeds the maximum allowed (65536 bytes)",
-        "QuotaExceededError"
+        "QuotaExceededError",
       );
     }
 
@@ -142,7 +142,7 @@ export function moduleWebCryptoPollyfill() {
     new Uint8Array(
       typedArray.buffer,
       typedArray.byteOffset,
-      typedArray.byteLength
+      typedArray.byteLength,
     ).set(bytes);
 
     return typedArray;

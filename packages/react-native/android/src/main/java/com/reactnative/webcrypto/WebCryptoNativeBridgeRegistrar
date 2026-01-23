@@ -1,4 +1,4 @@
-package com.reactnative.webcrypto
+package com.reactnative
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
