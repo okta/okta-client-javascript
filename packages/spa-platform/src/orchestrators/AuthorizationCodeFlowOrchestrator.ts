@@ -106,11 +106,31 @@ export class AuthorizationCodeFlowOrchestrator<
   }
 
   /**
+   * Defines how to revoke active tokens
+   */
+  protected async clearCredentials (clearOnly: boolean = false, tags: string[] | undefined = this.options.tags) {
+    return Promise.all(
+      (await Credential.find({ tags })).map(cred => clearOnly ? cred.remove() : cred.revoke())
+    );
+  }
+
+  /**
    * Defines how to request a token from Authorization Server
    */
   protected async requestToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null> {
     if (this.flow.inProgress) {
       throw new TokenOrchestratorError('flow already in progress');
+    }
+
+    // TODO: add more options for step-up auth - or consider having a separate orchestrator (simple + step-up)
+    if (params.maxAge && params.acrValues) {
+      const result = await AuthorizationCodeFlow.PerformInPopup(this.flow);
+      if (result.completed) {
+        this.storeCredential(result.token);
+      }
+      else {
+        throw new TokenOrchestratorError('step up authentication failed');
+      }
     }
 
     // TODO: handle requesting tokens from a different AS than the current flow is configured against

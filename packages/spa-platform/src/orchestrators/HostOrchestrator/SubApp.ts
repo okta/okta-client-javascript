@@ -63,8 +63,16 @@ export class SubAppOrchestrator<E extends HO.SubAppEvents = HO.SubAppEvents> ext
   }
 
   protected getTokenCacheKey (params: TokenOrchestrator.AuthorizeParams): Promise<string> {
-    const { scopes, ...rest } = { ...this.authParams, ...params };
+    // don't include maxAge in hash. Uses with maxAge cannot use cached token
+    const { scopes, maxAge, ...rest } = { ...this.authParams, ...params };
     return hashObject({ ...rest, scopes: scopes?.sort() });
+  }
+
+  // determines whether a request for a token should check the local cache for matching token
+  // before sending request to Host
+  protected isCacheEligible (params: TokenOrchestrator.AuthorizeParams): boolean {
+    const { maxAge } = params;
+    return !!maxAge;
   }
 
   protected async ping (timeout: number): Promise<boolean> {
@@ -120,19 +128,21 @@ export class SubAppOrchestrator<E extends HO.SubAppEvents = HO.SubAppEvents> ext
     const authParams = {...this.authParams, ...ignoreUndefineds(params)};
     const cacheKey = await this.getTokenCacheKey(authParams);
 
-    if (this.#tokenCache.has(cacheKey)) {
-      const token = this.#tokenCache.get(cacheKey)!;
-      if (token.willBeValidIn(30)) {
-        return token;
+    if (this.isCacheEligible(authParams)) {
+      if (this.#tokenCache.has(cacheKey)) {
+        const token = this.#tokenCache.get(cacheKey)!;
+        if (token.willBeValidIn(30)) {
+          return token;
+        }
+        else {
+          // remove expired token from cache
+          this.#tokenCache.delete(cacheKey);
+        }
       }
-      else {
-        // remove expired token from cache
-        this.#tokenCache.delete(cacheKey);
+  
+      if (this.#pendingRequests.has(cacheKey)) {
+        return await this.#pendingRequests.get(cacheKey)!;
       }
-    }
-
-    if (this.#pendingRequests.has(cacheKey)) {
-      return await this.#pendingRequests.get(cacheKey)!;
     }
 
     const request = this.requestToken(authParams);

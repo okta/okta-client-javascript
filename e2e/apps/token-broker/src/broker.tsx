@@ -5,7 +5,7 @@ import {
   AcrValues
 } from '@okta/auth-foundation';
 import { Credential, Token, HostOrchestrator } from '@okta/spa-platform';
-import { signIn, signOutFlow, getMordorToken, handleAcrStepUp } from './auth';
+import { signIn, signOutFlow, getMordorToken, handleStepUp } from './auth.js';
 
 
 const ADMIN_SPA_BROKER_TOKEN_TAG = 'admin-spa:broker-token';
@@ -106,26 +106,32 @@ class TokenBroker extends HostOrchestrator.Host {
 
   // TODO: add allow/deny lists of scopes
   async findToken ({ scopes, acrValues, maxAge }: BrokerAuthParams): Promise<Token | OAuth2ErrorResponse> {
-    // 1 - check storage for a existing token that matches the required scopes
-    const storedToken = await this.storageLookup({ scopes, acrValues });
-    if (storedToken) {
-      return storedToken;
+    let refreshToken: Credential | null = null;
+
+    // 0 - A `maxAge` is specified, this indicates re-prompt is required
+    if (maxAge) {
+      // NOTE: 
+      // Per spec, when higher assurance is required (`acr_values`) a `max_age` will also be provided by the Resource Server
+      // therefore we are not handling scenarios where only one of `acrValues` or `maxAge` is provided
+
+      // `handleStepUp` clears existing tokens
+      refreshToken = await handleStepUp(maxAge, acrValues);
     }
+    else {
+      // 1 - check storage for a existing token that matches the required scopes
+      const storedToken = await this.storageLookup({ scopes, acrValues });
+      if (storedToken) {
+        return storedToken;
+      }
 
-    // 2 - No matching/valid tokens found, token request is now required
+      // 2 - No matching/valid tokens found, token request is now required
 
-    // verify the "mordor" token is available
-    let refreshToken = await getMordorToken();
-    if (!refreshToken) {
-      await signIn();   // will trigger redirect to AS (this promise never resolves)
-      return { error: 'failed to authenticate' };  // should never reached
-    }
-
-    // No token with required acr value was found in storage, force prompt to acquire new mordor token
-    if (acrValues && refreshToken.token.context.acrValues !== acrValues) {
-      // TODO: amend timeout
-      // TODO: lock on the popup window?
-      refreshToken = await handleAcrStepUp(acrValues, maxAge);
+      // verify the "mordor" token is available
+      refreshToken = await getMordorToken();
+      if (!refreshToken) {
+        await signIn();   // will trigger redirect to AS (this promise never resolves)
+        return { error: 'failed to authenticate' };  // should never reached
+      }
     }
 
     // attempt a downscope refresh request

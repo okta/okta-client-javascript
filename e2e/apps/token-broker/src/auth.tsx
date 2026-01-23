@@ -59,10 +59,10 @@ export async function handleAuthorizationCodeFlowResponse () {
   }
 }
 
-export async function handleAcrStepUp (acrValues: AcrValues, maxAge: number = 1) {
+export async function handleStepUp (maxAge: number, acrValues?: AcrValues): Promise<Credential> {
   // provide `acrValues` to request a token with a higher assurance level
   // provide `maxAge` to force a re-prompt
-  await signInFlow.start({}, { acrValues, maxAge: maxAge });
+  await signInFlow.start({}, { acrValues, maxAge });
 
   // request new mordor token with higher assurance level
   const result = await AuthorizationCodeFlow.PerformInPopup(signInFlow);
@@ -77,7 +77,7 @@ export async function handleAcrStepUp (acrValues: AcrValues, maxAge: number = 1)
   // clear all existing tokens from storage (presumably they have been minted at the lower assurance level)
   await clearBrokerTokens();
   const mainCredential = await getMordorToken();
-  await mainCredential?.remove();
+  await mainCredential?.revoke();
 
   // store the new morder token
   return await Credential.store(token, [ADMIN_SPA_REFRESH_TOKEN_TAG]);
