@@ -60,11 +60,17 @@ import { AuthTransaction } from '../AuthTransaction.ts';
  * - {@link https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow | Auth0}
  * - {@link https://oauth.net/2/grant-types/authorization-code | OAuth.net}
  * - {@link https://datatracker.ietf.org/doc/html/rfc6749#section-1.3.1 | RFC}
+ * - {@link https://datatracker.ietf.org/doc/html/rfc9126 | Pushed Authorization Request (PAR)}
  */
 export class AuthorizationCodeFlow extends AuthenticationFlow {
   readonly client: OAuth2Client;
   readonly redirectUri: string;
   readonly additionalParameters: Record<string, string>;
+
+  /**
+   * Determines whether a Pushed Authorization Request (PAR) should be utilized
+   */
+  public parEnabled = false;
 
   protected context: AuthorizationCodeFlow.Context | null = null;
   protected authorizeUrl: URL | null = null;
@@ -85,10 +91,11 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
       options = { redirectUri, additionalParameters };
     }
 
-    const { redirectUri, additionalParameters } = options as AuthorizationCodeFlow.RedirectParams;
+    const { redirectUri, parEnabled = false, additionalParameters } = options as AuthorizationCodeFlow.RedirectParams;
 
     this.redirectUri = (new URL(redirectUri)).href;
     this.additionalParameters = additionalParameters ?? {};
+    this.parEnabled = parEnabled;
   }
 
   public get isAuthenticating (): boolean {
@@ -220,7 +227,28 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
         throw new OAuth2Error('Missing `authorization_endpoint` from ./well-known config');
       }
 
-      const url = this.buildAuthorizeURL(openIdConfig.authorization_endpoint, flowContext, additionalParameters);
+      let url: URL;
+      if (this.parEnabled && openIdConfig.pushed_authorization_request_endpoint) {
+        const parUrl = this.buildAuthorizeURL(openIdConfig.pushed_authorization_request_endpoint, flowContext, additionalParameters);
+        const parRequest = new Request(parUrl, { method: 'POST' });
+        parRequest.headers.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+        parRequest.headers.set('Accepts', 'application/json');
+
+        const parResponse = await this.client.fetch(parRequest);
+        if (parResponse.ok) {
+          const { request_uri } = await parResponse.json();
+          url = new URL(openIdConfig.authorization_endpoint);
+          url.searchParams.set('client_id', this.client.configuration.clientId);
+          url.searchParams.set('request_uri', request_uri);
+        }
+        else {
+          throw new OAuth2Error('Pushed Authorization Request failed to complete');
+        }
+      }
+      else {
+        url = this.buildAuthorizeURL(openIdConfig.authorization_endpoint, flowContext, additionalParameters);
+      }
+
       this.authorizeUrl = url;
 
       // after pkce code challenge is used, delete it
@@ -317,6 +345,7 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
 export namespace AuthorizationCodeFlow {
   export type RedirectParams = {
     redirectUri: string | URL;
+    parEnabled?: boolean;
     additionalParameters?: Record<string, string>;
   };
 

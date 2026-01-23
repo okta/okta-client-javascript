@@ -22,6 +22,7 @@ export const client = new OAuth2Client(oauthConfig);
 
 export const signInFlow = new AuthorizationCodeFlow(client, {
   redirectUri: `${window.location.origin}/login/callback`,
+  parEnabled: true
 });
 
 const flowLogin = async (originalUri = window.location.href, meta = {}) => {
