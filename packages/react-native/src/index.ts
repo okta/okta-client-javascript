@@ -4,3 +4,4 @@ export { getWebCryptoNativeBridge } from "./webCrypto/WebCryptoNativeBridge";
 export * from "./secureStorage/SecureStorageNativeBridge";
 
 export * from "./oidc";
+export * from "./oauth";

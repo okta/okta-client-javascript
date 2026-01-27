@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Text, View } from "react-native";
 import { buildAuthorizeUrl } from "@okta/react-native";
 import Constants from "expo-constants";
+// import { openAuthSessionAsync } from "expo-web-browser";
 
 function getConfig() {
   const env = Constants.expoConfig?.extra?.env ?? {};
@@ -50,6 +51,9 @@ export default function AuthorizeUrlScreen() {
             ? "sessionToken is present in authorize URL"
             : "sessionToken is not present in authorize URL";
         }
+
+        // const result = await openAuthSessionAsync(response.url, redirectUri);
+        // console.log("result Auth: ", result);
 
         console.log(log);
 

@@ -5,17 +5,9 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ViewManager
 
-import com.reactnative.webcrypto.WebCryptoNativeBridgeModule
-import com.reactnative.securestorage.SecureStorageNativeBridgeModule
-import com.reactnative.oauth.WebAuthNativeBridgeModule
-
-class OktaReactNativePackage: ReactPackage{
+class WebAuthNativeBridgeModule: ReactPackage{
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-        return listOf(
-            WebCryptoNativeBridgeModule(reactContext),
-            SecureStorageNativeBridgeModule(reactContext),
-            WebAuthNativeBridgeModule(reactContext)
-        )
+        return listOf(WebAuthNativeBridgeModule(reactContext))
     }
 
     override fun createViewManagers(reactContext: ReactApplicationContext): List<ViewManager<*, *>> {

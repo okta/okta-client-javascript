@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useRouter, type Router } from "expo-router";
-import { openAuthSessionAsync } from "expo-web-browser";
+// import { openAuthSessionAsync } from "expo-web-browser";
+import { openAuthSessionAsync } from "@okta/react-native";
 import {
   AuthorizationCodeFlow,
   SessionLogoutFlow,
@@ -68,7 +69,7 @@ export function useAuth() {
       await performSignIn();
       router.navigate(redirectTo);
     },
-    [router]
+    [router],
   );
 
   const signOut = useCallback(
@@ -76,7 +77,7 @@ export function useAuth() {
       await performSignOut();
       router.navigate(redirectTo);
     },
-    [router]
+    [router],
   );
 
   return { signIn, signOut };
