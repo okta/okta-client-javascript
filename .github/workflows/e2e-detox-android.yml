@@ -97,26 +97,34 @@ jobs:
             -no-snapshot -no-snapshot-save -wipe-data
           disable-animations: true
           script: |
+            set -e
+
             cd e2e/apps/react-native-oidc
 
-            adb start-server || true
-            adb wait-for-device
+            adb start-server
 
-            for i in ${seq 1 150}; do
-              BOOT="$(adb shell getprop sys.boot_completed 2>dev/null | tr -d '\r' || true)"
+            echo "------ Waiting for emulator boot-------"
 
-              if [ "$BOOT" = "1" ]; then
+            i=0
+            while ["$i" -lt 150]; do
+              boot="$(adb -s emulator-5554 shell getprop sys.boot_completed 2>/dev/null | tr -d '\r' || true)"
+              if [ "$boot" = "1" ]; then
                 echo "Emulator booted"
                 break
               fi
+              i=$((i + 1))
               sleep 2
             done
 
-            adb devices
+            if [ "$i" -ge 150 ]; then
+              echo "Emulator failed to boot in time"
+              adb devices || true
+              exit 1
+            fi
 
-            adb shell settings put global window_animation_scale 0 || true
-            adb shell settings put global transition_animation_scale 0 || true
-            adb shell settings put global animator_duration_scale 0 || true
+            adb -s emulator-5554 shell settings put global window_animation_scale 0 || true
+            adb -s emulator-5554 shell settings put global transition_animation_scale 0 || true
+            adb -s emulator-5554 shell settings put global animator_duration_scale 0 || true
 
             yarn workspace @repo/react-native-oidc e2e:build:android
             yarn workspace @repo/react-native-oidc e2e:test:android
