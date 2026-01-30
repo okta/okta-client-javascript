@@ -1,6 +1,6 @@
 module.exports = {
-  preset: "detox/runner/jest/preset",
+  // preset: "detox",
   testRunner: "jest-circus/runner",
-  setupFilesAfterEnv: ["<rootDir>/init.js"],
+  // setupFilesAfterEnv: ["<rootDir>/init.js"],
   testTimeout: 120000,
 };
