@@ -13,7 +13,7 @@ const env: any = {};
 ].forEach((key) => {
   if (!process.env[key]) {
     console.warn(
-      `Environment variable ${key} should be set for development. See README.md`
+      `Environment variable ${key} should be set for development. See README.md`,
     );
   }
   env[key] = process.env[key];
@@ -27,7 +27,21 @@ export default ({ config }: ConfigContext) => ({
     env,
   },
   scheme: "com.oktapreview.tciuc-test",
-  plugins: ["expo-font", "expo-router", "expo-web-browser"],
+  plugins: [
+    "expo-font",
+    "expo-router",
+    "expo-web-browser",
+    [
+      "expo-build-properties",
+      {
+        android: {
+          packagingOptions: {
+            pickFirst: ["**/libfbjni.so", "**/libc++_shared.so"],
+          },
+        },
+      },
+    ],
+  ],
   android: {
     package: "com.anonymous.reporeactnativeoidc",
   },

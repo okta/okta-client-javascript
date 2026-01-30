@@ -1,0 +1,111 @@
+name: Detox E2E - Android
+
+on:
+  pull_request:
+    branches:
+      - main
+      - migration/react-native
+      - migration/rn-upgrade-webcrypto-poc
+  push:
+    branches:
+      - main
+      - migration/react-native
+      - migration/rn-upgrade-webcrypto-poc
+
+jobs:
+  detox-android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    env:
+      GRADLE_OPTS: >-
+        -Dorg.gradle.jvmargs=-Xmx6g --XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8
+      _JAVA_OPTIONS: "-Xmx2g"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "yarn"
+
+      - name: Set up Java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "17"
+          cache: "gradle"
+
+      - name: Install dependencies
+      - run: yarn install --frozen-lockfile
+
+      - name: Prebuild (Android) clean, no-install
+        working-directory: e2e/apps/react-native-oidc
+        run: |
+          EXPO_NO_GIT_STATUS=1 yarn expo prebuild --clean --platform android --no-install
+
+      - name: Ensure deterministic gradle.properties
+        working-directory: e2e/apps/react-native-oidc
+        run: |
+          mkdir -p android
+          touch android/gradle.properties
+
+          # Remove any previous EXPO_LINES block
+          awk '
+            BEGIN {skip=0}
+            /^# EXPO_LINES_START$/ {skip=1; next}
+            /^# EXPO_LINES_END$/ {skip=0; next}
+            skip == 0 {print}
+          ' android/gradle.properties > android/gradle.properties.cleaned || true
+
+          mv android/gradle.properties.cleaned android/gradle.properties
+
+          # Append stable config
+          cat >> android/gradle.properties << 'EOF'
+          # EXPO_LINES_START
+          org.gradle.jvmargs=-Xmx6g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8
+          org.gradle.daemon=true
+          org.gradle.parallel=false
+          org.gradle.workers.max=2
+          android.useFullClasspathForDexingTransform=false
+          # EXPO_LINES_END
+          EOF
+
+          echo "------------ Final android/gradle.properties -----------------"
+          cat android/gradle.properties
+          echo "--------------------------------------------------------------"
+
+      - name: Run Android Emulator + Detox tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 33
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          emulator-options: >-
+            -no-window -no-audio -no-boot-anim -gpu swiftshader_indirect
+            -camera-back none -camera-front none
+          disable-animations: true
+          script: |
+            cd e2e/apps/react-native-oidc
+            adb devices
+            adb shell getprop sys.boot_completed || true
+            adb shell settings put global window_animation_scale 0 || true
+            adb shell settings put global transition_animation_scale 0 || true
+            adb shell settings put global animator_duration_scale 0 || true
+
+            yarn workspace @repo/react-native-oidc e2e:build:android
+            yarn workspace @repo/react-native-oidc e2e:test:android
+
+      - name: Upload Detox Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: detox-android-artifacts
+          path: |
+            e2e/apps/react-native-oidc/e2e/artifacts/**
+            e2e/apps/react-native-oidc/android/app/build/reports/**
+            e2e/apps/react-native-oidc/android/app/build/outputs/**
+            e2e/apps/react-native-oidc/.expo/**

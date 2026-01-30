@@ -1,0 +1,135 @@
+18:01:43.743 detox[15488] [90mi[39m Detected a deprecated "runnerConfig" property (string).
+18:01:43.745 detox[15488] [90mi[39m Detected a deprecated "testRunner" property (string).
+18:01:43.745 detox[15488] [90mi[39m Detected a deprecated "specs" property.
+18:01:43.745 detox[15488] [90mi[39m Please migrate your Detox config according to the guide:
+https://wix.github.io/Detox/docs/guide/migration
+
+18:01:43.747 detox[15488] [90mB[39m node_modules/.bin/detox test -c android.emu.debug --cleanup --record-logs all
+  data: {
+    "id": "ee0a5c9e-2d1c-7b93-9d38-5acfd19e0eca",
+    "detoxConfig": {
+      "configurationName": "android.emu.debug",
+      "apps": {
+        "default": {
+          "type": "android.apk",
+          "binaryPath": "android/app/build/outputs/apk/debug/app-debug.apk",
+          "build": "cd android && ./gradlew assembleDebug"
+        }
+      },
+      "artifacts": {
+        "rootDir": "e2e/artifacts/android.emu.debug.2026-01-30 16-01-43Z",
+        "plugins": {
+          "log": {
+            "enabled": true,
+            "keepOnlyFailedTestsArtifacts": false
+          },
+          "screenshot": {
+            "enabled": true,
+            "shouldTakeAutomaticSnapshots": false,
+            "keepOnlyFailedTestsArtifacts": false
+          },
+          "video": {
+            "enabled": true,
+            "keepOnlyFailedTestsArtifacts": false
+          },
+          "instruments": {
+            "enabled": false,
+            "keepOnlyFailedTestsArtifacts": false
+          },
+          "uiHierarchy": {
+            "enabled": false,
+            "keepOnlyFailedTestsArtifacts": false
+          },
+          "timeline": {
+            "enabled": false
+          }
+        }
+      },
+      "behavior": {
+        "init": {
+          "keepLockFile": false,
+          "reinstallApp": true,
+          "exposeGlobals": true
+        },
+        "cleanup": {
+          "shutdownDevice": true
+        },
+        "launchApp": "auto"
+      },
+      "cli": {
+        "recordLogs": "all",
+        "cleanup": true,
+        "configuration": "android.emu.debug",
+        "start": true
+      },
+      "commands": [
+        {
+          "appName": "default",
+          "build": "cd android && ./gradlew assembleDebug"
+        }
+      ],
+      "device": {
+        "type": "android.emulator",
+        "device": {
+          "avdName": "Pixel_5_API_3.1"
+        }
+      },
+      "logger": {
+        "level": "info",
+        "overrideConsole": true,
+        "options": {
+          "showLoggerName": true,
+          "showPid": true,
+          "showLevel": false,
+          "showMetadata": false,
+          "basepath": "/Users/tiberiu.ciuc/Documents/DEV/okta-client-javascript/node_modules/detox/src",
+          "prefixers": {},
+          "stringifiers": {}
+        }
+      },
+      "testRunner": {
+        "retries": 0,
+        "forwardEnv": false,
+        "detached": false,
+        "bail": false,
+        "noRetryArgs": [
+          "shard"
+        ],
+        "jest": {
+          "setupTimeout": 300000,
+          "teardownTimeout": 30000,
+          "retryAfterCircusRetries": false,
+          "reportWorkerAssign": true
+        },
+        "args": {
+          "$0": "jest",
+          "_": [
+            "e2e/tests"
+          ],
+          "config": "/Users/tiberiu.ciuc/Documents/DEV/okta-client-javascript/e2e/apps/react-native-oidc/e2e/jest.config.json",
+          "--": []
+        }
+      },
+      "session": {
+        "autoStart": true,
+        "debugSynchronization": 10000
+      }
+    },
+    "detoxIPCServer": "primary-15488",
+    "testResults": [],
+    "testSessionIndex": 0,
+    "workersCount": 0
+  }
+18:01:43.751 detox[15488] [90mi[39m Server path not specified, so defaulting to ipc.config.socketRoot + ipc.config.appspace + ipc.config.id /tmp/detox.primary-15488
+18:01:43.751 detox[15488] [90mi[39m starting server on  /tmp/detox.primary-15488 
+18:01:43.751 detox[15488] [90mi[39m starting TLS server false
+18:01:43.751 detox[15488] [90mi[39m starting server as Unix || Windows Socket
+18:01:43.753 detox[15488] [90mi[39m Detox server listening on localhost:49723...
+18:01:43.755 detox[15488] [90mi[39m Serialized the session state at: /private/var/folders/nq/wp0h1j791f3f_j37rpjvvcxh0000gn/T/ee0a5c9e-2d1c-7b93-9d38-5acfd19e0eca.detox.json
+18:01:43.756 detox[15488] [90mB[39m jest --config /Users/tiberiu.ciuc/Documents/DEV/okta-client-javascript/e2e/apps/react-native-oidc/e2e/jest.config.json e2e/tests
+18:01:43.758 detox[15488] [90mi[39m (node:15488) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+18:01:43.885 detox[15488] [90mE[39m Command failed with exit code = 1:
+jest --config /Users/tiberiu.ciuc/Documents/DEV/okta-client-javascript/e2e/apps/react-native-oidc/e2e/jest.config.json e2e/tests
+18:01:43.886 detox[15488] [90mi[39m Detox server has been closed gracefully
+18:01:43.886 detox[15488] [90mE[39m node_modules/.bin/detox test -c android.emu.debug --cleanup --record-logs all
