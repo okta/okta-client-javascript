@@ -12,10 +12,6 @@ on:
       - migration/react-native
       - migration/rn-upgrade-webcrypto-poc
 
-concurency:
-  group: detox-ios-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   detox-ios:
     runs-on: macos-latest
