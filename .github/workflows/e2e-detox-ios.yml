@@ -47,18 +47,9 @@ jobs:
 
           echo "------ ios folder -------"
           ls -la ios || true
-          echo "------ workspaces -------"
-          ls -la ios/*.xcworkspace || true
+
           echo "------ projects ---------"
           ls -la ios/*.xcodeproj || true
-
-          # Ensure the workspace was created
-          WORKSPACE="$(ls -1 ios/*.xcworkspace | head -n 1 || true)"
-          if [ -z "$WORKSPACE" ]; then
-            echo "ERROR: No .xcworkspace found in ios/ after expo prebuild"
-            exit 1
-          fi
-          echo "Detected workspace: ${WORKSPACE}"
 
           # Intall CocoaPods
 
@@ -71,6 +62,17 @@ jobs:
             sudo gem install cocoapods -N
             pod install --repo-update
           fi
+
+          echo "------ workspaces -------"
+          ls -la ios/*.xcworkspace || true
+
+          # Ensure the workspace was created
+          WORKSPACE="$(ls -1 ios/*.xcworkspace | head -n 1 || true)"
+          if [ -z "$WORKSPACE" ]; then
+            echo "ERROR: No .xcworkspace found in ios/ after expo prebuild"
+            exit 1
+          fi
+          echo "Detected workspace: ${WORKSPACE}"
 
       - name: Boot simulator
         run: |
