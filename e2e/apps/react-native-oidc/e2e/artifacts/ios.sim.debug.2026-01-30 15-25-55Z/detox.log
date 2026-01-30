@@ -1,0 +1,133 @@
+17:25:55.240 detox[5135] [90mi[39m Detected a deprecated "runnerConfig" property (string).
+17:25:55.242 detox[5135] [90mi[39m Detected a deprecated "testRunner" property (string).
+17:25:55.242 detox[5135] [90mi[39m Detected a deprecated "specs" property.
+17:25:55.243 detox[5135] [90mi[39m Please migrate your Detox config according to the guide:
+https://wix.github.io/Detox/docs/guide/migration
+
+17:25:55.244 detox[5135] [90mB[39m node_modules/.bin/detox test -c ios.sim.debug
+  data: {
+    "id": "8ef9cf07-0c02-ddb7-ccd1-9a3c4eda90f2",
+    "detoxConfig": {
+      "configurationName": "ios.sim.debug",
+      "apps": {
+        "default": {
+          "type": "ios.app",
+          "binaryPath": "ios/build/Build/Products/Debug-iphonesimulator/reporeactnativeoidc.app",
+          "build": "xcodebuild -workspace ios/reporeactnativeoidc.xcworkspace -scheme reporeactnativeoidc -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build"
+        }
+      },
+      "artifacts": {
+        "rootDir": "e2e/artifacts/ios.sim.debug.2026-01-30 15-25-55Z",
+        "plugins": {
+          "log": {
+            "enabled": true,
+            "keepOnlyFailedTestsArtifacts": false
+          },
+          "screenshot": {
+            "enabled": true,
+            "shouldTakeAutomaticSnapshots": false,
+            "keepOnlyFailedTestsArtifacts": false
+          },
+          "video": {
+            "enabled": true,
+            "keepOnlyFailedTestsArtifacts": false
+          },
+          "instruments": {
+            "enabled": false,
+            "keepOnlyFailedTestsArtifacts": false
+          },
+          "uiHierarchy": {
+            "enabled": false,
+            "keepOnlyFailedTestsArtifacts": false
+          },
+          "timeline": {
+            "enabled": false
+          }
+        }
+      },
+      "behavior": {
+        "init": {
+          "keepLockFile": false,
+          "reinstallApp": true,
+          "exposeGlobals": true
+        },
+        "cleanup": {
+          "shutdownDevice": false
+        },
+        "launchApp": "auto"
+      },
+      "cli": {
+        "configuration": "ios.sim.debug",
+        "start": true
+      },
+      "commands": [
+        {
+          "appName": "default",
+          "build": "xcodebuild -workspace ios/reporeactnativeoidc.xcworkspace -scheme reporeactnativeoidc -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build"
+        }
+      ],
+      "device": {
+        "type": "ios.simulator",
+        "device": {
+          "type": "iPhone 16e"
+        }
+      },
+      "logger": {
+        "level": "info",
+        "overrideConsole": true,
+        "options": {
+          "showLoggerName": true,
+          "showPid": true,
+          "showLevel": false,
+          "showMetadata": false,
+          "basepath": "/Users/tiberiu.ciuc/Documents/DEV/okta-client-javascript/node_modules/detox/src",
+          "prefixers": {},
+          "stringifiers": {}
+        }
+      },
+      "testRunner": {
+        "retries": 0,
+        "forwardEnv": false,
+        "detached": false,
+        "bail": false,
+        "noRetryArgs": [
+          "shard"
+        ],
+        "jest": {
+          "setupTimeout": 300000,
+          "teardownTimeout": 30000,
+          "retryAfterCircusRetries": false,
+          "reportWorkerAssign": true
+        },
+        "args": {
+          "$0": "jest",
+          "_": [
+            "e2e/tests"
+          ],
+          "config": "e2e/jest.config.json",
+          "--": []
+        }
+      },
+      "session": {
+        "autoStart": true,
+        "debugSynchronization": 10000
+      }
+    },
+    "detoxIPCServer": "primary-5135",
+    "testResults": [],
+    "testSessionIndex": 0,
+    "workersCount": 0
+  }
+17:25:55.246 detox[5135] [90mi[39m Server path not specified, so defaulting to ipc.config.socketRoot + ipc.config.appspace + ipc.config.id /tmp/detox.primary-5135
+17:25:55.247 detox[5135] [90mi[39m starting server on  /tmp/detox.primary-5135 
+17:25:55.247 detox[5135] [90mi[39m starting TLS server false
+17:25:55.247 detox[5135] [90mi[39m starting server as Unix || Windows Socket
+17:25:55.248 detox[5135] [90mi[39m Detox server listening on localhost:64576...
+17:25:55.250 detox[5135] [90mi[39m Serialized the session state at: /private/var/folders/nq/wp0h1j791f3f_j37rpjvvcxh0000gn/T/8ef9cf07-0c02-ddb7-ccd1-9a3c4eda90f2.detox.json
+17:25:55.251 detox[5135] [90mB[39m jest --config e2e/jest.config.json e2e/tests
+17:25:55.253 detox[5135] [90mi[39m (node:5135) [DEP0190] DeprecationWarning: Passing args to a child process with shell option true can lead to security vulnerabilities, as the arguments are not escaped, only concatenated.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+17:25:55.364 detox[5135] [90mE[39m Command failed with exit code = 1:
+jest --config e2e/jest.config.json e2e/tests
+17:25:55.365 detox[5135] [90mi[39m Detox server has been closed gracefully
+17:25:55.365 detox[5135] [90mE[39m node_modules/.bin/detox test -c ios.sim.debug
