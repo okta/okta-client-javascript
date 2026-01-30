@@ -63,6 +63,8 @@ jobs:
             pod install --repo-update
           fi
 
+          cd ..
+
           echo "------ workspaces -------"
           ls -la ios/*.xcworkspace || true
 
