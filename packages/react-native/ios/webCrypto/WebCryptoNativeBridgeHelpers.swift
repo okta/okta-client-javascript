@@ -333,7 +333,7 @@ extension WebCryptoNativeBridge{
 
     func parseEcPkcs8(
         _ pkcs8Data: Data
-    ) throws -> (namedCurve: String, data: Data, ) {
+    ) throws -> (namedCurve: String, data: Data) {
         var reader = DERReader(data: pkcs8Data)
         var topSeq = try reader.readSequence()
 

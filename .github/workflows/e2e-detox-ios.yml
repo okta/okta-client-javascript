@@ -73,6 +73,9 @@ jobs:
             pod install --repo-update
           fi
 
+          echo "------ list ios root ---------"
+          ls -la .
+
           cd ..
 
           echo "------ workspaces -------"
@@ -87,7 +90,7 @@ jobs:
           echo "Detected workspace: ${WORKSPACE}"
 
           echo "------ toolchain umbrella -------"
-          ls -la ios/Pods/Headers/Public/React-Core/React-Core-umbrella || true
+          ls -la ios/Pods/Headers/Public/React-Core|| true
           echo "--------------------------------"
 
       - name: Boot simulator

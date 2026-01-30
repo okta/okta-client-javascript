@@ -20,7 +20,7 @@ jobs:
     env:
       GRADLE_OPTS: >-
         -Dorg.gradle.jvmargs=-Xmx6g --XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8
-      _JAVA_OPTIONS: "-Xmx2g"
+      JAVA_TOOL_OPTIONS: "-Xmx2g"
 
     steps:
       - uses: actions/checkout@v4
@@ -97,27 +97,23 @@ jobs:
             -no-snapshot -no-snapshot-save -wipe-data
           disable-animations: true
           script: |
-            adb kill-server || true
-            adb start-server || true
-            adb wait-for-device || true
-            adb devices
+            cd e2e/apps/react-native-oidc
 
-            for i in {1..150}; do
-              state="$(adb get-state 2>dev/null || true)"
-              boot="$(adb shell getprop sys.boot_completed 2>dev/null | tr -d '\r' || true)"
-              echo "adb_state=${state}, boot_completed=${boot}"
-              if [ "${state}" = "device" ] && [ "${boot}" = "1" ]; then
-                echo "Emulator is ready"
+            adb start-server || true
+            adb wait-for-device
+
+            for i in ${seq 1 150}; do
+              BOOT="$(adb shell getprop sys.boot_completed 2>dev/null | tr -d '\r' || true)"
+
+              if [ "$BOOT" = "1" ]; then
+                echo "Emulator booted"
                 break
-              fi
-              if [ $state != "device" ] && ((i % 20 == 0)); then
-                adb kill-server || true
-                adb start-server || true
               fi
               sleep 2
             done
 
-            adb shell getprop sys.boot_completed || true
+            adb devices
+
             adb shell settings put global window_animation_scale 0 || true
             adb shell settings put global transition_animation_scale 0 || true
             adb shell settings put global animator_duration_scale 0 || true
