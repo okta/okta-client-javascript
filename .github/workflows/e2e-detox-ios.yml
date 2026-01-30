@@ -37,6 +37,16 @@ jobs:
           brew install applesimutils
           brew install watchman || true
 
+      - name: Print Xcode version
+        run: |
+          xcodebuild -version
+          xcode-select -p
+
+      - name: Select Xcode version
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: "16.4"
+
       - name: Prebuild (Expo) + Install Pods
         run: |
           set -euo pipefail
@@ -75,6 +85,10 @@ jobs:
             exit 1
           fi
           echo "Detected workspace: ${WORKSPACE}"
+
+          echo "------ toolchain umbrella -------"
+          ls -la ios/Pods/Headers/Public/React-Core/React-Core-umbrella || true
+          echo "--------------------------------"
 
       - name: Boot simulator
         run: |

@@ -14,7 +14,7 @@ on:
 
 jobs:
   detox-android:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     timeout-minutes: 60
 
     env:
@@ -77,6 +77,13 @@ jobs:
           cat android/gradle.properties
           echo "--------------------------------------------------------------"
 
+      - name: Enable KVM
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-kvm
+          sudo usermod -aG kvm $USER
+          sudo chmod 666 /dev/kvm
+
       - name: Run Android Emulator + Detox tests
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -102,6 +109,10 @@ jobs:
               if [ "${state}" = "device" ] && [ "${boot}" = "1" ]; then
                 echo "Emulator is ready"
                 break
+              fi
+              if [ $state != "device" ] && ((i % 20 == 0)); then
+                adb kill-server || true
+                adb start-server || true
               fi
               sleep 2
             done
