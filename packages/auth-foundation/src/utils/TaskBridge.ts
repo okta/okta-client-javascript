@@ -86,6 +86,7 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
     });
     this.#pending.set(request.id, request);
 
+    let abortHandler: () => void;
     const result = (new Promise<R[K]>((resolve, reject) => {
       const setTimeoutTimer = () => {
         // `options.timeout` set to `null` disables the timeout mechanism
@@ -103,14 +104,16 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
       setTimeoutTimer();
 
       // forces the pending promise to reject, so resources clean up if the request is aborted
-      request.signal.addEventListener('abort', () => {
+      abortHandler = () => {
+        console.log('thrown abort error')
         reject(new DOMException('Aborted', 'AbortError'));
-      });
+      };
+      request.signal.addEventListener('abort', abortHandler);
 
       // This channel is meant for the Receiver to send the results (aka `HandlerMessage<M>` messages)
       // ignore all Requestor events received (aka `RequestorMessage`)
       responseChannel.onmessage = (event) => {
-        if ('action' in event.data) {
+        if (request.signal.aborted || 'action' in event.data) {
           return;   // ignore message
         }
 
@@ -141,20 +144,23 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
       }
       requestChannel.close();
       responseChannel.close();
+      request.signal.removeEventListener('abort', abortHandler);
       this.#pending.delete(request.id);
     });
 
     // TODO: review
-    const cancel = () => {
+    const abort = () => {
       responseChannel.postMessage({ action: 'CANCEL', __v: TaskBridge.BridgeVersion });
+      request.controller.abort('cancel');
     };
 
-    return { result, cancel };
+    return { result, abort };
   }
 
   subscribe<K extends keyof M & keyof R>(handler: TaskBridge.TaskHandler<M, R>) {
     this.#channel = this.createBridgeChannel();
     this.#channel.onmessage = async (evt, reply) => {
+      console.log('onmessage: ', evt.data, reply);
       const { requestId, __v, ...rest } = evt.data;
 
       if (!requestId) {
@@ -173,6 +179,8 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
       this.pushMessage(message);
 
       responseChannel.onmessage = (event) => {
+        console.log('[response channel]', event.data);
+
         // The Requestor may send a `RequestorMessage` (like `CANCEL`) to the Subscriber
         // ignore `HandlerMessage<M>` messages - only the Requestor cares about those
         if ('status' in event.data) {
@@ -184,20 +192,25 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
           case 'CANCEL':
             // TODO: probably don't need to reply, just cancel action, if possible
             // responseChannel.postMessage({ status: 'CANCELED' });
+            console.log('received cancel')
             message.abort('cancel');
             break;
         }
       };
 
       try {
+        console.log('in try')
         message.reply('PENDING');     // send instantaneous `PENDING` message, essentially a "received" event
+        console.log('sent PENDING')
         await handler(
           evt.data,                                             // message payload
           (response) => message.reply(response, 'SUCCESS'),     // reply fn
           { signal: message.signal }                            // options
         );
+        console.log('handler done')
       }
       catch (err) {
+        console.log('error thrown', err);
         if (err instanceof DOMException && err.name === 'AbortError') {
           return null;
         }
@@ -207,6 +220,7 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
         }
       }
       finally {
+        console.log('finally')
         this.clearMessage(requestId);
         responseChannel.close();
       }
@@ -311,7 +325,7 @@ export namespace TaskBridge {
     reply (data: S, status: TaskBridge.TaskStatus): void;
     reply (status: 'PENDING'): void;
     reply (data: S | 'PENDING', status: TaskBridge.TaskStatus = 'SUCCESS') {
-      const fn = this.replyFn ?? this.channel.postMessage;
+      const fn = this.replyFn ?? this.channel.postMessage.bind(this.channel);
 
       if (data === 'PENDING' || status === 'PENDING') {
         // only send `PENDING` heartbeats when using <= v2 of the TaskBridge payload structure
@@ -345,6 +359,7 @@ export namespace TaskBridge {
    */
   export type TaskOptions = {
     timeout?: number | null;
+    signal?: AbortSignal;
   };
 
   /**
@@ -352,7 +367,7 @@ export namespace TaskBridge {
    */
   export type TaskResponse<R extends TypeMap> = {
     result: Promise<R>;
-    cancel: () => void;
+    abort: () => void;
   };
 
   /**

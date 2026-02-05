@@ -34,7 +34,7 @@ class TestChannel<M extends JsonRecord> implements BroadcastChannelLike<M> {
   get onmessage () {
     return this.#handler;
   }
-  
+
   set onmessage (handler) {
     if (handler === null) {
       this.channel.onmessage = null;
@@ -54,6 +54,7 @@ class TestChannel<M extends JsonRecord> implements BroadcastChannelLike<M> {
   }
 
   postMessage(message: M): void {
+    console.log('postMessage called', message)
     this.channel.postMessage(message);
   }
 
@@ -62,19 +63,28 @@ class TestChannel<M extends JsonRecord> implements BroadcastChannelLike<M> {
   }
 }
 
-class TestBus extends TaskBridge<TestRequest, TestResponse> {
+class TestBus extends TaskBridge<any, any> {
 
-  protected createBridgeChannel (): TaskBridge.BridgeChannel<TestRequest[keyof TestRequest]> {
-    return new TestChannel(this.name);
+  // protected createBridgeChannel (): TaskBridge.BridgeChannel<TestRequest[keyof TestRequest]> {
+  //   return new TestChannel(this.name);
+  // }
+
+  // protected createTaskChannel<K extends keyof TestRequest & keyof TestResponse>(name: string): TaskBridge.TaskChannel<TestResponse[K]> {
+  //   return new TestChannel(name);
+  // }
+
+  protected createBridgeChannel (): TaskBridge.BridgeChannel<any> {
+    return new BroadcastChannel(this.name) as TaskBridge.BridgeChannel<any>;
   }
-
-  protected createTaskChannel<K extends keyof TestRequest & keyof TestResponse>(name: string): TaskBridge.TaskChannel<TestResponse[K]> {
-    return new TestChannel(name);
+  
+  protected createTaskChannel(name: string): TaskBridge.TaskChannel<any> {
+    return new BroadcastChannel(name) as TaskBridge.TaskChannel<any>;
   }
 }
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-describe.skip('TaskBridge', () => {
+describe('TaskBridge', () => {
   let receiver: TaskBridge<TestRequest, TestResponse>;
   let sender: TaskBridge<TestRequest, TestResponse>;
 
@@ -86,25 +96,54 @@ describe.skip('TaskBridge', () => {
   afterEach(() => {
     receiver.close();
     sender.close();
+    jest.clearAllTimers();
   });
 
   describe('test', () => {
-    it('sends and receives messages', async () => {
-      const channel = new BroadcastChannel('test');
-      channel.onmessage = (event) => {
-        console.log('[monitor]: ', event.data);
-      };
+    it('sends and receives messages between separate instances', async () => {
+      const response = { foo: '2', bar: '1' };
 
       receiver.subscribe(async (message, reply) => {
-        console.log('handler called');
-        reply({ foo: '2', bar: '1' });
+        reply(response);
       });
   
       const result = await sender.send({ foo: 1, bar: 2 }).result;
-      expect(result).toEqual({ bar: 'baz' });
-
-      channel.close();
+      expect(result).toEqual(response);
     });
+
+    fit('can handle aborting pending tasks', async () => {
+      jest.useFakeTimers();
+      expect.assertions(4);     // ensures `catch` block is reached
+
+      const abortListener = jest.fn();
+      const handler = jest.fn().mockImplementation( async (message, reply, { signal }) => {
+        // TODO: why isn't this being called?
+        signal.addEventListener('abort', abortListener, { once: true });
+
+        await sleep(1000);    // sleep to delay responding to the message, so the abort fires first
+        reply({ foo: '1', bar: '2' });
+      });
+      receiver.subscribe(handler);
+
+      try {
+        const { result, abort } = sender.send({ foo: 1, bar: 2 });
+        // flushes the promise queue, so the `receiver.subscribe` handler actually gets called
+        await jest.advanceTimersByTimeAsync(100);
+        abort();
+        await jest.advanceTimersByTimeAsync(100);
+        await result;
+      }
+      catch (err) {
+        console.log(err);
+        expect(err).toBeInstanceOf(DOMException);
+        expect((err as Error).name).toEqual('AbortError');
+      }
+
+      expect(handler).toHaveBeenCalled();
+      expect(abortListener).toHaveBeenCalled();
+
+      jest.useRealTimers();
+    }, 100000);
   });
 
   // xdescribe('', async () => {
