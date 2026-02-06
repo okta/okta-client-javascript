@@ -1,5 +1,6 @@
 import { BroadcastChannelLike, JsonRecord } from 'src/types';
 import { TaskBridge } from 'src/utils/TaskBridge.ts';
+import { eventAsPromise } from 'src/utils/asPromise.ts';
 
 type TestRequest = {
   ADD: {
@@ -94,6 +95,9 @@ describe('TaskBridge', () => {
   });
 
   afterEach(() => {
+    expect(receiver.pending).toEqual(0);
+    expect(sender.pending).toEqual(0);
+
     receiver.close();
     sender.close();
     jest.clearAllTimers();
@@ -101,49 +105,209 @@ describe('TaskBridge', () => {
 
   describe('test', () => {
     it('sends and receives messages between separate instances', async () => {
+      jest.useFakeTimers();
+
       const response = { foo: '2', bar: '1' };
 
       receiver.subscribe(async (message, reply) => {
         reply(response);
       });
   
-      const result = await sender.send({ foo: 1, bar: 2 }).result;
-      expect(result).toEqual(response);
+      const { result } = sender.send({ foo: 1, bar: 2 });
+      await expect(result).resolves.toEqual(response);
+      expect(jest.getTimerCount()).toBe(0);
+
+      jest.useRealTimers();
     });
 
-    fit('can handle aborting pending tasks', async () => {
+    it('can handle aborting pending tasks', async () => {
       jest.useFakeTimers();
-      expect.assertions(4);     // ensures `catch` block is reached
 
       const abortListener = jest.fn();
       const handler = jest.fn().mockImplementation( async (message, reply, { signal }) => {
-        // TODO: why isn't this being called?
         signal.addEventListener('abort', abortListener, { once: true });
 
-        await sleep(1000);    // sleep to delay responding to the message, so the abort fires first
+        await sleep(50);    // sleep to delay responding to the message, so the abort fires first
         reply({ foo: '1', bar: '2' });
       });
       receiver.subscribe(handler);
 
-      try {
-        const { result, abort } = sender.send({ foo: 1, bar: 2 });
-        // flushes the promise queue, so the `receiver.subscribe` handler actually gets called
-        await jest.advanceTimersByTimeAsync(100);
-        abort();
-        await jest.advanceTimersByTimeAsync(100);
-        await result;
-      }
-      catch (err) {
-        console.log(err);
-        expect(err).toBeInstanceOf(DOMException);
-        expect((err as Error).name).toEqual('AbortError');
-      }
+      const { result, abort } = sender.send({ foo: 1, bar: 2 });
+
+      // flush microtasks to ensure subscribe abortHandler is set up
+      // await sleep(10);
+      await jest.advanceTimersByTimeAsync(10);
+
+      abort();
+
+      await expect(result).rejects.toThrow(DOMException);
+      await expect(result).rejects.toThrow('Aborted');
+
+      // wait a bit more to ensure abort listener is called
+      // await sleep(100);
+      await jest.advanceTimersByTimeAsync(100);
 
       expect(handler).toHaveBeenCalled();
       expect(abortListener).toHaveBeenCalled();
+      expect(jest.getTimerCount()).toBe(0);
 
       jest.useRealTimers();
-    }, 100000);
+    });
+
+    it('will not timeout a pending request when host is available', async () => {
+      jest.useFakeTimers();
+
+      const response = { foo: '2', bar: '1' };
+      const largeDelay = 10000;
+
+      // clever way of capturing the requestId
+      let requestId;
+      const bc = new BroadcastChannel('test');
+      bc.onmessage = (evt => {
+        console.log('[bc]', evt.data);
+        if (evt.data.requestId) {
+          requestId = evt.data.requestId;
+        }
+      });
+
+      receiver.subscribe(async (message, reply) => {
+        await sleep(largeDelay);   // very long delay
+        reply(response);
+      });
+
+      const { result } = sender.send({ foo: 1, bar: 2 });
+      // advance timers to send BroadcastChannel messages
+      await jest.advanceTimersByTimeAsync(100);
+
+      // listen on "response channel" and count number of `PENDING` "pings"
+      let pendingCount = 0;
+      const channel = new BroadcastChannel(requestId);
+      channel.onmessage = (evt) => {
+        if (evt.data.status === 'PENDING') {
+          pendingCount++;
+        }
+      };
+
+      // advance the timers to the length of the delay, so response is finally returned
+      await jest.advanceTimersByTimeAsync(largeDelay);
+
+      await expect(result).resolves.toEqual(response);
+      // expect a predictable number of 'PENDING' pings given the large delay 
+      expect(pendingCount).toEqual(largeDelay / receiver.heartbeatInterval);
+      expect(jest.getTimerCount()).toBe(0);
+
+      // cleanup
+      jest.useRealTimers();
+      bc.close();
+      channel.close();
+    });
+
+    it('will timeout when host does not response within default timeout window', async () => {
+      expect.assertions(4);     // ensures `result.catch()` is invoked
+      jest.useFakeTimers();
+
+      receiver.close();
+  
+      const { result } = sender.send({ foo: 1, bar: 2 });
+
+      // use `.catch` to bind listener synchronously 
+      const promise = result.catch(err => {
+        expect(err).toBeInstanceOf(TaskBridge.TimeoutError);
+      });
+
+      await jest.advanceTimersByTimeAsync(10000);
+      await promise;
+
+      expect(jest.getTimerCount()).toBe(0);
+
+      jest.useRealTimers();
+    });
+
+    it('will timeout when host does not response within user defined timeout window', async () => {
+      expect.assertions(4);     // ensures `result.catch()` is invoked
+      jest.useFakeTimers();
+
+      const largeTimeout = 10000;
+
+      receiver.close();
+  
+      const { result } = sender.send({ foo: 1, bar: 2 }, { timeout: largeTimeout - 100 });
+
+      // use `.catch` to bind listener synchronously 
+      const promise = result.catch(err => {
+        expect(err).toBeInstanceOf(TaskBridge.TimeoutError);
+      });
+
+      await jest.advanceTimersByTimeAsync(10000);
+      await promise;
+
+      expect(jest.getTimerCount()).toBe(0);
+
+      jest.useRealTimers();
+    });
+
+    it('will timeout when no host is avaiable', async () => {
+      expect.assertions(4);     // ensures `result.catch()` is invoked
+      jest.useFakeTimers();
+  
+      const timeout = 100;
+
+      // NOTE: no `receiver.subscribe` call
+
+      const { result } = sender.send({ foo: 1, bar: 2 }, { timeout });
+
+      // use `.catch` to bind listener synchronously 
+      const promise = result.catch(err => {
+        expect(err).toBeInstanceOf(TaskBridge.TimeoutError);
+      });
+
+      await jest.advanceTimersByTimeAsync(timeout);
+      await promise;
+
+      expect(jest.getTimerCount()).toBe(0);
+
+      jest.useRealTimers();
+    });
+
+    fit('will abort pending tasks when closed', async () => {
+      jest.useFakeTimers();
+
+      const abortListener = jest.fn();
+      const handler = jest.fn().mockImplementation(async (message, reply, { signal }) => {
+        signal.addEventListener('abort', abortListener);
+
+        // sleep to delay responding to the message, so the abort fires first
+        // await sleep(sender.heartbeatInterval * 10);
+
+        await Promise.race([
+          sleep(sender.heartbeatInterval * 10),
+          eventAsPromise(signal, 'abort', true),
+        ]);
+        
+        reply({ foo: '1', bar: '2' });
+      });
+      receiver.subscribe(handler);
+
+      const promises = Promise.allSettled(Array.from({ length: 3 }, (_, i) => {
+        const { result } = sender.send({ foo: 1 + i, bar: 2 + i }, { timeout: null });
+        return result;
+      }));
+
+      // flush microtasks to ensure subscribe handler is set up
+      await jest.advanceTimersByTimeAsync(10);
+
+      expect(handler).toHaveBeenCalledTimes(3);
+      
+      receiver.close();
+      const result = await promises;
+      await jest.advanceTimersByTimeAsync(10);
+
+      expect(result).toEqual(Array(3).fill({ status: 'rejected', reason: expect.any(DOMException) }));
+      expect(abortListener).toHaveBeenCalledTimes(3);
+      expect(jest.getTimerCount()).toBe(0);
+
+      jest.useRealTimers();
+    }, 10000);
   });
 
   // xdescribe('', async () => {

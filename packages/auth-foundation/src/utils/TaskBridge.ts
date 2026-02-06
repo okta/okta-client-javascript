@@ -1,5 +1,6 @@
 import type { BroadcastChannelLike } from '../types/index.ts';
 import { shortID } from '../crypto/index.ts';
+import { AuthSdkError } from '../errors/AuthSdkError.ts';
 
 /** @useDeclaredType */
 type TypeMap = Record<string, any>;
@@ -56,6 +57,7 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
   }
 
   protected pushMessage (message: TaskBridge.Task<any, any> ) {
+    console.log('pushMessage called');
     this.#pending.set(message.id, message);
     // if there is no active heartbeat, start one
     if (this.#heartbeatInt === null) {
@@ -88,7 +90,9 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
 
     let abortHandler: () => void;
     const result = (new Promise<R[K]>((resolve, reject) => {
-      const setTimeoutTimer = () => {
+      const resetTimeoutTimer = () => {
+        console.log('reset called')
+
         // `options.timeout` set to `null` disables the timeout mechanism
         if (options.timeout === null) {
           return;
@@ -98,10 +102,12 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
           clearTimeout(timeoutId);
         }
         // TODO: error type
-        timeoutId = setTimeout(() => reject(new Error('timeout')), options.timeout ?? 5000);
+        timeoutId = setTimeout(() => reject(
+          new TaskBridge.TimeoutError('timeout')
+        ), options.timeout ?? 5000);
       };
       // sets timeout timer
-      setTimeoutTimer();
+      resetTimeoutTimer();
 
       // forces the pending promise to reject, so resources clean up if the request is aborted
       abortHandler = () => {
@@ -129,8 +135,13 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
 
           case 'PENDING':
             // defer the timeout timer when a heartbeat is received (host is still working)
-            setTimeoutTimer();
+            resetTimeoutTimer();
 
+            break;
+          case 'ABORTED':
+            // reject(new DOMException('Aborted', 'AbortError'));
+            console.log('here')
+            request.abort('Host Aborted');
             break;
         }
       };
@@ -139,6 +150,7 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
       requestChannel.close();
     }))
     .finally(() => {
+      console.log('in finally', timeoutId)
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
@@ -210,9 +222,19 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
         console.log('handler done')
       }
       catch (err) {
-        console.log('error thrown', err);
-        if (err instanceof DOMException && err.name === 'AbortError') {
-          return null;
+        if (err instanceof DOMException) {
+          if (err.name === 'AbortError') {
+            // task was aborted, do nothing
+            return null;
+          }
+
+          if (err.name === 'InvalidStateError') {
+            // this is error is thrown if a `.postMessage` is attempted after the channel is closed
+            // this can happen when the `handler` function attempts to `reply()` after `.close()`
+            // is called. Ignore the error, the `AbortSignal` is provided to the `handler` for
+            // if needed
+            return null;
+          }
         }
 
         if (err instanceof Error) {
@@ -227,12 +249,24 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
     };
   }
 
+  /**
+   * Returns the number of pending tasks
+   */
+  get pending (): number {
+    return this.#pending.size;
+  }
+
   close () {
     this.#channel?.close();
     for (const message of this.#pending.values()) {
       message.abort();
       message.channel.close();
+      this.clearMessage(message.id);
     }
+    // this.#pending.clear();
+    // if (this.#heartbeatInt) {
+    //   clearInterval(this.#heartbeatInt);
+    // }
   }
 }
 
@@ -243,7 +277,7 @@ export namespace TaskBridge {
   /**
    * Possible `status` values indicating the process of an orchestrated request
    */
-  export type TaskStatus = 'PENDING' | 'SUCCESS' | 'FAILED';
+  export type TaskStatus = 'PENDING' | 'SUCCESS' | 'FAILED' | 'ABORTED';
 
   export type BridgeVersions = 1 | 2;
 
@@ -260,6 +294,9 @@ export namespace TaskBridge {
     __v: BridgeVersions;
   } | {
     status: 'PENDING'
+    __v: BridgeVersions;
+  } | {
+    status: 'ABORTED'
     __v: BridgeVersions;
   }
 
@@ -323,14 +360,20 @@ export namespace TaskBridge {
     }
 
     reply (data: S, status: TaskBridge.TaskStatus): void;
-    reply (status: 'PENDING'): void;
-    reply (data: S | 'PENDING', status: TaskBridge.TaskStatus = 'SUCCESS') {
+    reply (status: 'PENDING' | 'ABORTED'): void;
+    reply (data: S | 'PENDING' | 'ABORTED', status: TaskBridge.TaskStatus = 'SUCCESS') {
       const fn = this.replyFn ?? this.channel.postMessage.bind(this.channel);
 
       if (data === 'PENDING' || status === 'PENDING') {
         // only send `PENDING` heartbeats when using <= v2 of the TaskBridge payload structure
         if (this.__v === 2) {
           fn({ status: 'PENDING', __v: this.__v } satisfies HandlerMessage<S>);
+        }
+      }
+      else if (data === 'ABORTED' || status === 'ABORTED') {
+        // only send `PENDING` heartbeats when using <= v2 of the TaskBridge payload structure
+        if (this.__v === 2) {
+          fn({ status: 'ABORTED', __v: this.__v } satisfies HandlerMessage<S>);
         }
       }
       else {
@@ -346,6 +389,7 @@ export namespace TaskBridge {
     }
 
     abort (...args: Parameters<AbortController['abort']>) {
+      this.reply('ABORTED');
       return this.controller.abort(...args);
     }
 
@@ -379,4 +423,20 @@ export namespace TaskBridge {
     options?: { signal: AbortSignal }
   ) => any;
 
+  /**
+   * @group Errors
+   */
+  export class TimeoutError extends AuthSdkError {
+    #timeout: boolean = false;
+
+    constructor (...args: ConstructorParameters<typeof AuthSdkError>) {
+      const [message, ...rest] = args;
+      super(message ?? 'timeout', ...rest);
+      this.#timeout = true;
+    }
+
+    get timeout (): boolean {
+      return this.#timeout;
+    }
+  };
 }
