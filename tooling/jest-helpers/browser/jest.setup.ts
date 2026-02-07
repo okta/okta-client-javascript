@@ -25,7 +25,8 @@ class MockBroadcastChannel implements BroadcastChannel {
 
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
-global.BroadcastChannel = MockBroadcastChannel;
+// global.BroadcastChannel = MockBroadcastChannel;
+// global.BroadcastChannel = BroadcastChannel;
 
 global.fetch = () => {
   throw new Error(`
