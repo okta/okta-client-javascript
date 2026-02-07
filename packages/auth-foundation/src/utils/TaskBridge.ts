@@ -57,7 +57,6 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
   }
 
   protected pushMessage (message: TaskBridge.Task<any, any> ) {
-    console.log('pushMessage called');
     this.#pending.set(message.id, message);
     // if there is no active heartbeat, start one
     if (this.#heartbeatInt === null) {
@@ -91,8 +90,6 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
     let abortHandler: () => void;
     const result = (new Promise<R[K]>((resolve, reject) => {
       const resetTimeoutTimer = () => {
-        console.log('reset called')
-
         // `options.timeout` set to `null` disables the timeout mechanism
         if (options.timeout === null) {
           return;
@@ -110,10 +107,7 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
       resetTimeoutTimer();
 
       // forces the pending promise to reject, so resources clean up if the request is aborted
-      abortHandler = () => {
-        console.log('thrown abort error')
-        reject(new DOMException('Aborted', 'AbortError'));
-      };
+      abortHandler = () => reject(new DOMException('Aborted', 'AbortError'));
       request.signal.addEventListener('abort', abortHandler);
 
       // This channel is meant for the Receiver to send the results (aka `HandlerMessage<M>` messages)
@@ -139,8 +133,6 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
 
             break;
           case 'ABORTED':
-            // reject(new DOMException('Aborted', 'AbortError'));
-            console.log('here')
             request.abort('Host Aborted');
             break;
         }
@@ -150,7 +142,6 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
       requestChannel.close();
     }))
     .finally(() => {
-      console.log('in finally', timeoutId)
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
@@ -160,7 +151,6 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
       this.#pending.delete(request.id);
     });
 
-    // TODO: review
     const abort = () => {
       responseChannel.postMessage({ action: 'CANCEL', __v: TaskBridge.BridgeVersion });
       request.controller.abort('cancel');
@@ -172,7 +162,6 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
   subscribe<K extends keyof M & keyof R>(handler: TaskBridge.TaskHandler<M, R>) {
     this.#channel = this.createBridgeChannel();
     this.#channel.onmessage = async (evt, reply) => {
-      console.log('onmessage: ', evt.data, reply);
       const { requestId, __v, ...rest } = evt.data;
 
       if (!requestId) {
@@ -191,8 +180,6 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
       this.pushMessage(message);
 
       responseChannel.onmessage = (event) => {
-        console.log('[response channel]', event.data);
-
         // The Requestor may send a `RequestorMessage` (like `CANCEL`) to the Subscriber
         // ignore `HandlerMessage<M>` messages - only the Requestor cares about those
         if ('status' in event.data) {
@@ -202,24 +189,18 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
         // event type is now `RequestorMessage`
         switch (event.data.action) {
           case 'CANCEL':
-            // TODO: probably don't need to reply, just cancel action, if possible
-            // responseChannel.postMessage({ status: 'CANCELED' });
-            console.log('received cancel')
             message.abort('cancel');
             break;
         }
       };
 
       try {
-        console.log('in try')
         message.reply('PENDING');     // send instantaneous `PENDING` message, essentially a "received" event
-        console.log('sent PENDING')
         await handler(
           evt.data,                                             // message payload
           (response) => message.reply(response, 'SUCCESS'),     // reply fn
           { signal: message.signal }                            // options
         );
-        console.log('handler done')
       }
       catch (err) {
         if (err instanceof DOMException) {
@@ -242,7 +223,6 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
         }
       }
       finally {
-        console.log('finally')
         this.clearMessage(requestId);
         responseChannel.close();
       }
@@ -263,10 +243,11 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
       message.channel.close();
       this.clearMessage(message.id);
     }
-    // this.#pending.clear();
-    // if (this.#heartbeatInt) {
-    //   clearInterval(this.#heartbeatInt);
-    // }
+    this.#pending.clear();
+    if (this.#heartbeatInt !== null) {
+      clearInterval(this.#heartbeatInt);
+      this.#heartbeatInt = null;
+    }
   }
 }
 
