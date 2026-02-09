@@ -419,5 +419,5 @@ export namespace TaskBridge {
     get timeout (): boolean {
       return this.#timeout;
     }
-  };
+  }
 }

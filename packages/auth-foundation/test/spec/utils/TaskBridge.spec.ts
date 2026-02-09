@@ -34,7 +34,7 @@ class TestBus extends TaskBridge<any, any> {
 }
 
 const sleep = (ms: number) => new Promise(resolve => {
-  setTimeout(resolve, ms)
+  setTimeout(resolve, ms);
 });
 
 describe('TaskBridge', () => {
@@ -96,10 +96,43 @@ describe('TaskBridge', () => {
     jest.useRealTimers();
   });
 
+  it('handles a single task throwing gracefully', async () => {
+    jest.useFakeTimers();
+
+    const response = { foo: '2', bar: '1' };
+
+    let taskCount = 0;
+    receiver.subscribe(async (message, reply) => {
+      const isEven = taskCount === 0 || taskCount % 2 === 0;
+      taskCount += 1;
+      if (isEven) {
+        reply(response);
+      }
+      else {
+        throw new Error('test error');
+      }
+    });
+
+    const promises = Promise.allSettled(Array.from({ length: 3 }, (_, i) => {
+      const { result } = sender.send({ foo: 1 + i, bar: 2 + i });
+      return result;
+    }));
+
+    await expect(promises).resolves.toEqual([
+      { status: 'fulfilled', value: { ...response} },
+      { status: 'fulfilled', value: { error: 'test error' } },
+      { status: 'fulfilled', value: { ...response } },
+    ]);
+
+    expect(jest.getTimerCount()).toBe(0);
+
+    jest.useRealTimers();
+  });
+
   it('gracefully handles an error being thrown by the subscribe handler', async () => {
     jest.useFakeTimers();
 
-    const handler = jest.fn().mockImplementation(async (message, reply) => {
+    const handler = jest.fn().mockImplementation(async () => {
       throw new Error('test');
     });
     receiver.subscribe(handler);
