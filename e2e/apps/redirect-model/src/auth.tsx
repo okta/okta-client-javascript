@@ -7,11 +7,14 @@ const USE_DPOP = __USE_DPOP__ === "true";
 
 const isOIDC = (new URL(window.location.href).searchParams.get('oidc') !== "false");
 
+// TODO: enable to test MyAccount API
+// const customScopes = [
+//   'okta.myAccount.profile.read'
+// ];
 const customScopes = [];
-// const customScopes = [];
 
 export const oauthConfig: any = {
-  issuer: __ISSUER__,
+  issuer: customScopes?.length ? `${__ISSUER__}/oauth2/default` : __ISSUER__,
   clientId: USE_DPOP ? __DPOP_CLIENT_ID__ : __SPA_CLIENT_ID__,
   scopes: [...(isOIDC ? ['openid', 'profile', 'email'] : []), 'offline_access', ...customScopes],
   dpop: USE_DPOP

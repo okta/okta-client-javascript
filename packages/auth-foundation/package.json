@@ -30,6 +30,10 @@
       "types": "./dist/types/internal.d.ts",
       "import": "./dist/esm/internal.js"
     },
+    "./myaccount": {
+      "types": "./dist/types/MyAccountClient.d.ts",
+      "import": "./dist/esm/MyAccountClient.js"
+    },
     "./package.json": "./package.json"
   },
   "sideEffects": [
