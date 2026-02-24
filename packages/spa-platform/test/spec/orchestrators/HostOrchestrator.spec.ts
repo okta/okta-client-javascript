@@ -26,10 +26,24 @@ class MockOrchestrator extends TokenOrchestrator {
   }
 }
 
-// TODO: revisit
-// console.warn = () => {};
 
 describe('HostOrchestrator', () => {
+  // beforeEach(() => {
+  //   window.location = {
+  //     ...window.location,
+  //     href: 'http://localhost'
+  //   }
+  // });
+
+  // beforeEach(() => {
+  //   global.location = window.location;
+  // });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    jest.clearAllTimers();
+  });
+
   const authParams = {
     issuer: 'http://fake.okta.com',
     clientId: 'fakeClientId',
@@ -51,6 +65,7 @@ describe('HostOrchestrator', () => {
       jest.spyOn((LocalBroadcastChannel.prototype as any), 'isTrustedMessage').mockReturnValue(true);
     });
 
+    // THIS
     it('.activate / .close', () => {
       const activateSpy = jest.spyOn(MockHost.prototype, 'activate');
       // don't pollute logs with warnings during testing
@@ -408,6 +423,7 @@ describe('HostOrchestrator', () => {
     });
 
     describe('getToken', () => {
+      // THIS
       it('can request a token or load one from cache', async () => {
         const sub = new HostOrchestrator.SubApp('Test');
   
@@ -425,7 +441,8 @@ describe('HostOrchestrator', () => {
         expect(broadcastSpy).toHaveBeenCalledTimes(1);
       });
 
-      it('will resolve the same pending promise for requests with same authParams', async () => {
+      // THIS
+      fit('will resolve the same pending promise for requests with same authParams', async () => {
         const sub = new HostOrchestrator.SubApp('Test');
 
         const broadcastSpy = jest.spyOn((sub as any), 'broadcast')
@@ -465,16 +482,19 @@ describe('HostOrchestrator', () => {
         expect(broadcastSpy).toHaveBeenCalledTimes(2);
       });
 
-      it('throws when host fails to respond (timeout)', async () => {
+      // THIS
+      fit('throws when host fails to respond (timeout)', async () => {
         jest.useFakeTimers();
 
         const sub = new HostOrchestrator.SubApp('Test');
 
-        jest.spyOn((sub as any), 'broadcast');
+        const broadcastSpy = jest.spyOn((sub as any), 'broadcast');
 
-        const promise = expect(sub.getToken()).rejects.toThrow(new TokenOrchestratorError('timeout'));
+        const promise = sub.getToken();
+        expect(broadcastSpy).toHaveBeenCalled();
         await jest.advanceTimersByTimeAsync(5000);
-        await promise;
+        // await promise;
+        await expect(promise).rejects.toThrow(new TokenOrchestratorError('timeout'));
 
         jest.useRealTimers();
       });

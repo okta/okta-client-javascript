@@ -240,9 +240,18 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
     this.#channel?.close();
     for (const message of this.#pending.values()) {
       message.abort();
-      message.channel.close();
-      this.clearMessage(message.id);
+      // message.channel.close();
+      // this.clearMessage(message.id);
     }
+
+    // Give abort messages a chance to be sent before closing channels
+    queueMicrotask(() => {
+      for (const message of this.#pending.values()) {
+        message.channel.close();
+        this.clearMessage(message.id);
+      }
+    });
+
     this.#pending.clear();
     if (this.#heartbeatInt !== null) {
       clearInterval(this.#heartbeatInt);

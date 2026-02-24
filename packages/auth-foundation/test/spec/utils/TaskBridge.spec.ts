@@ -1,5 +1,6 @@
-import { TaskBridge } from 'src/utils/TaskBridge.ts';
+// global.BroadcastChannel = BroadcastChannel;
 
+import { TaskBridge } from 'src/utils/TaskBridge.ts';
 
 type TestRequest = {
   ADD: {
