@@ -1,7 +1,7 @@
 const crypto = require('node:crypto');
 const { TextEncoder, TextDecoder } = require('node:util');
-const { BroadcastChannel } = require('node:worker_threads');
 import { randStr } from './helpers';
+
 
 Object.defineProperty(global, 'crypto', {
   value: {
@@ -26,11 +26,6 @@ class MockBroadcastChannel implements BroadcastChannel {
 
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
-
-// global.BroadcastChannel = BroadcastChannel;
-// global.DOMException = DOMException;
-
-global.BroadcastChannel = MockBroadcastChannel;
 
 global.fetch = () => {
   throw new Error(`

@@ -28,6 +28,8 @@ export type LocalBroadcastChannelOptions = {
 };
 
 
+console.log('##### TESTING #####', location)
+
 /**
  * @internal
  *

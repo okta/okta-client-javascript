@@ -15,7 +15,7 @@ class CustomJSDomEnv extends JSDOMEnv {
     this.global.Request = Request;
     this.global.Response = Response;
     this.global.Headers = Headers;
-    // this.global.BroadcastChannel = BroadcastChannel;
+    this.global.BroadcastChannel = BroadcastChannel;
     this.global.DOMException = DOMException;
   }
 }
