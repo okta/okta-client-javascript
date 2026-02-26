@@ -5,9 +5,6 @@ import { Credential } from 'src/Credential';
 import { mockIDToken, mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
 
 
-// @ts-expect-error - coordinator is a protected member
-Credential.coordinator.tokenStorage.encryptAtRest = false;
-
 class JestOAuth2Client extends OAuth2Client {
   public async fetch (url: string | URL, options: RequestInit = {}): Promise<Response> {
     throw new Error('JEST CLIENT BOUNDARY, NO NETWORK REQUEST SHOULD BE MADE!');
@@ -67,9 +64,4 @@ export class MockIndexedDBStore<T> {
   public async clear (): Promise<void> {
     this.cache.clear();
   }
-}
-
-export const testResourceCleanup = () => {
-  Credential.close();
-  Credential.clear();
 }

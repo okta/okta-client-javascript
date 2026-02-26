@@ -10,7 +10,7 @@ describe('AuthorizationCodeFlowOrchestrator', () => {
   let flow;
   
   beforeEach(() => {
-    // Credential.clear();
+    Credential.clear();
     // @ts-expect-error - coordinator is a protected member
     Credential.coordinator.tokenStorage.encryptAtRest = false;
 
@@ -22,11 +22,6 @@ describe('AuthorizationCodeFlowOrchestrator', () => {
     flow = new AuthorizationCodeFlow(oauthClient, {
       redirectUri: 'http://localhost:8080/login/callback'
     });
-  });
-
-  afterEach(() => {
-    Credential.close();
-    Credential.clear();
   });
 
   it('constructs', () => {

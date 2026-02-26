@@ -28,9 +28,6 @@ class MockOrchestrator extends TokenOrchestrator {
 
 
 describe('HostOrchestrator', () => {
-  // afterEach(() => {
-  //   jest.restoreAllMocks();
-  // });
 
   const authParams = {
     issuer: 'http://fake.okta.com',
@@ -410,8 +407,8 @@ describe('HostOrchestrator', () => {
       }).toThrow();
     });
 
-    describe.only('getToken', () => {
-      // THIS
+    describe('getToken', () => {
+
       it('can request a token or load one from cache', async () => {
         const sub = new HostOrchestrator.SubApp('Test');
   
@@ -429,7 +426,7 @@ describe('HostOrchestrator', () => {
         expect(broadcastSpy).toHaveBeenCalledTimes(1);
       });
 
-      // THIS
+
       it('will resolve the same pending promise for requests with same authParams', async () => {
         const sub = new HostOrchestrator.SubApp('Test');
 
