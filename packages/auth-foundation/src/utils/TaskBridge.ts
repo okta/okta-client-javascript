@@ -74,8 +74,6 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
   }
 
   send<K extends keyof M & keyof R>(message: M[K], options: TaskBridge.TaskOptions = {}): TaskBridge.TaskResponse<R[K]> {
-    console.log('send called')
-
     const requestId = shortID();
     const requestChannel: TaskBridge.BridgeChannel<M[keyof M]> = this.createBridgeChannel();
     const responseChannel: TaskBridge.TaskChannel<R[K]> = this.createTaskChannel(requestId);

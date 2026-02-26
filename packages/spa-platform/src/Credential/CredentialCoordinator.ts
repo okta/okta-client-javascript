@@ -90,11 +90,16 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
   }
 
   protected broadcast (eventName: string, data: Record<string, JsonPrimitive | JsonRecord>) {
-    this.channel.postMessage({
-      eventName,
-      source: this.id,    // id associated with CredentialCoordinator instance (aka per tab)
-      ...data
-    });
+    try {
+      this.channel.postMessage({
+        eventName,
+        source: this.id,    // id associated with CredentialCoordinator instance (aka per tab)
+        ...data
+      });
+    }
+    catch (err) {
+      
+    }
   }
 
   protected registerTabListeners (): void {

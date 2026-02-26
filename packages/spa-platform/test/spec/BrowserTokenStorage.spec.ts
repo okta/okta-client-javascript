@@ -1,9 +1,13 @@
 import { CredentialError } from '@okta/auth-foundation';
 import { Token } from 'src/platform';
 import { BrowserTokenStorage } from 'src/Credential/TokenStorage';
-import { makeTestToken, MockIndexedDBStore } from '../helpers/makeTestResource';
+import { makeTestToken, MockIndexedDBStore, testResourceCleanup } from '../helpers/makeTestResource';
 
-describe('BrowserTokenStorage' , () => {
+describe('BrowserTokenStorage', () => {
+  afterEach(() => {
+    testResourceCleanup();
+  });
+
   it('can construct', () => {
     const storage = new BrowserTokenStorage();
     expect(storage).toBeInstanceOf(BrowserTokenStorage);

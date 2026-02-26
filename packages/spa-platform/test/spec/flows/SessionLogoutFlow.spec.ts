@@ -1,6 +1,6 @@
 import { SessionLogoutFlow as Base } from '@okta/oauth2-flows';
 import { SessionLogoutFlow } from 'src/flows';
-import { oauthClient, makeTestToken } from '../../helpers/makeTestResource';
+import { oauthClient, makeTestToken, testResourceCleanup } from '../../helpers/makeTestResource';
 
 
 const params = {
@@ -8,6 +8,10 @@ const params = {
 };
 
 describe('SessionLogoutFlow', () => {
+  afterEach(() => {
+    testResourceCleanup();
+  });
+
   it('constructs', async () => {
     const flow = new SessionLogoutFlow(oauthClient, params);
     expect(flow).toBeInstanceOf(SessionLogoutFlow);

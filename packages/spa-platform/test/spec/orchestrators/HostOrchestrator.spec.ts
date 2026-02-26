@@ -1,7 +1,7 @@
 import { TokenOrchestrator, TokenOrchestratorError } from '@okta/auth-foundation';
 import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
 import { Token } from 'src/platform';
-import { HostOrchestrator } from 'src/orchestrators';
+import { HostOrchestrator } from 'src/orchestrators/HostOrchestrator/index';
 import { LocalBroadcastChannel } from 'src/utils/LocalBroadcastChannel';
 
 
@@ -28,21 +28,9 @@ class MockOrchestrator extends TokenOrchestrator {
 
 
 describe('HostOrchestrator', () => {
-  // beforeEach(() => {
-  //   window.location = {
-  //     ...window.location,
-  //     href: 'http://localhost'
-  //   }
+  // afterEach(() => {
+  //   jest.restoreAllMocks();
   // });
-
-  // beforeEach(() => {
-  //   global.location = window.location;
-  // });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-    // jest.clearAllTimers();
-  });
 
   const authParams = {
     issuer: 'http://fake.okta.com',
@@ -482,35 +470,19 @@ describe('HostOrchestrator', () => {
         expect(broadcastSpy).toHaveBeenCalledTimes(2);
       });
 
-      // THIS
-      fit('throws when host fails to respond (timeout)', async () => {
+      it('throws when host fails to respond (timeout)', async () => {
         jest.useFakeTimers();
 
-        try {
-          const sub = new HostOrchestrator.SubApp('Test');
-          const broadcastSpy = jest.spyOn((sub as any), 'broadcast');
+        const sub = new HostOrchestrator.SubApp('Test');
+        const broadcastSpy = jest.spyOn((sub as any), 'broadcast');
 
-          const promise = sub.getToken();
-          await jest.advanceTimersByTimeAsync(10);
-          expect(broadcastSpy).toHaveBeenCalled();
-          await jest.advanceTimersByTimeAsync(5000);
-          const result = await promise;
-          console.log('result', result);
-        }
-        catch (err) {
-          console.log(err);
-          expect(err).toBeInstanceOf(Error);
-          expect((err as any).message).toBe('timeout')
-        }
+        const promise = sub.getToken();
 
-        console.log('POST CATCH')
+        const expectation = expect(promise).rejects.toThrow();
+        await jest.advanceTimersByTimeAsync(5000);
 
-        // const promise = sub.getToken();
-        // await jest.advanceTimersByTimeAsync(10);
-        // expect(broadcastSpy).toHaveBeenCalled();
-        // await jest.advanceTimersByTimeAsync(5000);
-        // // await promise;
-        // await expect(promise).rejects.toThrow(new Error('timeout'));
+        await expectation;
+        expect(broadcastSpy).toHaveBeenCalled();
 
         jest.useRealTimers();
       });

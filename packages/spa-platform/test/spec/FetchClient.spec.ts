@@ -1,7 +1,7 @@
 import { TokenOrchestrator, APIClientError, DPoPNonceCache } from '@okta/auth-foundation';
 import { FetchClient } from 'src/FetchClient';
 import { randStr } from '@repo/jest-helpers/browser/helpers';
-import { makeTestToken } from '../helpers/makeTestResource';
+import { makeTestToken, testResourceCleanup } from '../helpers/makeTestResource';
 
 
 // TODO: THESE TESTS ARE ALSO ADDED TO `auth-foundation` - How can I run all unit tests on both instances?
@@ -32,6 +32,7 @@ describe('FetchClient', () => {
   afterEach(() => {
     // ensures the DPoPNonceCache of APIClient is overwritten
     expect(DPoPNonceCache.InMemoryCache.prototype.cacheNonce).not.toHaveBeenCalled();
+    testResourceCleanup();
   });
 
   it('can make an authenticated resource request', async () => {

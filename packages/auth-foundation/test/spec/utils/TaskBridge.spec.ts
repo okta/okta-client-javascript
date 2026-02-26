@@ -1,6 +1,12 @@
-// global.BroadcastChannel = BroadcastChannel;
-
+/**
+ * A real `BroadcastChannel` implementation is needed within this test file
+ * Make sure the `global.BroadcastChannel = X` line executes before any additional imports
+ */
+import { BroadcastChannel as BC } from 'node:worker_threads';
+// @ts-expect-error - Seemingly a JSDOM vs Node impl difference, ignore
+global.BroadcastChannel = BC;
 import { TaskBridge } from 'src/utils/TaskBridge.ts';
+
 
 type TestRequest = {
   ADD: {
@@ -317,10 +323,10 @@ describe('TaskBridge', () => {
       // sleep to delay responding to the message, so the abort fires first
       try {
         await Promise.race([
-          sleep(sender.heartbeatInterval * 10),     
+          sleep(sender.heartbeatInterval * 10),
           rejectWhenFired(signal, 'abort'),
         ]);
-        
+
         reply({ foo: '1', bar: '2' });
       }
       finally {
@@ -339,7 +345,7 @@ describe('TaskBridge', () => {
     await jest.advanceTimersByTimeAsync(10);
 
     expect(handler).toHaveBeenCalledTimes(3);
-    
+
     receiver.close();
     const result = await promises;
     await jest.advanceTimersByTimeAsync(10);

@@ -24,6 +24,7 @@ class MockBroadcastChannel implements BroadcastChannel {
   close = jest.fn();
 }
 
+global.BroadcastChannel = MockBroadcastChannel;
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 

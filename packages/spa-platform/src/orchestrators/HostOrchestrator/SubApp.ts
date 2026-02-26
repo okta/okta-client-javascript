@@ -59,7 +59,7 @@ export class SubAppOrchestrator<E extends HO.SubAppEvents = HO.SubAppEvents> ext
       subAppId: this.id
     } as HO.RequestEvent[K], { ...options });
 
-    return result;
+    return await result;
   }
 
   protected getTokenCacheKey (params: TokenOrchestrator.AuthorizeParams): Promise<string> {
