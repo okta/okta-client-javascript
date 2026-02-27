@@ -158,23 +158,29 @@ describe('TaskBridge', () => {
     const handler = jest.fn().mockImplementation( async (message, reply, { signal }) => {
       signal.addEventListener('abort', abortListener, { once: true });
 
-      await sleep(50);    // sleep to delay responding to the message, so the abort fires first
+      await sleep(5000);    // sleep to delay responding to the message, so the abort fires first
       reply({ foo: '1', bar: '2' });
     });
     receiver.subscribe(handler);
 
     const { result, abort } = sender.send({ foo: 1, bar: 2 });
+    // bind abort error listener before the error is thrown
+    const expectation = expect(result).rejects.toThrow(new DOMException('Aborted'));
 
     // flush microtasks to ensure subscribe abortHandler is set up
     await jest.advanceTimersByTimeAsync(10);
+    // flush microtasks again so messages are sent over the bridge
+    await jest.advanceTimersByTimeAsync(10);
 
-    abort();
+    abort();    // trigger abort
+    // flush microtask queue again
+    await jest.advanceTimersByTimeAsync(10);
+    await jest.advanceTimersByTimeAsync(10);
 
-    await expect(result).rejects.toThrow(DOMException);
-    await expect(result).rejects.toThrow('Aborted');
-
-    // wait a bit more to ensure abort listener is called
-    await jest.advanceTimersByTimeAsync(100);
+    // await the `expect(DOMException)` from above
+    await expectation;
+    // flush all timers from queue
+    await jest.runAllTimersAsync();
 
     expect(handler).toHaveBeenCalled();
     expect(abortListener).toHaveBeenCalled();

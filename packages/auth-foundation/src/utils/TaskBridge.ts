@@ -108,7 +108,7 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
 
       // forces the pending promise to reject, so resources clean up if the request is aborted
       abortHandler = () => reject(new DOMException('Aborted', 'AbortError'));
-      request.signal.addEventListener('abort', abortHandler);
+      request.signal.addEventListener('abort', abortHandler, { once: true });
 
       // This channel is meant for the Receiver to send the results (aka `HandlerMessage<M>` messages)
       // ignore all Requestor events received (aka `RequestorMessage`)
