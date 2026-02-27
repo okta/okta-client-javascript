@@ -4,8 +4,6 @@ import { AuthSdkError } from '../errors/AuthSdkError.ts';
 
 /** @useDeclaredType */
 type TypeMap = Record<string, any>;
-// TODO: revisit this
-// type TypeMap = Record<string, Record<string, any>>;
 
 /**
  * A bridge for passing messages between a `TaskHandler` and a `Requestor`. The `Requestor` is "asking" the `TaskHandler`
@@ -240,8 +238,6 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
     this.#channel?.close();
     for (const message of this.#pending.values()) {
       message.abort();
-      // message.channel.close();
-      // this.clearMessage(message.id);
     }
 
     // Give abort messages a chance to be sent before closing channels

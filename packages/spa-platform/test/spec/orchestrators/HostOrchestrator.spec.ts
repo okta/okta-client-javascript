@@ -50,58 +50,68 @@ describe('HostOrchestrator', () => {
       jest.spyOn((LocalBroadcastChannel.prototype as any), 'isTrustedMessage').mockReturnValue(true);
     });
 
-    // THIS
-    xit('.activate / .close', () => {
-      const activateSpy = jest.spyOn(MockHost.prototype, 'activate');
-      // don't pollute logs with warnings during testing
-      jest.spyOn(console, 'warn').mockReturnValue(undefined);
+    describe('duplicate hosts', () => {
+      let hosts: MockHost[] = [];
 
-      const host1 = new MockHost('TestHost');
-      expect(host1).toBeInstanceOf(HostOrchestrator.Host);
-      expect(host1.isActive).toBe(true);
-      expect(activateSpy).toHaveBeenCalledTimes(1);
+      afterEach(() => {
+        const [host1, host2, host3, host4] = hosts;
 
-      const duplicateHostListener = jest.fn();
-      host1.on('duplicate_host', duplicateHostListener);
-
-      const host2 = new MockHost('TestHost');
-      expect(host2).toBeInstanceOf(HostOrchestrator.Host);
-      expect(host2.isActive).toBe(true);
-      expect(activateSpy).toHaveBeenCalledTimes(2);
-      expect(duplicateHostListener).toHaveBeenCalledTimes(1);
-      expect(duplicateHostListener.mock.lastCall?.[0]).toMatchObject({
-        id: host1.id,
-        duplicateId: host2.id
+        // clean up, important to not bleed into other tests
+        host1.close(); host2.close(); host3.close(); host4.close();
+        // assert clean up was completed succesfully
+        expect(host1.isActive).toBe(false);
+        expect(host2.isActive).toBe(false);
+        expect(host3.isActive).toBe(false);
+        expect(host4.isActive).toBe(false);
       });
 
-      // should not auto-activate since `window.top` is null (mocking iframe mounting)
-      jest.spyOn((HostOrchestrator.Host as any).prototype, 'shouldActive').mockReturnValue(false);
-      const host3 = new MockHost('TestHost');
-      expect(host3.isActive).toBe(false);
-      expect(activateSpy).toHaveBeenCalledTimes(2);
-      expect(duplicateHostListener).toHaveBeenCalledTimes(1);
+      it('.activate / .close', async () => {
+        const activateSpy = jest.spyOn(MockHost.prototype, 'activate');
+        // don't pollute logs with warnings during testing
+        jest.spyOn(console, 'warn').mockReturnValue(undefined);
 
-      // manually activate
-      host3.activate();
-      expect(host3.isActive).toBe(true);
-      expect(activateSpy).toHaveBeenCalledTimes(3);
-      expect(duplicateHostListener).toHaveBeenCalledTimes(2);
+        const host1 = new MockHost('TestHost');
+        expect(host1).toBeInstanceOf(HostOrchestrator.Host);
+        expect(host1.isActive).toBe(true);
+        expect(activateSpy).toHaveBeenCalledTimes(1);
 
-      const host4 = new MockHost('TestHost--FOO');
-      host4.activate();   // iframe mock still in place, requires manual activation
-      expect(host4.isActive).toBe(true);
-      expect(activateSpy).toHaveBeenCalledTimes(4);
-      // host4 is named differently, therefore does not trigger dup host event
-      expect(duplicateHostListener).toHaveBeenCalledTimes(2);
+        const duplicateHostListener = jest.fn();
+        host1.on('duplicate_host', duplicateHostListener);
 
-      // clean up, important to not bleed into other tests
-      host1.close(); host2.close(); host3.close(); host4.close();
-      expect(host1.isActive).toBe(false);
-      expect(host2.isActive).toBe(false);
-      expect(host3.isActive).toBe(false);
-      expect(host4.isActive).toBe(false);
+        const host2 = new MockHost('TestHost');
+        expect(host2).toBeInstanceOf(HostOrchestrator.Host);
+        expect(host2.isActive).toBe(true);
+        expect(activateSpy).toHaveBeenCalledTimes(2);
+        expect(duplicateHostListener).toHaveBeenCalledTimes(1);
+        expect(duplicateHostListener.mock.lastCall?.[0]).toMatchObject({
+          id: host1.id,
+          duplicateId: host2.id
+        });
 
-      host1.off('duplicate_host', duplicateHostListener);
+        // should not auto-activate since `window.top` is null (mocking iframe mounting)
+        jest.spyOn((HostOrchestrator.Host as any).prototype, 'shouldActive').mockReturnValue(false);
+        const host3 = new MockHost('TestHost');
+        expect(host3.isActive).toBe(false);
+        expect(activateSpy).toHaveBeenCalledTimes(2);
+        expect(duplicateHostListener).toHaveBeenCalledTimes(1);
+
+        // manually activate
+        host3.activate();
+        expect(host3.isActive).toBe(true);
+        expect(activateSpy).toHaveBeenCalledTimes(3);
+        expect(duplicateHostListener).toHaveBeenCalledTimes(2);
+
+        const host4 = new MockHost('TestHost--FOO');
+        host4.activate();   // iframe mock still in place, requires manual activation
+        expect(host4.isActive).toBe(true);
+        expect(activateSpy).toHaveBeenCalledTimes(4);
+        // host4 is named differently, therefore does not trigger dup host event
+        expect(duplicateHostListener).toHaveBeenCalledTimes(2);
+
+        // test cleanup move to `afterEach` to allow for microtasks to fire
+        hosts = [host1, host2, host3, host4];   // therefore list hosts within array for cleanup
+        host1.off('duplicate_host', duplicateHostListener);
+      });
     });
 
     describe('events', () => {
