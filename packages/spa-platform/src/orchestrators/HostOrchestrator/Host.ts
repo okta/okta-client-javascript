@@ -84,7 +84,9 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
     let response: HO.ResponseEvent[keyof HO.ResponseEvent];
     switch (eventName) {
       case 'ACTIVATED':
-        return this.handleHostActivated(request);
+        this.handleHostActivated(request);
+        response = {};
+        break;
       case 'PING':
         response = { message: 'PONG' } satisfies HO.PingResponse;
         break;

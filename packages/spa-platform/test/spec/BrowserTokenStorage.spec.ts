@@ -3,7 +3,7 @@ import { Token } from 'src/platform';
 import { BrowserTokenStorage } from 'src/Credential/TokenStorage';
 import { makeTestToken, MockIndexedDBStore } from '../helpers/makeTestResource';
 
-describe('BrowserTokenStorage' , () => {
+describe('BrowserTokenStorage', () => {
   it('can construct', () => {
     const storage = new BrowserTokenStorage();
     expect(storage).toBeInstanceOf(BrowserTokenStorage);

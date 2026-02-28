@@ -2,6 +2,7 @@ const crypto = require('node:crypto');
 const { TextEncoder, TextDecoder } = require('node:util');
 import { randStr } from './helpers';
 
+
 Object.defineProperty(global, 'crypto', {
   value: {
     randomUUID: () => randStr(15),   // do not use actual crypto alg for testing to for speed
@@ -23,9 +24,9 @@ class MockBroadcastChannel implements BroadcastChannel {
   close = jest.fn();
 }
 
+global.BroadcastChannel = MockBroadcastChannel;
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
-global.BroadcastChannel = MockBroadcastChannel;
 
 global.fetch = () => {
   throw new Error(`
