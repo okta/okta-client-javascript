@@ -109,12 +109,17 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   protected async processResponse(response: Response, request: APIRequest): Promise<void> {
     await super.processResponse(response, request);
 
-    // NOTE: this logic will not work on CORS requests, the Date header needs to be allowlisted via access-control-expose-headers
-    const dateHeader = response.headers.get('date');
-    if (dateHeader) {
-      const serverTime = Timestamp.from(new Date(dateHeader));
-      const skew = Math.round(serverTime.timeSince(Date.now() / 1000));
-      TimeCoordinator.clockSkew = skew;
+    if (this.configuration.syncClockWithAuthorizationServer) {
+      // NOTE: this logic will not work on CORS requests, the Date header needs to be allowlisted via access-control-expose-headers
+      const dateHeader = response.headers.get('date');
+      if (dateHeader) {
+        const parsedDate = new Date(dateHeader);
+        if (parsedDate.toString() !== 'Invalid Date') {
+          const serverTime = Timestamp.from(parsedDate);
+          const skew = Math.round(serverTime.timeSince(Date.now() / 1000));
+          TimeCoordinator.clockSkew = skew;
+        }
+      }
     }
   }
 

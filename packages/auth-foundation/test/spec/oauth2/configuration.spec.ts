@@ -69,6 +69,7 @@ describe('OAuth2Client.Configuration', () => {
     });
     expect(c1.issuer.href).toEqual('https://foo.com/');
     expect(c1.authentication).toEqual('none');
+    expect(c1.syncClockWithAuthorizationServer).toEqual(true);
     expect(c1.allowHTTP).toEqual(false);
     expect(c1.dpop).toEqual(false);
     expect(c1.fetchImpl).toEqual(undefined);
@@ -76,6 +77,7 @@ describe('OAuth2Client.Configuration', () => {
     // override default configurations
     OAuth2Client.Configuration.DefaultOptions.allowHTTP = true;
     OAuth2Client.Configuration.DefaultOptions.dpop = true;
+    OAuth2Client.Configuration.DefaultOptions.syncClockWithAuthorizationServer = false;
 
     const c2 = new OAuth2Client.Configuration({
       baseURL: 'https://foo.com',
@@ -84,6 +86,7 @@ describe('OAuth2Client.Configuration', () => {
     });
     expect(c2.issuer.href).toEqual('https://foo.com/');
     expect(c2.authentication).toEqual('none');
+    expect(c2.syncClockWithAuthorizationServer).toEqual(false);
     expect(c2.allowHTTP).toEqual(true);
     expect(c2.dpop).toEqual(true);
     expect(c2.fetchImpl).toEqual(undefined);
@@ -94,10 +97,12 @@ describe('OAuth2Client.Configuration', () => {
       clientId: 'fakeclientid',
       scopes: 'openid email profile',
       dpop: false,
-      allowHTTP: false
+      allowHTTP: false,
+      syncClockWithAuthorizationServer: true
     });
     expect(c4.issuer.href).toEqual('https://foo.com/');
     expect(c4.authentication).toEqual('none');
+    expect(c4.syncClockWithAuthorizationServer).toEqual(true);
     expect(c4.allowHTTP).toEqual(false);
     expect(c4.dpop).toEqual(false);
     expect(c4.fetchImpl).toEqual(undefined);

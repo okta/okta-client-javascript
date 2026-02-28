@@ -830,4 +830,106 @@ describe('OAuth2Client', () => {
       });
     });
   });
+
+  describe('features', () => {
+    describe('Clock Synchronization', () => {
+      let testContext: any = {};
+
+      beforeEach(async () => {
+        fetchSpy.mockReset();
+        const client = new OAuth2Client(params);
+        const original = new Token(mockTokenResponse());
+        const tokenResponse = mockTokenResponse();
+
+        jest.spyOn(client, 'openIdConfiguration').mockResolvedValue({
+          issuer: 'https://fake.okta.com',
+          token_endpoint: 'https://fake.okta.com/token'
+        });
+        jest.spyOn((client as any), 'jwks').mockResolvedValue({ keys: [{ kid: 'foo', alg: 'bar'}]});
+
+        const TimeCoordinator = (await import('src/utils/TimeCoordinator')).default;
+        testContext = { client, original, tokenResponse, TimeCoordinator };
+      });
+
+      afterEach(() => {
+        // needed to reset the dynamically imported `TimeCoordinator` singleton instance
+        jest.resetModules();
+      });
+
+      it('should calculate clock skew when Date header is available', async () => {
+        const { TimeCoordinator, client, original, tokenResponse } = testContext;
+        const skewSetterSpy = jest.spyOn(TimeCoordinator, 'clockSkew', 'set');
+
+        const date15MinsBefore = new Date(Date.now() - (1000 * 60 * 15));   // 15 minutes before now
+        fetchSpy.mockResolvedValue(Response.json(tokenResponse, {
+          headers: { date: date15MinsBefore.toUTCString() }
+        }));
+
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        await client.refresh(original);
+        // NOTE: real time math is done, so value will be rounded and can be between -899 and -901
+        expect(TimeCoordinator.clockSkew).toBeLessThan(-898);
+        expect(TimeCoordinator.clockSkew).toBeGreaterThan(-902);
+
+        TimeCoordinator.clockSkew = 0;    // reset
+
+        const date15MinsAfter = new Date(Date.now() + (1000 * 60 * 15));   // 15 minutes after now
+        fetchSpy.mockResolvedValue(Response.json(tokenResponse, {
+          headers: { date: date15MinsAfter.toUTCString() }
+        }));
+
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        await client.refresh(original);
+        // NOTE: real time math is done, so value will be rounded and can be between 899 or 901
+        expect(TimeCoordinator.clockSkew).toBeLessThan(902);
+        expect(TimeCoordinator.clockSkew).toBeGreaterThan(898);
+
+        // NOTE: one call is done manually to reset (twice via .refresh(), once for manual reset)
+        expect(skewSetterSpy).toHaveBeenCalledTimes(3);
+      });
+
+      it('should ignore Date header when value isn\'t a valid date string', async () => {
+        const { TimeCoordinator, client, original, tokenResponse } = testContext;
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        const skewSetterSpy = jest.spyOn(TimeCoordinator, 'clockSkew', 'set');
+
+        fetchSpy.mockResolvedValue(Response.json(tokenResponse, {
+          headers: { date: 'some random string' }
+        }));
+
+        await client.refresh(original);
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        expect(skewSetterSpy).not.toHaveBeenCalled();
+      });
+
+      it('should gracefully skip when Date header is not available', async () => {
+        const { TimeCoordinator, client, original, tokenResponse } = testContext;
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        const skewSetterSpy = jest.spyOn(TimeCoordinator, 'clockSkew', 'set');
+
+        fetchSpy.mockResolvedValue(Response.json(tokenResponse));
+
+        await client.refresh(original);
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        expect(skewSetterSpy).not.toHaveBeenCalled();
+      });
+
+      it('should skip when configured off', async () => {
+        const { TimeCoordinator, client, original, tokenResponse } = testContext;
+        expect(TimeCoordinator.clockSkew).toBe(0);
+
+        const skewSetterSpy = jest.spyOn(TimeCoordinator, 'clockSkew', 'set');
+        client.configuration.syncClockWithAuthorizationServer = false;
+        
+        const date15MinsAfter = new Date(Date.now() + (1000 * 60 * 15));   // 15 minutes after now
+        fetchSpy.mockResolvedValue(Response.json(tokenResponse, {
+          headers: { date: date15MinsAfter.toUTCString() }
+        }));
+
+        await client.refresh(original);
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        expect(skewSetterSpy).not.toHaveBeenCalled();
+      });
+    });
+  });
 });
