@@ -102,8 +102,14 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
 
   /** @internal */
   protected async prepareDPoPNonceRetry (request: APIRequest, nonce: string): Promise<void> {
+    return this.signTokenRequestWithDPoP(request);
+  }
+
+  protected async signTokenRequestWithDPoP (request: APIRequest, nonce?: string): Promise<void> {
     const { dpopPairId } = request.context;
-    await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce });
+    // dpop nonce may not be available for this request (undefined), this is expected
+    const dpopNonce = nonce ?? await this.getDPoPNonceFromCache(request);
+    await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce: dpopNonce });
   }
 
   protected async processResponse(response: Response, request: APIRequest): Promise<void> {
@@ -188,16 +194,24 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     const { acrValues, maxAge } = tokenRequest;
 
     if (this.configuration.dpop) {
-      // dpop nonce may not be available for this request (undefined), this is expected
-      const nonce = await this.getDPoPNonceFromCache(request);
-      await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce });
+      request.context.dpopPairId = dpopPairId;
+      await this.signTokenRequestWithDPoP(request);
     }
 
     const response = await this.send(request);
-    const json = await response.json();
+    let json = await response.json();
 
     if (isOAuth2ErrorResponse(json)) {
-      return json;
+      if (!(OAuth2Client.isDPoPProofClockSkewError(json) && request.canRetry())) {
+        return json;
+      }
+
+      // If a JWT (DPoP Proof) clock skew error is returned we can retry the request.
+      // The `Date` header of the /token response will be have been processed, hopefully
+      // this will align the client's clock with the Authorization Server's
+      await this.signTokenRequestWithDPoP(request);     // re-sign request (with new `TimeCoordinator.now()`)
+      const retryReponse = await this.retry(request);   // trigger retry
+      json = await retryReponse.json();
     }
 
     const tokenContext: Token.Context = {
@@ -567,4 +581,9 @@ export namespace OAuth2Client {
   export type GetJsonOptions = {
     skipCache?: boolean;
   };
+
+  export function isDPoPProofClockSkewError (error: OAuth2ErrorResponse) {
+    return error.error === 'invalid_dpop_proof' &&
+      error.error_description === 'The DPoP proof JWT is issued in the future.';
+  }
 }

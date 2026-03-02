@@ -545,6 +545,54 @@ describe('OAuth2Client', () => {
         expect(newToken.refreshToken).not.toEqual(token.refreshToken);
         expect(newToken.refreshToken).toEqual(undefined);
       });
+
+      describe('DPoP proof clock skew recovery', () => {
+        beforeEach(() => {
+          client.configuration.dpop = true;
+          jest.spyOn(client.dpopSigningAuthority, 'sign').mockImplementation((request) => request);
+        });
+
+        test('isDPoPProofClockSkewError', () => {
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+              error: 'invalid_dpop_proof',
+              error_description: 'The DPoP proof JWT is issued in the future.'
+          })).toBe(true);
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'invalid_dpop_proof'
+          })).toBe(false);
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'invalid_dpop_proof',
+            error_description: 'foobar'
+          })).toBe(false);
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'foobar',
+            error_description: 'The DPoP proof JWT is issued in the future.'
+          })).toBe(false);
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'foobar',
+          })).toBe(false);
+        });
+
+        it('gracefully recovers from a bad system clock when using DPoP', async () => {
+          const dpopProofInFutureErrorResponse = Response.json({
+            error: 'invalid_dpop_proof',
+            error_description: 'The DPoP proof JWT is issued in the future.'
+          });
+          const dpopTokenResponse = Response.json(mockTokenResponse(null, { token_type: 'DPoP' }));
+
+          fetchSpy
+            .mockResolvedValueOnce(dpopProofInFutureErrorResponse)
+            .mockResolvedValueOnce(dpopTokenResponse);
+          const retrySpy = jest.spyOn(client, 'retry');
+  
+          const token = new Token(mockTokenResponse());
+  
+          const response = await client.performRefresh(token);
+          expect(response).toBeInstanceOf(Token);
+          expect(fetchSpy).toHaveBeenCalledTimes(2);
+          expect(retrySpy).toHaveBeenCalledTimes(1);
+        });
+      });
     });
 
     describe('revoke', () => {
