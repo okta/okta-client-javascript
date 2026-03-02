@@ -202,7 +202,11 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     let json = await response.json();
 
     if (isOAuth2ErrorResponse(json)) {
-      if (!(OAuth2Client.isDPoPProofClockSkewError(json) && request.canRetry())) {
+      if (!(
+        OAuth2Client.isDPoPProofClockSkewError(json) &&             // proper error is returned from AS
+        request.canRetry() &&                                       // request hasn't been retried too many times previously
+        Math.abs(Date.now() - TimeCoordinator.clockSkew) >= 150     // the TimeCoordinator updated with a meaningful time difference (~2.5 mintues)
+      )) {
         return json;
       }
 
@@ -583,7 +587,9 @@ export namespace OAuth2Client {
   };
 
   export function isDPoPProofClockSkewError (error: OAuth2ErrorResponse) {
-    return error.error === 'invalid_dpop_proof' &&
-      error.error_description === 'The DPoP proof JWT is issued in the future.';
+    return error.error === 'invalid_dpop_proof' && (
+      error.error_description === 'The DPoP proof JWT is issued in the future.' ||
+      error.error_description === 'The DPoP proof JWT is issued more than five minutes in the past.'
+    );
   }
 }

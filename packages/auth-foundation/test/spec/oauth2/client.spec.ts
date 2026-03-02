@@ -557,23 +557,37 @@ describe('OAuth2Client', () => {
               error: 'invalid_dpop_proof',
               error_description: 'The DPoP proof JWT is issued in the future.'
           })).toBe(true);
+
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'invalid_dpop_proof',
+            error_description: 'The DPoP proof JWT is issued more than five minutes in the past.'
+        })).toBe(true);
+
           expect(OAuth2Client.isDPoPProofClockSkewError({
             error: 'invalid_dpop_proof'
           })).toBe(false);
+
           expect(OAuth2Client.isDPoPProofClockSkewError({
             error: 'invalid_dpop_proof',
             error_description: 'foobar'
           })).toBe(false);
+
           expect(OAuth2Client.isDPoPProofClockSkewError({
             error: 'foobar',
             error_description: 'The DPoP proof JWT is issued in the future.'
           })).toBe(false);
+
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'foobar',
+            error_description: 'The DPoP proof JWT is issued more than five minutes in the past.'
+          })).toBe(false);
+
           expect(OAuth2Client.isDPoPProofClockSkewError({
             error: 'foobar',
           })).toBe(false);
         });
 
-        it('gracefully recovers from a bad system clock when using DPoP', async () => {
+        it('gracefully recovers from a bad system clock when using DPoP (clock set ahead)', async () => {
           const dpopProofInFutureErrorResponse = Response.json({
             error: 'invalid_dpop_proof',
             error_description: 'The DPoP proof JWT is issued in the future.'
@@ -582,6 +596,26 @@ describe('OAuth2Client', () => {
 
           fetchSpy
             .mockResolvedValueOnce(dpopProofInFutureErrorResponse)
+            .mockResolvedValueOnce(dpopTokenResponse);
+          const retrySpy = jest.spyOn(client, 'retry');
+  
+          const token = new Token(mockTokenResponse());
+  
+          const response = await client.performRefresh(token);
+          expect(response).toBeInstanceOf(Token);
+          expect(fetchSpy).toHaveBeenCalledTimes(2);
+          expect(retrySpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('gracefully recovers from a bad system clock when using DPoP (clock set behind)', async () => {
+          const dpopProofInPastErrorResponse = Response.json({
+            error: 'invalid_dpop_proof',
+            error_description: 'The DPoP proof JWT is issued more than five minutes in the past.'
+          });
+          const dpopTokenResponse = Response.json(mockTokenResponse(null, { token_type: 'DPoP' }));
+
+          fetchSpy
+            .mockResolvedValueOnce(dpopProofInPastErrorResponse)
             .mockResolvedValueOnce(dpopTokenResponse);
           const retrySpy = jest.spyOn(client, 'retry');
   

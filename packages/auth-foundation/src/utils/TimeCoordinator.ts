@@ -85,19 +85,19 @@ class TimeCoordinator {
   #skew = 0;
   static #tolerance = 0;
 
-  get clockSkew (): number {
+  get clockSkew (): Seconds {
     return this.#skew;
   }
 
-  set clockSkew (skew: number) {
+  set clockSkew (skew: Seconds) {
     this.#skew = skew;
   }
 
-  static get clockTolerance (): number {
+  static get clockTolerance (): Seconds {
     return TimeCoordinator.#tolerance;
   }
 
-  static set clockTolerance (tolerance: number) {
+  static set clockTolerance (tolerance: Seconds) {
     TimeCoordinator.#tolerance = tolerance;
   }
 
