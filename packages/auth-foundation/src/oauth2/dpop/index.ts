@@ -123,8 +123,6 @@ export class DPoPSigningAuthorityImpl implements DPoPSigningAuthority {
       nonce
     };
 
-    console.log('claims', claims);
-
     // encode access token
     if (accessToken) {
       claims.ath = await hash(accessToken);

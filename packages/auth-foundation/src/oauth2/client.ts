@@ -101,7 +101,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /** @internal */
-  protected async prepareDPoPNonceRetry (request: APIRequest, nonce: string): Promise<void> {
+  protected async prepareDPoPNonceRetry (request: APIRequest): Promise<void> {
     return this.signTokenRequestWithDPoP(request);
   }
 
@@ -202,20 +202,26 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     let json = await response.json();
 
     if (isOAuth2ErrorResponse(json)) {
-      if (!(
-        OAuth2Client.isDPoPProofClockSkewError(json) &&             // proper error is returned from AS
-        request.canRetry() &&                                       // request hasn't been retried too many times previously
-        Math.abs(Date.now() - TimeCoordinator.clockSkew) >= 150     // the TimeCoordinator updated with a meaningful time difference (~2.5 mintues)
-      )) {
-        return json;
+      if (
+        // proper error is returned from AS
+        OAuth2Client.isDPoPProofClockSkewError(json) &&
+        // request hasn't been retried too many times previously
+        request.canRetry() &&
+        // (heuristic) the TimeCoordinator updated with a meaningful time difference (~2.5 mintues)
+        Math.abs(Date.now() - TimeCoordinator.clockSkew) >= 150
+      ) {
+        // If a JWT (DPoP Proof) clock skew error is returned we can retry the request.
+        // The `Date` header of the /token response will be have been processed, hopefully
+        // this will align the client's clock with the Authorization Server's
+        await this.signTokenRequestWithDPoP(request);     // re-sign request (with new `TimeCoordinator.now()`)
+        const retryReponse = await this.retry(request);   // trigger retry
+        json = await retryReponse.json();
       }
 
-      // If a JWT (DPoP Proof) clock skew error is returned we can retry the request.
-      // The `Date` header of the /token response will be have been processed, hopefully
-      // this will align the client's clock with the Authorization Server's
-      await this.signTokenRequestWithDPoP(request);     // re-sign request (with new `TimeCoordinator.now()`)
-      const retryReponse = await this.retry(request);   // trigger retry
-      json = await retryReponse.json();
+      // redundant, but handles scenario where retry returns error
+      if (isOAuth2ErrorResponse(json)) {
+        return json;
+      }
     }
 
     const tokenContext: Token.Context = {

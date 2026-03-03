@@ -626,6 +626,44 @@ describe('OAuth2Client', () => {
           expect(fetchSpy).toHaveBeenCalledTimes(2);
           expect(retrySpy).toHaveBeenCalledTimes(1);
         });
+
+        it('returns error after retry when same system clock error is returned (clock set ahead)', async () => {
+          const dpopProofInFutureErrorResponse = {
+            error: 'invalid_dpop_proof',
+            error_description: 'The DPoP proof JWT is issued in the future.'
+          };
+
+          fetchSpy
+            .mockResolvedValueOnce(Response.json(dpopProofInFutureErrorResponse))
+            .mockResolvedValueOnce(Response.json(dpopProofInFutureErrorResponse));
+          const retrySpy = jest.spyOn(client, 'retry');
+
+          const token = new Token(mockTokenResponse());
+
+          const response = await client.performRefresh(token);
+          expect(response).toEqual(dpopProofInFutureErrorResponse);
+          expect(fetchSpy).toHaveBeenCalledTimes(2);
+          expect(retrySpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('returns error after retry when same system clock error is returned (clock set behind)', async () => {
+          const dpopProofInPastErrorResponse = {
+            error: 'invalid_dpop_proof',
+            error_description: 'The DPoP proof JWT is issued more than five minutes in the past.'
+          };
+
+          fetchSpy
+            .mockResolvedValueOnce(Response.json(dpopProofInPastErrorResponse))
+            .mockResolvedValueOnce(Response.json(dpopProofInPastErrorResponse));
+          const retrySpy = jest.spyOn(client, 'retry');
+
+          const token = new Token(mockTokenResponse());
+
+          const response = await client.performRefresh(token);
+          expect(response).toEqual(dpopProofInPastErrorResponse);
+          expect(fetchSpy).toHaveBeenCalledTimes(2);
+          expect(retrySpy).toHaveBeenCalledTimes(1);
+        });
       });
     });
 
