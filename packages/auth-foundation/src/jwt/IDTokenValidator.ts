@@ -8,7 +8,9 @@
 import type { AcrValues } from '../types/index.ts';
 import type { JWT } from './JWT.ts';
 import { JWTError } from '../errors/index.ts';
-import TimeCoordinator, { Timestamp } from '../utils/TimeCoordinator.ts';
+import { Timestamp } from '../utils/TimeCoordinator.ts';
+import { Platform } from '../platform/Platform.ts';
+
 
 /**
  * @group JWT
@@ -98,7 +100,7 @@ export const DefaultIDTokenValidator: IDTokenValidator = {
           break;
 
         case 'expirationTime':
-          const now = TimeCoordinator.now();
+          const now = Platform.TimeCoordinator.now();
           if (jwt.expirationTime && now.isBefore(jwt.expirationTime)) {
             break;
           }
@@ -107,7 +109,7 @@ export const DefaultIDTokenValidator: IDTokenValidator = {
         case 'issuedAtTime':
           if (jwt.issuedAt) {
             const issuedAt: Date = jwt.issuedAt;
-            const now = TimeCoordinator.now();
+            const now = Platform.TimeCoordinator.now();
             if (Math.abs(now.timeSince(issuedAt)) <= DefaultIDTokenValidator.issuedAtGraceInterval) {
               break;
             }
@@ -131,7 +133,7 @@ export const DefaultIDTokenValidator: IDTokenValidator = {
 
             // compare `auth_time` to a timestamp to determine how long ago authentication was completed
             // the timestamp can either be the issuedAt (iat) claim or a coordinated .now()
-            const issuedAt = Timestamp.from(jwt?.issuedAt ?? TimeCoordinator.now());
+            const issuedAt = Timestamp.from(jwt?.issuedAt ?? Platform.TimeCoordinator.now());
             const elapsedTime = issuedAt.timeSince(authTime);
             if (elapsedTime > context.maxAge) {
               throw new JWTError('exceeds maxAge');

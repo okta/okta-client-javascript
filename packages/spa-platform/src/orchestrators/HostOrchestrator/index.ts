@@ -9,7 +9,7 @@ import {
   type JsonRecord,
   type TokenPrimitiveInit,
   Token
-} from '@okta/auth-foundation';
+} from '@okta/auth-foundation/core';
 import { HostOrchestrator as HostApp } from './Host.ts';
 import { SubAppOrchestrator } from './SubApp.ts';
 

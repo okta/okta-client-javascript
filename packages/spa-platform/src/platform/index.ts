@@ -2,7 +2,6 @@
  * @module Platform
  */
 
-export * from './Token.ts';
 export * from './OAuth2Client.ts';
 import { DefaultSigningAuthority } from './dpop/authority.ts';
 

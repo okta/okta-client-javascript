@@ -1,10 +1,12 @@
 import {
+  Credential,
+  Token,
+  HostOrchestrator,
   OAuth2ErrorResponse,
   isOAuth2ErrorResponse,
   hasSameValues,
   AcrValues
-} from '@okta/auth-foundation';
-import { Credential, Token, HostOrchestrator } from '@okta/spa-platform';
+} from '@okta/spa-platform';
 import { signIn, signOutFlow, getMordorToken, handleAcrStepUp } from './auth';
 
 

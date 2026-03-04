@@ -7,10 +7,11 @@
 import type { JsonRecord, RawRepresentable, Expires, TimeInterval } from '../types/index.ts';
 import { JWTError } from '../errors/index.ts';
 import { validateString } from '../internals/validators.ts';
-import TimeCoordinator from '../utils/TimeCoordinator.ts';
 import { JWK, JWKS } from './JWK.ts';
 import { buf, b64u } from '../crypto/index.ts';
 import { IDTokenValidator } from './IDTokenValidator.ts';
+import { Platform } from '../platform/Platform.ts';
+
 
 /**
  * @group JWT
@@ -70,7 +71,7 @@ function validateBody (claims: JsonRecord) {
       throw new JWTError('Unexpected `nbf` claim type');
     }
 
-    if (!TimeCoordinator.now().isAfter(claims.nbf)) {
+    if (!Platform.TimeCoordinator.now().isAfter(claims.nbf)) {
       throw new JWTError('`nbf` claim is unexpectedly in the past');
     }
   }
@@ -242,7 +243,7 @@ export class JWT implements RawRepresentable, Expires {
     if (!this.expirationTime) {
       return false;
     }
-    const now = TimeCoordinator.now();
+    const now = Platform.TimeCoordinator.now();
     return now.isBefore(this.expirationTime);
   }
   get isValid(): boolean {

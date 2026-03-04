@@ -1,12 +1,12 @@
 import type { HostOrchestrator as HO } from './index.ts';
 import {
+  Token,
   shortID,
   type TokenPrimitiveInit,
   EventEmitter,
   type Emitter,
   TokenOrchestrator
-} from '@okta/auth-foundation';
-import { Token } from '../../platform/index.ts';
+} from '@okta/auth-foundation/core';
 import { OrchestrationBridge } from './OrchestrationBridge.ts';
 
 

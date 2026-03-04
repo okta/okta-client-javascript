@@ -15,8 +15,8 @@ const config = {
     '<rootDir>/src/index.ts',
   ],
   moduleNameMapper: {
-    // TODO: why is this required? yarn workspace and jest don't seem to get along?
-    '^@okta/auth-foundation/client$': '<rootDir>/../auth-foundation/src/client.ts',
+    // NOTE: auth-foundation/core maps to src/index.ts so Default Dependencies (like TimeCoordinator) are loaded
+    '^@okta/auth-foundation/core$': '<rootDir>/../auth-foundation/src/index.ts',
     '^@okta/auth-foundation/internal$': '<rootDir>/../auth-foundation/src/internal.ts',
     '^@okta/auth-foundation$': '<rootDir>/../auth-foundation/src/index.ts',
     '^@okta/oauth2-flows$': '<rootDir>/../oauth2-flows/src/index.ts',

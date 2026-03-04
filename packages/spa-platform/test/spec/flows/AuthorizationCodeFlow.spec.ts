@@ -13,8 +13,7 @@ jest.mock('@okta/auth-foundation', () => {
   };
 });
 
-import { OAuth2Error } from '@okta/auth-foundation';
-import { Token } from 'src/platform';
+import { Token, OAuth2Error } from '@okta/auth-foundation';
 import { AuthorizationCodeFlow as Base, AuthenticationFlowError } from '@okta/oauth2-flows';
 import { AuthorizationCodeFlow } from 'src/flows';
 import { oauthClient, makeTestToken } from '../../helpers/makeTestResource';

@@ -4,11 +4,11 @@
 
 import type { AuthContext } from '../types.ts';
 import {
+  OAuth2Client,
   randomBytes,
   OAuth2Error,
   mergeURLSearchParameters
-} from '@okta/auth-foundation';
-import OAuth2Client from '@okta/auth-foundation/client';
+} from '@okta/auth-foundation/core';
 import { LogoutFlow } from '../LogoutFlow.ts';
 
 

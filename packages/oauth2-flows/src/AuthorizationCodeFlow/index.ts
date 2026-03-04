@@ -10,6 +10,7 @@ import {
   type TimeInterval,
   type AcrValues,
   type JsonRecord,
+  OAuth2Client,
   PKCE,
   OAuth2Error,
   isOAuth2ErrorResponse,
@@ -18,8 +19,7 @@ import {
   mergeURLSearchParameters,
   Token,
   AuthSdkError,
-} from '@okta/auth-foundation';
-import OAuth2Client from '@okta/auth-foundation/client';
+} from '@okta/auth-foundation/core';
 import {
   AuthenticationFlow,
   AuthenticationFlowError

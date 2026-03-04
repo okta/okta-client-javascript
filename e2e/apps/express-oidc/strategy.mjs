@@ -1,4 +1,5 @@
 import { Strategy} from 'passport';
+import { OAuth2Client } from '@okta/auth-foundation';
 import { AuthorizationCodeFlow, SessionLogoutFlow, AuthTransaction } from '@okta/oauth2-flows';
 
 
@@ -20,8 +21,8 @@ export class OIDCStrategy extends Strategy {
   }
 
   async authenticate (req) {
-    const flow = new AuthorizationCodeFlow({
-      ...authParams,
+    const client = new OAuth2Client(authParams);
+    const flow = new AuthorizationCodeFlow(client, {
       redirectUri: 'http://localhost:8080/login/callback'
     });
 
@@ -61,8 +62,8 @@ export class OIDCStrategy extends Strategy {
   }
 
   static async logout (idToken) {
-    const flow = new SessionLogoutFlow({
-      ...authParams,
+    const client = new OAuth2Client(authParams);
+    const flow = new SessionLogoutFlow(client, {
       logoutRedirectUri: 'http://localhost:8080/'
     });
 

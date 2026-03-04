@@ -1,5 +1,4 @@
-import { FetchClient } from '@okta/spa-platform/fetch';
-import { HostOrchestrator } from '@okta/spa-platform/orchestrator';
+import { FetchClient, HostOrchestrator, type APIRequest } from '@okta/spa-platform';
 import { customScopes } from '@/auth';
 
 
@@ -11,11 +10,11 @@ orchestrator.defaultTimeout = 15000;
 export const fetchClient = new FetchClient(orchestrator);
 
 // testing APIClient request interceptors
-const interceptor1 = (req: Request) => {
+const interceptor1 = (req: APIRequest) => {
   req.headers.append('foo', '1');
   return req;
 };
-const interceptor2 = (req: Request) => {
+const interceptor2 = (req: APIRequest) => {
   req.headers.append('bar', '1');
   return req;
 };

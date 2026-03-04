@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { AuthorizationCodeFlow } from '@okta/oauth2-flows';
-import { AuthorizationCodeFlowOrchestrator } from '@okta/spa-platform';
-import { FetchClient } from '@okta/spa-platform/fetch';
+import {
+  AuthorizationCodeFlow,
+  AuthorizationCodeFlowOrchestrator,
+  FetchClient
+} from '@okta/spa-platform';
 import { client } from '@/auth';
 import { Loading } from '@/component/Loading';
 import { createMessageComponent } from '../createMessageComponent';

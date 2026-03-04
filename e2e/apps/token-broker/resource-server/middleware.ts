@@ -1,5 +1,5 @@
 import { MockLayer } from 'vite-plugin-mock-server';
-import { JWT, shortID } from '@okta/auth-foundation';
+import { JWT, shortID } from '@okta/auth-foundation/core';
 
 
 const dpopNonceError = 

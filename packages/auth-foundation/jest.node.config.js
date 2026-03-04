@@ -7,7 +7,10 @@ const config = {
   globals: {
     __PKG_NAME__: pkg.name,
     __PKG_VERSION__: pkg.version,
-  }
+  },
+  setupFilesAfterEnv: [
+    '<rootDir>/test/jest.setupAfterEnv.ts'
+  ]
 };
 
 export default config;
