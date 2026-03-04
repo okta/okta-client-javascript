@@ -4,14 +4,14 @@
  */
 
 import {
-  JsonRecord,
-  TokenStorage,
-  TokenStorageEvents,
+  Token,
+  type JsonRecord,
+  type TokenStorage,
+  type TokenStorageEvents,
   CredentialError,
   EventEmitter
-} from '@okta/auth-foundation';
+} from '@okta/auth-foundation/core';
 import { buf, b64u } from '@okta/auth-foundation/internal';
-import { Token } from '../platform/index.ts';
 import { IndexedDBStore } from '../utils/IndexedDBStore.ts';
 
 

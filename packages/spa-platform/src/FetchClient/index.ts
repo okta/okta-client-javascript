@@ -1,7 +1,7 @@
 import {
   FetchClient as FetchClientBase,
   type DPoPNonceCache
-} from '@okta/auth-foundation';
+} from '@okta/auth-foundation/core';
 import { PersistentCache } from '../platform/dpop/index.ts';
 
 /**

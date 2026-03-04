@@ -20,7 +20,7 @@ import { JWT } from './jwt/index.ts';
 import { OAuth2Request } from './http/index.ts';
 import { DefaultDPoPSigningAuthority, DPoPSigningAuthority } from './oauth2/dpop/index.ts';
 import { Timestamp } from './utils/TimeCoordinator.ts';
-import TimeCoordinator from './utils/TimeCoordinator.ts';
+import { Platform } from './platform/Platform.ts';
 
 /**
  * @module Token
@@ -114,7 +114,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
   constructor (obj: TokenInit) {
     const id = obj?.id ?? shortID();
     this.id = id;
-    this.issuedAt = obj?.issuedAt ? new Date(obj?.issuedAt) : TimeCoordinator.now().asDate;
+    this.issuedAt = obj?.issuedAt ? new Date(obj?.issuedAt) : Platform.TimeCoordinator.now().asDate;
 
     this.accessToken = obj.accessToken;
     if (obj.idToken) {
@@ -200,7 +200,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
    */
   get isExpired (): boolean {
     // TODO: revisit
-    const now = TimeCoordinator.now().asDate;
+    const now = Platform.TimeCoordinator.now().asDate;
     return +this.expiresAt - +now <= 0;
   }
 
@@ -219,7 +219,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
    * @see {@link Token.willBeValidIn}
    */
   willBeExpiredIn (duration: Seconds) {
-    const ts = Timestamp.from(TimeCoordinator.now().value + duration);
+    const ts = Timestamp.from(Platform.TimeCoordinator.now().value + duration);
     return ts.isAfter(this.expiresAt);
   }
 
@@ -289,7 +289,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
 
     return Token.create({
       id: this.id,
-      issuedAt: (this.issuedAt ?? token.issuedAt ?? TimeCoordinator.now().asDate).valueOf() / 1000,
+      issuedAt: (this.issuedAt ?? token.issuedAt ?? Platform.TimeCoordinator.now().asDate).valueOf() / 1000,
       tokenType: this.tokenType,
       expiresIn: this.expiresIn,
       accessToken: this.accessToken,
@@ -320,7 +320,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
     if (this.tokenType === 'DPoP') {
       const keyPairId = this.context.dpopPairId;
       // .generateDPoPProof() will throw if dpopPairId is undefined
-      await this.dpopSigningAuthority.sign(request, { keyPairId, nonce: dpopNonce, accessToken: this.accessToken });
+      await Platform.DPoPSigningAuthority.sign(request, { keyPairId, nonce: dpopNonce, accessToken: this.accessToken });
     }
 
     request.headers.set('Authorization', `${this.tokenType} ${this.accessToken}`);

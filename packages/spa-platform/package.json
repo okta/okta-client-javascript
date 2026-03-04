@@ -18,18 +18,6 @@
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
     },
-    "./fetch": {
-      "types": "./dist/types/FetchClient/index.d.ts",
-      "import": "./dist/esm/FetchClient/index.js"
-    },
-    "./orchestrator": {
-      "types": "./dist/types/orchestrators/index.d.ts",
-      "import": "./dist/esm/orchestrators/index.js"
-    },
-    "./flows": {
-      "types": "./dist/types/flows/index.d.ts",
-      "import": "./dist/esm/flows/index.js"
-    },
     "./package.json": "./package.json"
   },
   "scripts": {

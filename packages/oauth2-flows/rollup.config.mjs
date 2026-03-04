@@ -6,7 +6,7 @@ export default {
   ...baseConfig(ts, pkg),
   external: [
     ...Object.keys(pkg.peerDependencies),
-    '@okta/auth-foundation/client',
+    '@okta/auth-foundation/core',
     '@okta/auth-foundation/internal'
   ],
 };

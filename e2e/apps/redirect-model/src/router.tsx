@@ -1,7 +1,5 @@
 import { createBrowserRouter } from 'react-router-dom';
 import { Credential } from '@okta/spa-platform';
-import { AuthorizationCodeFlow } from '@okta/spa-platform/flows';
-import { signInFlow } from '@/auth';
 
 // import Page components
 import { App } from './App';

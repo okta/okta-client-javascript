@@ -9,7 +9,7 @@ import { JWT } from '../../jwt/index.ts';
 import { DPoPStorage } from './storage.ts';
 import { DPoPNonceCache } from './nonceCache.ts';
 import { DPoPError } from '../../errors/DPoPError.ts';
-import TimeCoordinator from '../../utils/TimeCoordinator.ts';
+import { Platform } from '../../platform/Platform.ts';
 
 export { DPoPNonceCache };
 export type { DPoPHeaders, DPoPClaims, DPoPProofParams, DPoPStorage };
@@ -62,11 +62,9 @@ export class DPoPSigningAuthorityImpl implements DPoPSigningAuthority {
    * @returns `id` representing the generated key pair
    */
   async createDPoPKeyPair (): Promise<string> {
-    // export async function createDPoPKeyPair (): Promise<{keyPair: CryptoKeyPair, keyPairId: string}> {
     const keyPairId = shortID();
     const keyPair = await this.generateKeyPair();
     await this.store.add(keyPairId, keyPair);
-    // return { keyPair, keyPairId };
     return keyPairId;
   }
 
@@ -118,7 +116,7 @@ export class DPoPSigningAuthorityImpl implements DPoPSigningAuthority {
     const claims: DPoPClaims = {
       htm: request.method,
       htu: `${url.origin}${url.pathname}`,
-      iat: TimeCoordinator.now().value,
+      iat: Platform.TimeCoordinator.now().value,
       jti: randomBytes(),
       nonce
     };

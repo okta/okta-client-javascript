@@ -1,6 +1,13 @@
-import { Credential, OAuth2Client, clearDPoPKeyPairs } from '@okta/spa-platform';
-import { AuthorizationCodeFlow, SessionLogoutFlow } from '@okta/spa-platform/flows';
-import { AcrValues, JsonRecord, isOAuth2ErrorResponse } from '@okta/auth-foundation';
+import {
+  Credential,
+  OAuth2Client,
+  clearDPoPKeyPairs,
+  AuthorizationCodeFlow,
+  SessionLogoutFlow,
+  type AcrValues,
+  type JsonRecord,
+  isOAuth2ErrorResponse,
+} from '@okta/spa-platform';
 
 
 const ADMIN_SPA_REFRESH_TOKEN_TAG = 'admin-spa:mordor-token';
@@ -23,7 +30,6 @@ export const oauthConfig: any = {
 oauthConfig.baseURL = oauthConfig.issuer;
 
 export const client = new OAuth2Client(oauthConfig);
-
 
 // ############# OAuth Flow Instances ############# //
 export const signInFlow = new AuthorizationCodeFlow(client, {

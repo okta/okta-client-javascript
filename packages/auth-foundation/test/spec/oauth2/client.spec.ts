@@ -8,6 +8,7 @@ jest.mock('src/http/oktaUserAgent', () => {
 import { Token, TokenInit } from 'src/Token';
 import { OAuth2Client } from 'src/oauth2/client';
 import { OAuth2Error, TokenError, JWTError } from 'src/errors';
+import { DefaultDPoPSigningAuthority } from 'src/oauth2/dpop';
 import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
 
 const fetchSpy = global.fetch = jest.fn();
@@ -122,8 +123,8 @@ describe('OAuth2Client', () => {
       it('dpop nonce / cache', async () => {
         client.configuration.dpop = true;
         jest.spyOn(client, 'jwks').mockResolvedValue({});
-        jest.spyOn(client.dpopSigningAuthority, 'createDPoPKeyPair').mockResolvedValue('dpopPairId');
-        jest.spyOn(client.dpopSigningAuthority, 'sign').mockImplementation((request) => Promise.resolve(request));
+        jest.spyOn(DefaultDPoPSigningAuthority, 'createDPoPKeyPair').mockResolvedValue('dpopPairId');
+        jest.spyOn(DefaultDPoPSigningAuthority, 'sign').mockImplementation((request) => Promise.resolve(request));
         fetchSpy.mockImplementation( () => Response.json({
             token_type: 'DPoP',
             expires_in: 300,
@@ -145,8 +146,8 @@ describe('OAuth2Client', () => {
         });
         await client.exchange(tokenRequest1);
         expect(fetchSpy).toHaveBeenLastCalledWith(expect.any(Request));
-        expect(client.dpopSigningAuthority.sign).toHaveBeenCalledTimes(1);
-        expect(client.dpopSigningAuthority.sign).toHaveBeenLastCalledWith(
+        expect(DefaultDPoPSigningAuthority.sign).toHaveBeenCalledTimes(1);
+        expect(DefaultDPoPSigningAuthority.sign).toHaveBeenLastCalledWith(
           expect.any(Request),
           expect.objectContaining({
             keyPairId: 'dpopPairId'
@@ -164,8 +165,8 @@ describe('OAuth2Client', () => {
         });
         await client.exchange(tokenRequest2);
         expect(fetchSpy).toHaveBeenLastCalledWith(expect.any(Request));
-        expect(client.dpopSigningAuthority.sign).toHaveBeenCalledTimes(2);
-        expect(client.dpopSigningAuthority.sign).toHaveBeenLastCalledWith(
+        expect(DefaultDPoPSigningAuthority.sign).toHaveBeenCalledTimes(2);
+        expect(DefaultDPoPSigningAuthority.sign).toHaveBeenLastCalledWith(
           expect.any(Request),
           expect.objectContaining({
             keyPairId: 'dpopPairId',
@@ -549,7 +550,7 @@ describe('OAuth2Client', () => {
       describe('DPoP proof clock skew recovery', () => {
         beforeEach(() => {
           client.configuration.dpop = true;
-          jest.spyOn(client.dpopSigningAuthority, 'sign').mockImplementation((request) => request);
+          jest.spyOn(DefaultDPoPSigningAuthority, 'sign').mockImplementation((request) => Promise.resolve(request));
         });
 
         test('isDPoPProofClockSkewError', () => {

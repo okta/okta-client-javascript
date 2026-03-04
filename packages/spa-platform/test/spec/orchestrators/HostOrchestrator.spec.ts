@@ -1,6 +1,5 @@
-import { TokenOrchestrator, TokenOrchestratorError } from '@okta/auth-foundation';
+import { Token, TokenOrchestrator, TokenOrchestratorError } from '@okta/auth-foundation';
 import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
-import { Token } from 'src/platform';
 import { HostOrchestrator } from 'src/orchestrators/HostOrchestrator/index';
 import { LocalBroadcastChannel } from 'src/utils/LocalBroadcastChannel';
 

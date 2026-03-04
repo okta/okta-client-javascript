@@ -51,7 +51,7 @@ export class Timestamp {
   isBefore (t: EpochTimestamp | Date | Timestamp): boolean {
     t = Timestamp.from(t).value;
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return this.ts < t - TimeCoordinator.clockTolerance;
+    return this.ts < t - timeCoordinator.clockTolerance;
   }
 
   isAfter (t: Timestamp): boolean;
@@ -60,7 +60,7 @@ export class Timestamp {
   isAfter (t: EpochTimestamp | Date | Timestamp): boolean {
     t = Timestamp.from(t).value;
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return this.ts > t + TimeCoordinator.clockTolerance;
+    return this.ts > t + timeCoordinator.clockTolerance;
   }
 
   timeSince (t: Timestamp): Seconds;
@@ -81,9 +81,18 @@ export class Timestamp {
 /**
  * @group TimeCoordinator
  */
-class TimeCoordinator {
+export interface TimeCoordinator {
+  clockSkew: Seconds;
+  clockTolerance: Seconds;
+  now: () => Timestamp;
+}
+
+/**
+ * @group TimeCoordinator
+ */
+class DefaultTimeCoordinator implements TimeCoordinator {
   #skew = 0;
-  static #tolerance = 0;
+  #tolerance = 0;
 
   get clockSkew (): Seconds {
     return this.#skew;
@@ -93,12 +102,12 @@ class TimeCoordinator {
     this.#skew = skew;
   }
 
-  static get clockTolerance (): Seconds {
-    return TimeCoordinator.#tolerance;
+  get clockTolerance (): Seconds {
+    return this.#tolerance;
   }
 
-  static set clockTolerance (tolerance: Seconds) {
-    TimeCoordinator.#tolerance = tolerance;
+  set clockTolerance (tolerance: Seconds) {
+    this.#tolerance = tolerance;
   }
 
   now (): Timestamp {
@@ -107,7 +116,7 @@ class TimeCoordinator {
   }
 }
 
-const timeCoordinator = new TimeCoordinator();
+const timeCoordinator = new DefaultTimeCoordinator();
 
 /** @internal */
 export default timeCoordinator;

@@ -1,8 +1,8 @@
-import { OAuth2Error } from '@okta/auth-foundation';
-import OAuth2Client from '@okta/auth-foundation/client';
+import { OAuth2Client, OAuth2Error } from '@okta/auth-foundation';
 import { AuthenticationFlowError } from 'src/AuthenticationFlow';
 import { AuthorizationCodeFlow } from 'src/AuthorizationCodeFlow';
 import { AuthTransaction } from 'src/AuthTransaction';
+
 
 describe('AuthorizationCodeFlow', () => {
   const authParams = {

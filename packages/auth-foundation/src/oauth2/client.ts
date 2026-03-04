@@ -21,14 +21,14 @@ import {
   TokenHashValidator
 } from '../jwt/index.ts';
 import { APIClient, APIRequest } from '../http/index.ts';
-import { DefaultDPoPSigningAuthority, type DPoPSigningAuthority } from './dpop/index.ts';
 import { Configuration as ConfigurationConstructor, type ConfigurationParams } from './configuration.ts';
 import { TokenInit, Token } from '../Token.ts';
 import { UserInfo } from './requests/UserInfo.ts';
 import { PromiseQueue } from '../utils/PromiseQueue.ts';
 import { EventEmitter } from '../utils/EventEmitter.ts';
 import { hasSameValues } from '../utils/index.ts';
-import TimeCoordinator, { Timestamp } from '../utils/TimeCoordinator.ts';
+import { Timestamp } from '../utils/TimeCoordinator.ts';
+import { Platform } from '../platform/Platform.ts';
 
 
 // ref: https://developer.okta.com/docs/reference/api/oidc/
@@ -38,10 +38,6 @@ import TimeCoordinator, { Timestamp } from '../utils/TimeCoordinator.ts';
  * @noInheritDoc
  */
 export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> extends APIClient<E> {
-  /**
-   * @group Customizations
-   */
-  public readonly dpopSigningAuthority: DPoPSigningAuthority = DefaultDPoPSigningAuthority;
   /**
    * @group Customizations
    */
@@ -65,11 +61,6 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     const configuration = params instanceof OAuth2Client.Configuration ? params : new OAuth2Client.Configuration(params);
     super(configuration);
     this.configuration = configuration;
-  }
-
-  /** @internal */
-  protected createToken (init: TokenInit): Token {
-    return new Token(init);
   }
 
   /** @internal */
@@ -101,7 +92,8 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /** @internal */
-  protected async prepareDPoPNonceRetry (request: APIRequest): Promise<void> {
+  protected async prepareDPoPNonceRetry (request: APIRequest, nonce: string): Promise<void> {
+    request.context.dpopNonce = nonce;
     return this.signTokenRequestWithDPoP(request);
   }
 
@@ -109,7 +101,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     const { dpopPairId } = request.context;
     // dpop nonce may not be available for this request (undefined), this is expected
     const dpopNonce = nonce ?? await this.getDPoPNonceFromCache(request);
-    await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce: dpopNonce });
+    await Platform.DPoPSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce: dpopNonce });
   }
 
   protected async processResponse(response: Response, request: APIRequest): Promise<void> {
@@ -123,7 +115,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
         if (parsedDate.toString() !== 'Invalid Date') {
           const serverTime = Timestamp.from(parsedDate);
           const skew = Math.round(serverTime.timeSince(Date.now() / 1000));
-          TimeCoordinator.clockSkew = skew;
+          Platform.TimeCoordinator.clockSkew = skew;
         }
       }
     }
@@ -188,7 +180,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     tokenRequest: Token.TokenRequest,
     requestContext: OAuth2Client.TokenRequestContext = {}
   ): Promise<Token | OAuth2ErrorResponse> {
-    const { keyPairId: dpopPairId } = requestContext;
+    const { dpopPairId } = requestContext;
     const request = tokenRequest.prepare({ dpopPairId });
 
     const { acrValues, maxAge } = tokenRequest;
@@ -208,7 +200,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
         // request hasn't been retried too many times previously
         request.canRetry() &&
         // (heuristic) the TimeCoordinator updated with a meaningful time difference (~2.5 mintues)
-        Math.abs(Date.now() - TimeCoordinator.clockSkew) >= 150
+        Math.abs(Date.now() - Platform.TimeCoordinator.clockSkew) >= 150
       ) {
         // If a JWT (DPoP Proof) clock skew error is returned we can retry the request.
         // The `Date` header of the /token response will be have been processed, hopefully
@@ -255,7 +247,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
       result.id = tokenRequest.id;
     }
 
-    const token = this.createToken(result);
+    const token = new Token(result);
     return token;
   }
 
@@ -320,8 +312,8 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   public async exchange (request: Token.TokenRequest): Promise<Token | OAuth2ErrorResponse> {
     const context: OAuth2Client.TokenRequestContext = {};
     if (this.configuration.dpop) {
-      const keyPairId = await this.dpopSigningAuthority.createDPoPKeyPair();
-      context.keyPairId = keyPairId;
+      const dpopPairId = await Platform.DPoPSigningAuthority.createDPoPKeyPair();
+      context.dpopPairId = dpopPairId;
     }
 
     const [keySet, response] = await Promise.all([
@@ -405,7 +397,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
 
     const context: OAuth2Client.TokenRequestContext = {};
     if (token.context?.dpopPairId) {
-      context.keyPairId = token.context.dpopPairId;
+      context.dpopPairId = token.context.dpopPairId;
     }
 
     const [keySet, response] = await Promise.all([
@@ -424,14 +416,14 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     // 1. providing a sub-set of scopes
     // 2. providing no scopes (empty array)
     if (!hasSameValues(response.scopes, token.scopes) || scopes?.length === 0) {
-      refreshedToken = this.createToken({
+      refreshedToken = new Token({
         ...(token.toJSON() as TokenInit),
         id: token.id,
         refreshToken: response.refreshToken
       });
 
       const tokenInit = { ...response.toJSON() } as TokenInit;
-      newToken = this.createToken({
+      newToken = new Token({
         ...tokenInit,
         // downscoped token should "inherit" context from "parent" token
         context: { ...refreshedToken.context, ...tokenInit.context },
@@ -582,7 +574,7 @@ export namespace OAuth2Client {
 
   /** @internal */
   export type TokenRequestContext = {
-    keyPairId?: string;
+    dpopPairId?: string;
   };
 
   /** @internal */

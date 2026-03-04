@@ -12,7 +12,8 @@
     "apps/**/*.ts",
     "e2e/**/*.ts",
     "helpers/**/*.ts",
-    "spec/**/*.ts",
+    "spec/**/*.ts", 
+    "jest.setupAfterEnv.ts",
   ],
   "exclude": [
     "node_modules"

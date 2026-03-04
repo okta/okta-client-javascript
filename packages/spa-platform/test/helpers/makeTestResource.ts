@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 
-import { Token, OAuth2Client } from 'src/platform';
+import { Token } from '@okta/auth-foundation/core';
+import { OAuth2Client } from 'src/platform';
 import { Credential } from 'src/Credential';
 import { mockIDToken, mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
 

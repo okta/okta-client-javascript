@@ -6,15 +6,9 @@ const base = baseConfig(ts, pkg);
 
 export default {
   ...base,
-  input: [
-    base.input,
-    'src/FetchClient/index.ts',
-    'src/orchestrators/index.ts',
-    'src/flows/index.ts'
-  ],
   external: [
     ...Object.keys(pkg.peerDependencies),
-    '@okta/auth-foundation/client',
+    '@okta/auth-foundation/core',
     '@okta/auth-foundation/internal',
   ],
 };

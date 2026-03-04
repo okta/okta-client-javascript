@@ -1,5 +1,6 @@
 import type { HostOrchestrator as HO } from './index.ts';
 import {
+  Token,
   shortID,
   type SubSet,
   ignoreUndefineds,
@@ -7,9 +8,8 @@ import {
   TokenOrchestratorError,
   EventEmitter,
   hashObject
-} from '@okta/auth-foundation';
+} from '@okta/auth-foundation/core';
 import { validateString } from '@okta/auth-foundation/internal';
-import { Token } from '../../platform/index.ts';
 import { OrchestrationBridge } from './OrchestrationBridge.ts';
 
 

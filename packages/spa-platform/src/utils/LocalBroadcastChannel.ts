@@ -3,7 +3,7 @@
  * @internal
  */
 
-import type { JsonRecord, BroadcastChannelLike } from '@okta/auth-foundation';
+import type { JsonRecord, BroadcastChannelLike } from '@okta/auth-foundation/core';
 import { validateURL } from '@okta/auth-foundation/internal';
 
 export type LocalBroadcastChannelMessage<M = any> = {
