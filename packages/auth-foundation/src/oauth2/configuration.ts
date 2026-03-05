@@ -24,7 +24,8 @@ export type OAuth2ClientConfigurations = DiscrimUnion<OAuth2Params & {
 export type OAuth2ClientOptions = {
   authentication?: ClientAuthentication;
   allowHTTP?: boolean;
-}
+  syncClockWithAuthorizationServer?: boolean;
+};
 
 /**
  * @group Configuration
@@ -45,10 +46,25 @@ export class Configuration extends APIClient.Configuration implements APIClientC
    * When `true`, issuer and other .well-known endpoints can be HTTP. Defaults to `false`
    */
   public allowHTTP: boolean = false;
+  /**
+   * When `true`, the `Date` header from HTTP requests made to the Authorization Server will be
+   * used to calculate a clock skew between the Authorization Server and the system clock. This is
+   * useful for situations when the client's system clock is set to something other than the "true time".
+   *
+   * Defaults to `true`.
+   *
+   * @remarks
+   * By default, the `Date` header is not safelisted for CORS requests. The Authorization Server will need
+   * to include the `Date` header in the `allow-control-exppose-headers` for this feature to work properly.
+   *
+   * Reference: https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_response_header
+   */
+  public syncClockWithAuthorizationServer: boolean = true;
 
   public static DefaultOptions: Required<OAuth2ClientOptions> & typeof APIClient.Configuration.DefaultOptions = {
     ...APIClient.Configuration.DefaultOptions,
     allowHTTP: false,
+    syncClockWithAuthorizationServer: true,
     authentication: 'none'
   };
 
@@ -61,7 +77,8 @@ export class Configuration extends APIClient.Configuration implements APIClientC
       scopes,
       authentication,
       dpop,
-      allowHTTP
+      allowHTTP,
+      syncClockWithAuthorizationServer
     } = { ...Configuration.DefaultOptions, ...params };
     const url = issuer ?? baseURL;            // one of them must be defined via Discriminated Union
     if (!validateURL(url, allowHTTP)) {
@@ -77,6 +94,7 @@ export class Configuration extends APIClient.Configuration implements APIClientC
     // default values are set in `static DefaultOptions`
     this.authentication = authentication;
     this.allowHTTP = allowHTTP;
+    this.syncClockWithAuthorizationServer = syncClockWithAuthorizationServer;
   }
 
   /**
@@ -112,7 +130,7 @@ export class Configuration extends APIClient.Configuration implements APIClientC
   }
 
   toJSON (): JsonRecord {
-    const { issuer, discoveryURL, clientId, scopes, authentication, allowHTTP } = this;
+    const { issuer, discoveryURL, clientId, scopes, authentication, allowHTTP, syncClockWithAuthorizationServer } = this;
     return {
       ...super.toJSON(),
       issuer: issuer.href,
@@ -120,7 +138,8 @@ export class Configuration extends APIClient.Configuration implements APIClientC
       clientId,
       scopes,
       authentication,
-      allowHTTP
+      allowHTTP,
+      syncClockWithAuthorizationServer
     };
   }
 }

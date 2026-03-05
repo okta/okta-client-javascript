@@ -545,6 +545,126 @@ describe('OAuth2Client', () => {
         expect(newToken.refreshToken).not.toEqual(token.refreshToken);
         expect(newToken.refreshToken).toEqual(undefined);
       });
+
+      describe('DPoP proof clock skew recovery', () => {
+        beforeEach(() => {
+          client.configuration.dpop = true;
+          jest.spyOn(client.dpopSigningAuthority, 'sign').mockImplementation((request) => request);
+        });
+
+        test('isDPoPProofClockSkewError', () => {
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+              error: 'invalid_dpop_proof',
+              error_description: 'The DPoP proof JWT is issued in the future.'
+          })).toBe(true);
+
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'invalid_dpop_proof',
+            error_description: 'The DPoP proof JWT is issued more than five minutes in the past.'
+        })).toBe(true);
+
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'invalid_dpop_proof'
+          })).toBe(false);
+
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'invalid_dpop_proof',
+            error_description: 'foobar'
+          })).toBe(false);
+
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'foobar',
+            error_description: 'The DPoP proof JWT is issued in the future.'
+          })).toBe(false);
+
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'foobar',
+            error_description: 'The DPoP proof JWT is issued more than five minutes in the past.'
+          })).toBe(false);
+
+          expect(OAuth2Client.isDPoPProofClockSkewError({
+            error: 'foobar',
+          })).toBe(false);
+        });
+
+        it('gracefully recovers from a bad system clock when using DPoP (clock set ahead)', async () => {
+          const dpopProofInFutureErrorResponse = Response.json({
+            error: 'invalid_dpop_proof',
+            error_description: 'The DPoP proof JWT is issued in the future.'
+          });
+          const dpopTokenResponse = Response.json(mockTokenResponse(null, { token_type: 'DPoP' }));
+
+          fetchSpy
+            .mockResolvedValueOnce(dpopProofInFutureErrorResponse)
+            .mockResolvedValueOnce(dpopTokenResponse);
+          const retrySpy = jest.spyOn(client, 'retry');
+  
+          const token = new Token(mockTokenResponse());
+  
+          const response = await client.performRefresh(token);
+          expect(response).toBeInstanceOf(Token);
+          expect(fetchSpy).toHaveBeenCalledTimes(2);
+          expect(retrySpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('gracefully recovers from a bad system clock when using DPoP (clock set behind)', async () => {
+          const dpopProofInPastErrorResponse = Response.json({
+            error: 'invalid_dpop_proof',
+            error_description: 'The DPoP proof JWT is issued more than five minutes in the past.'
+          });
+          const dpopTokenResponse = Response.json(mockTokenResponse(null, { token_type: 'DPoP' }));
+
+          fetchSpy
+            .mockResolvedValueOnce(dpopProofInPastErrorResponse)
+            .mockResolvedValueOnce(dpopTokenResponse);
+          const retrySpy = jest.spyOn(client, 'retry');
+  
+          const token = new Token(mockTokenResponse());
+  
+          const response = await client.performRefresh(token);
+          expect(response).toBeInstanceOf(Token);
+          expect(fetchSpy).toHaveBeenCalledTimes(2);
+          expect(retrySpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('returns error after retry when same system clock error is returned (clock set ahead)', async () => {
+          const dpopProofInFutureErrorResponse = {
+            error: 'invalid_dpop_proof',
+            error_description: 'The DPoP proof JWT is issued in the future.'
+          };
+
+          fetchSpy
+            .mockResolvedValueOnce(Response.json(dpopProofInFutureErrorResponse))
+            .mockResolvedValueOnce(Response.json(dpopProofInFutureErrorResponse));
+          const retrySpy = jest.spyOn(client, 'retry');
+
+          const token = new Token(mockTokenResponse());
+
+          const response = await client.performRefresh(token);
+          expect(response).toEqual(dpopProofInFutureErrorResponse);
+          expect(fetchSpy).toHaveBeenCalledTimes(2);
+          expect(retrySpy).toHaveBeenCalledTimes(1);
+        });
+
+        it('returns error after retry when same system clock error is returned (clock set behind)', async () => {
+          const dpopProofInPastErrorResponse = {
+            error: 'invalid_dpop_proof',
+            error_description: 'The DPoP proof JWT is issued more than five minutes in the past.'
+          };
+
+          fetchSpy
+            .mockResolvedValueOnce(Response.json(dpopProofInPastErrorResponse))
+            .mockResolvedValueOnce(Response.json(dpopProofInPastErrorResponse));
+          const retrySpy = jest.spyOn(client, 'retry');
+
+          const token = new Token(mockTokenResponse());
+
+          const response = await client.performRefresh(token);
+          expect(response).toEqual(dpopProofInPastErrorResponse);
+          expect(fetchSpy).toHaveBeenCalledTimes(2);
+          expect(retrySpy).toHaveBeenCalledTimes(1);
+        });
+      });
     });
 
     describe('revoke', () => {
@@ -827,6 +947,108 @@ describe('OAuth2Client', () => {
         await expect(client.userInfo(token)).rejects.toThrow(
           new OAuth2Error('missing `userinfo_endpoint`')
         );
+      });
+    });
+  });
+
+  describe('features', () => {
+    describe('Clock Synchronization', () => {
+      let testContext: any = {};
+
+      beforeEach(async () => {
+        fetchSpy.mockReset();
+        const client = new OAuth2Client(params);
+        const original = new Token(mockTokenResponse());
+        const tokenResponse = mockTokenResponse();
+
+        jest.spyOn(client, 'openIdConfiguration').mockResolvedValue({
+          issuer: 'https://fake.okta.com',
+          token_endpoint: 'https://fake.okta.com/token'
+        });
+        jest.spyOn((client as any), 'jwks').mockResolvedValue({ keys: [{ kid: 'foo', alg: 'bar'}]});
+
+        const TimeCoordinator = (await import('src/utils/TimeCoordinator')).default;
+        testContext = { client, original, tokenResponse, TimeCoordinator };
+      });
+
+      afterEach(() => {
+        // needed to reset the dynamically imported `TimeCoordinator` singleton instance
+        jest.resetModules();
+      });
+
+      it('should calculate clock skew when Date header is available', async () => {
+        const { TimeCoordinator, client, original, tokenResponse } = testContext;
+        const skewSetterSpy = jest.spyOn(TimeCoordinator, 'clockSkew', 'set');
+
+        const date15MinsBefore = new Date(Date.now() - (1000 * 60 * 15));   // 15 minutes before now
+        fetchSpy.mockResolvedValue(Response.json(tokenResponse, {
+          headers: { date: date15MinsBefore.toUTCString() }
+        }));
+
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        await client.refresh(original);
+        // NOTE: real time math is done, so value will be rounded and can be between -899 and -901
+        expect(TimeCoordinator.clockSkew).toBeLessThan(-898);
+        expect(TimeCoordinator.clockSkew).toBeGreaterThan(-902);
+
+        TimeCoordinator.clockSkew = 0;    // reset
+
+        const date15MinsAfter = new Date(Date.now() + (1000 * 60 * 15));   // 15 minutes after now
+        fetchSpy.mockResolvedValue(Response.json(tokenResponse, {
+          headers: { date: date15MinsAfter.toUTCString() }
+        }));
+
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        await client.refresh(original);
+        // NOTE: real time math is done, so value will be rounded and can be between 899 or 901
+        expect(TimeCoordinator.clockSkew).toBeLessThan(902);
+        expect(TimeCoordinator.clockSkew).toBeGreaterThan(898);
+
+        // NOTE: one call is done manually to reset (twice via .refresh(), once for manual reset)
+        expect(skewSetterSpy).toHaveBeenCalledTimes(3);
+      });
+
+      it('should ignore Date header when value isn\'t a valid date string', async () => {
+        const { TimeCoordinator, client, original, tokenResponse } = testContext;
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        const skewSetterSpy = jest.spyOn(TimeCoordinator, 'clockSkew', 'set');
+
+        fetchSpy.mockResolvedValue(Response.json(tokenResponse, {
+          headers: { date: 'some random string' }
+        }));
+
+        await client.refresh(original);
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        expect(skewSetterSpy).not.toHaveBeenCalled();
+      });
+
+      it('should gracefully skip when Date header is not available', async () => {
+        const { TimeCoordinator, client, original, tokenResponse } = testContext;
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        const skewSetterSpy = jest.spyOn(TimeCoordinator, 'clockSkew', 'set');
+
+        fetchSpy.mockResolvedValue(Response.json(tokenResponse));
+
+        await client.refresh(original);
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        expect(skewSetterSpy).not.toHaveBeenCalled();
+      });
+
+      it('should skip when configured off', async () => {
+        const { TimeCoordinator, client, original, tokenResponse } = testContext;
+        expect(TimeCoordinator.clockSkew).toBe(0);
+
+        const skewSetterSpy = jest.spyOn(TimeCoordinator, 'clockSkew', 'set');
+        client.configuration.syncClockWithAuthorizationServer = false;
+        
+        const date15MinsAfter = new Date(Date.now() + (1000 * 60 * 15));   // 15 minutes after now
+        fetchSpy.mockResolvedValue(Response.json(tokenResponse, {
+          headers: { date: date15MinsAfter.toUTCString() }
+        }));
+
+        await client.refresh(original);
+        expect(TimeCoordinator.clockSkew).toBe(0);
+        expect(skewSetterSpy).not.toHaveBeenCalled();
       });
     });
   });
