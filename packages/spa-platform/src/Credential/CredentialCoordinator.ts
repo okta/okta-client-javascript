@@ -90,6 +90,7 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
   }
 
   protected broadcast (eventName: string, data: Record<string, JsonPrimitive | JsonRecord>) {
+    // TODO: consider catching `InvalidStateError` thrown here (thrown when .postMessage is called on a closed channel)
     this.channel.postMessage({
       eventName,
       source: this.id,    // id associated with CredentialCoordinator instance (aka per tab)

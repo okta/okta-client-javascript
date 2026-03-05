@@ -28,6 +28,7 @@ import { UserInfo } from './requests/UserInfo.ts';
 import { PromiseQueue } from '../utils/PromiseQueue.ts';
 import { EventEmitter } from '../utils/EventEmitter.ts';
 import { hasSameValues } from '../utils/index.ts';
+import TimeCoordinator, { Timestamp } from '../utils/TimeCoordinator.ts';
 
 
 // ref: https://developer.okta.com/docs/reference/api/oidc/
@@ -100,9 +101,32 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /** @internal */
-  protected async prepareDPoPNonceRetry (request: APIRequest, nonce: string): Promise<void> {
+  protected async prepareDPoPNonceRetry (request: APIRequest): Promise<void> {
+    return this.signTokenRequestWithDPoP(request);
+  }
+
+  protected async signTokenRequestWithDPoP (request: APIRequest, nonce?: string): Promise<void> {
     const { dpopPairId } = request.context;
-    await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce });
+    // dpop nonce may not be available for this request (undefined), this is expected
+    const dpopNonce = nonce ?? await this.getDPoPNonceFromCache(request);
+    await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce: dpopNonce });
+  }
+
+  protected async processResponse(response: Response, request: APIRequest): Promise<void> {
+    await super.processResponse(response, request);
+
+    if (this.configuration.syncClockWithAuthorizationServer) {
+      // NOTE: this logic will not work on CORS requests, the Date header needs to be allowlisted via access-control-expose-headers
+      const dateHeader = response.headers.get('date');
+      if (dateHeader) {
+        const parsedDate = new Date(dateHeader);
+        if (parsedDate.toString() !== 'Invalid Date') {
+          const serverTime = Timestamp.from(parsedDate);
+          const skew = Math.round(serverTime.timeSince(Date.now() / 1000));
+          TimeCoordinator.clockSkew = skew;
+        }
+      }
+    }
   }
 
   /** @internal */
@@ -170,16 +194,34 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     const { acrValues, maxAge } = tokenRequest;
 
     if (this.configuration.dpop) {
-      // dpop nonce may not be available for this request (undefined), this is expected
-      const nonce = await this.getDPoPNonceFromCache(request);
-      await this.dpopSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce });
+      request.context.dpopPairId = dpopPairId;
+      await this.signTokenRequestWithDPoP(request);
     }
 
     const response = await this.send(request);
-    const json = await response.json();
+    let json = await response.json();
 
     if (isOAuth2ErrorResponse(json)) {
-      return json;
+      if (
+        // proper error is returned from AS
+        OAuth2Client.isDPoPProofClockSkewError(json) &&
+        // request hasn't been retried too many times previously
+        request.canRetry() &&
+        // (heuristic) the TimeCoordinator updated with a meaningful time difference (~2.5 mintues)
+        Math.abs(Date.now() - TimeCoordinator.clockSkew) >= 150
+      ) {
+        // If a JWT (DPoP Proof) clock skew error is returned we can retry the request.
+        // The `Date` header of the /token response will be have been processed, hopefully
+        // this will align the client's clock with the Authorization Server's
+        await this.signTokenRequestWithDPoP(request);     // re-sign request (with new `TimeCoordinator.now()`)
+        const retryReponse = await this.retry(request);   // trigger retry
+        json = await retryReponse.json();
+      }
+
+      // redundant, but handles scenario where retry returns error
+      if (isOAuth2ErrorResponse(json)) {
+        return json;
+      }
     }
 
     const tokenContext: Token.Context = {
@@ -549,4 +591,11 @@ export namespace OAuth2Client {
   export type GetJsonOptions = {
     skipCache?: boolean;
   };
+
+  export function isDPoPProofClockSkewError (error: OAuth2ErrorResponse) {
+    return error.error === 'invalid_dpop_proof' && (
+      error.error_description === 'The DPoP proof JWT is issued in the future.' ||
+      error.error_description === 'The DPoP proof JWT is issued more than five minutes in the past.'
+    );
+  }
 }
