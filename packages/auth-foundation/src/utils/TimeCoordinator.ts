@@ -90,7 +90,7 @@ export interface TimeCoordinator {
 /**
  * @group TimeCoordinator
  */
-class DefaultTimeCoordinator implements TimeCoordinator {
+export class DefaultTimeCoordinator implements TimeCoordinator {
   #skew = 0;
   #tolerance = 0;
 
