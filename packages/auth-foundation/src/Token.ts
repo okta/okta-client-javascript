@@ -18,7 +18,6 @@ import { validateURL } from './internals/validators.ts';
 import { shortID } from './crypto/index.ts';
 import { JWT } from './jwt/index.ts';
 import { OAuth2Request } from './http/index.ts';
-import { DefaultDPoPSigningAuthority, DPoPSigningAuthority } from './oauth2/dpop/index.ts';
 import { Timestamp } from './utils/TimeCoordinator.ts';
 import { Platform } from './platform/Platform.ts';
 
@@ -70,8 +69,6 @@ export type TokenPrimitiveInit = TokenResponse;
  * - Okta Documentation: {@link https://developer.okta.com/docs/reference/api/oidc/#response-properties-4 | OIDC }
  */
 export class Token implements JSONSerializable, Expires, RequestAuthorizer {
-  public readonly dpopSigningAuthority: DPoPSigningAuthority = DefaultDPoPSigningAuthority;
-
   /** @internal */
   public static expiryTimeouts: {[key: string]: ReturnType<typeof setTimeout>} = {};
 

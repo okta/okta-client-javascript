@@ -57,6 +57,7 @@ module.exports = {
         "max-statements": 0,
         "camelcase": 0,
         "no-restricted-imports": 0,
+        "no-restricted-syntax": 0,
         "@typescript-eslint/ban-ts-comment": 0,
         "@typescript-eslint/no-non-null-assertion": 0
       }
@@ -124,8 +125,15 @@ module.exports = {
             name: '@okta/auth-foundation',
             message: 'Import from "@okta/auth-foundation/core" instead to avoid bundling default platform implementations.',
           },
-        ],
+        ]
       },
     ],
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: "ImportDeclaration > ImportSpecifier[imported.name=/^__internal/]",
+        message: "Importing from '__internal*' paths is not allowed. Use Platform.X to access this singleton"
+      }
+    ]
   }
 }

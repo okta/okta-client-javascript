@@ -1,6 +1,7 @@
 import { FetchClient } from 'src/FetchClient';
 import { TokenOrchestrator } from 'src/TokenOrchestrator';
 import { APIClientError } from 'src/errors';
+import { Platform } from 'src/platform/Platform';
 import { randStr } from '@repo/jest-helpers/browser/helpers';
 import { makeTestToken } from '../helpers/makeTestResource';
 
@@ -52,7 +53,7 @@ describe('FetchClient', () => {
 
     // test with a (mocked) dpop-bound token
     const dpopToken = makeTestToken(null, { tokenType: 'DPoP' });
-    dpopToken.dpopSigningAuthority.sign = jest.fn().mockImplementation(async (request) => {
+    jest.spyOn(Platform.DPoPSigningAuthority, 'sign').mockImplementation(async (request) => {
       request.headers.set('dpop', 'fakedpopvalue');
       return request;
     });

@@ -1,15 +1,11 @@
 import { Token } from 'src/Token';
 import { TokenOrchestrator } from 'src/TokenOrchestrator';
 import { TokenOrchestratorError } from 'src/errors';
+import { Platform } from 'src/platform/Platform';
 import { makeTestToken } from '../helpers/makeTestResource';
 
 
-// Mock DPoP token (and signingAuthority)
-const testToken = makeTestToken(null, { tokenType: 'DPoP' });
-testToken.dpopSigningAuthority.sign = jest.fn().mockImplementation(async (request) => {
-  request.headers.set('dpop', 'fakedpopvalue');
-  return request;
-});
+let testToken: Token;
 
 // Extend and mock abstract methods to test default implementation
 // of non-abstract methods
@@ -20,6 +16,15 @@ class TestOrchestrator extends TokenOrchestrator {
 }
 
 describe('TokenOrchestrator', () => {
+  beforeEach(() => {
+    // Mock DPoP token (and signingAuthority)
+    testToken = makeTestToken(null, { tokenType: 'DPoP' });
+    jest.spyOn(Platform.DPoPSigningAuthority, 'sign').mockImplementation(async (request) => {
+      request.headers.set('dpop', 'fakedpopvalue');
+      return request;
+    });
+  });
+
   describe('authorize impl', () => {
     it('should sign request with dpop signature', async () => {
       const orch = new TestOrchestrator();

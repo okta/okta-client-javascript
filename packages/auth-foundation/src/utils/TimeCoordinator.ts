@@ -7,8 +7,8 @@
 // CORS requests are limited to the specific headers exposed. This by default will block the `date` header
 
 import type { TimeInterval, EpochTimestamp, Seconds } from '../types/index.ts';
+import { Platform } from '../platform/Platform.ts';
 
-// TODO: DOC THIS
 
 /**
  * Utility class for parse timestamps and performing time/date calculations
@@ -51,7 +51,7 @@ export class Timestamp {
   isBefore (t: EpochTimestamp | Date | Timestamp): boolean {
     t = Timestamp.from(t).value;
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return this.ts < t - timeCoordinator.clockTolerance;
+    return this.ts < t - Platform.TimeCoordinator.clockTolerance;
   }
 
   isAfter (t: Timestamp): boolean;
@@ -60,7 +60,7 @@ export class Timestamp {
   isAfter (t: EpochTimestamp | Date | Timestamp): boolean {
     t = Timestamp.from(t).value;
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return this.ts > t + timeCoordinator.clockTolerance;
+    return this.ts > t + Platform.TimeCoordinator.clockTolerance;
   }
 
   timeSince (t: Timestamp): Seconds;
@@ -73,7 +73,7 @@ export class Timestamp {
 
   timeSinceNow () {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    const now = timeCoordinator.now();
+    const now = Platform.TimeCoordinator.now();
     return this.ts - now.value;
   }
 }
@@ -116,7 +116,6 @@ export class DefaultTimeCoordinator implements TimeCoordinator {
   }
 }
 
-const timeCoordinator = new DefaultTimeCoordinator();
+/** @internal - Use `Platform.TimeCoordinator` instead */
+export const __internalTimeCoordinator = new DefaultTimeCoordinator();
 
-/** @internal */
-export default timeCoordinator;

@@ -1,8 +1,10 @@
 import { Platform } from 'src/platform/Platform';
-import TimeCoordinator from 'src/utils/TimeCoordinator';
-import { DefaultDPoPSigningAuthority } from 'src/oauth2/dpop';
+// eslint-disable-next-line no-restricted-syntax
+import { __internalTimeCoordinator } from 'src/utils/TimeCoordinator';
+// eslint-disable-next-line no-restricted-syntax
+import { __internalDPoPSigningAuthority } from 'src/oauth2/dpop';
 
 Platform.registerDefaultsLoader(() => ({
-  TimeCoordinator, 
-  DPoPSigningAuthority: DefaultDPoPSigningAuthority
+  TimeCoordinator: __internalTimeCoordinator, 
+  DPoPSigningAuthority: __internalDPoPSigningAuthority
 }));

@@ -143,5 +143,5 @@ export class DPoPSigningAuthorityImpl implements DPoPSigningAuthority {
 
 }
 
-/** @internal */
-export const DefaultDPoPSigningAuthority: DPoPSigningAuthority = new DPoPSigningAuthorityImpl(new DPoPStorage.MemoryStore());
+/** @internal - Use `Platform.DPoPSigninAuthority instead */
+export const __internalDPoPSigningAuthority: DPoPSigningAuthority = new DPoPSigningAuthorityImpl(new DPoPStorage.MemoryStore());
