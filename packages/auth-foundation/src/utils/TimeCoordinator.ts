@@ -115,7 +115,3 @@ export class DefaultTimeCoordinator implements TimeCoordinator {
     return new Timestamp(now);
   }
 }
-
-/** @internal - Use `Platform.TimeCoordinator` instead */
-export const __internalTimeCoordinator = new DefaultTimeCoordinator();
-

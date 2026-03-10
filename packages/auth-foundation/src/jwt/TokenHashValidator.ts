@@ -7,7 +7,7 @@
 import type { JWT } from './JWT.ts';
 import { b64u, buf } from '../crypto/index.ts';
 import { JWTError } from '../errors/index.ts';
-import { validateString } from '../internals/validators.ts';
+import { validateString } from '../utils/validators.ts';
 
 /**
  * @group JWT

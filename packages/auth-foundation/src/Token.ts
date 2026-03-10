@@ -14,7 +14,7 @@ import {
 } from './types/index.ts';
 import type { OAuth2Client } from './oauth2/client.ts';
 import { OAuth2Error } from './errors/index.ts';
-import { validateURL } from './internals/validators.ts';
+import { validateURL } from './utils/validators.ts';
 import { shortID } from './crypto/index.ts';
 import { JWT } from './jwt/index.ts';
 import { OAuth2Request } from './http/index.ts';

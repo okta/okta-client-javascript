@@ -4,7 +4,7 @@
  */
 
 import { randomBytes, hash } from '../crypto/index.ts';
-import { validateString } from '../internals/validators.ts';
+import { validateString } from '../utils/validators.ts';
 
 
 /**

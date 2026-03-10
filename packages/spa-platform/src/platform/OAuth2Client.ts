@@ -10,10 +10,8 @@ import {
   OAuth2ErrorResponse,
   isOAuth2ErrorResponse,
   OAuth2Error,
-  type DPoPNonceCache
 } from '@okta/auth-foundation/core';
 import { SynchronizedResult } from '../utils/SynchronizedResult.ts';
-import { PersistentCache } from './dpop/index.ts';
 
 
 /**
@@ -22,7 +20,6 @@ import { PersistentCache } from './dpop/index.ts';
  * @group OAuth2Client
  */
 export class OAuth2Client extends OAuth2ClientBase {
-  protected readonly dpopNonceCache: DPoPNonceCache = new PersistentCache('okta-dpop-nonce');
 
   protected prepareRefreshRequest (token: Token, scopes?: string[]): Promise<Token | OAuth2ErrorResponse> {
     if (!token.refreshToken) {

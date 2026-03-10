@@ -12,8 +12,7 @@ import type {
   DiscrimUnion
 } from '../types/index.ts';
 import { APIClient } from '../http/index.ts';
-import { buildURL, hasSameValues } from '../utils/index.ts';
-import { validateURL } from '../internals/index.ts';
+import { buildURL, hasSameValues, validateURL } from '../utils/index.ts';
 
 
 export type OAuth2ClientConfigurations = DiscrimUnion<OAuth2Params & {

@@ -1,6 +1,7 @@
 import { PlatformRegistry } from 'src/platform/Platform';
-import { __internalTimeCoordinator, TimeCoordinator, Timestamp } from 'src/utils/TimeCoordinator';
-import { __internalDPoPSigningAuthority } from 'src/oauth2/dpop';
+import { TimeCoordinator, Timestamp } from 'src/utils/TimeCoordinator';
+// eslint-disable-next-line no-restricted-imports
+import { PlatformDefaults } from 'src/platform/defaults';
 
 
 describe('PlatformRegistry', () => {
@@ -53,10 +54,7 @@ describe('PlatformRegistry', () => {
         expect(() => module.Platform.TimeCoordinator).toThrow(PlatformModule.PlatformRegistryError);
         expect(() => module.Platform.DPoPSigningAuthority).toThrow(PlatformModule.PlatformRegistryError);
 
-        module.Platform.registerDefaultsLoader(() => ({
-          TimeCoordinator: __internalTimeCoordinator,
-          DPoPSigningAuthority: __internalDPoPSigningAuthority
-        }));
+        module.Platform.registerDefaultsLoader(() => PlatformDefaults);
 
         expect(() => module.Platform.TimeCoordinator).not.toThrow();
         expect(() => module.Platform.DPoPSigningAuthority).not.toThrow();
@@ -75,23 +73,23 @@ describe('PlatformRegistry', () => {
       expect(() => Platform.TimeCoordinator).toThrow(PlatformModule.PlatformRegistryError);
       expect(() => Platform.DPoPSigningAuthority).toThrow(PlatformModule.PlatformRegistryError);
 
-      Platform.registerDefaultsLoader(() => ({
-        TimeCoordinator: __internalTimeCoordinator,
-        DPoPSigningAuthority: __internalDPoPSigningAuthority
-      }));
+      Platform.registerDefaultsLoader(() => PlatformDefaults);
 
-      expect(Platform.TimeCoordinator).toEqual(__internalTimeCoordinator);
-      expect(Platform.DPoPSigningAuthority).toEqual(__internalDPoPSigningAuthority);
+      expect(Platform.TimeCoordinator).toEqual(PlatformDefaults.TimeCoordinator);
+      expect(Platform.DPoPSigningAuthority).toEqual(PlatformDefaults.DPoPSigningAuthority);
+      expect(Platform.DPoPNonceCache).toEqual(PlatformDefaults.DPoPNonceCache);
 
       const CustomizedTimeCoordinator = new CustomTimeCoordinator();
       Platform.configure({
         TimeCoordinator: CustomizedTimeCoordinator
       });
 
+      expect(Platform.TimeCoordinator).not.toEqual(PlatformDefaults.TimeCoordinator);
       expect(Platform.TimeCoordinator).toEqual(CustomizedTimeCoordinator);
-      expect(Platform.DPoPSigningAuthority).toEqual(__internalDPoPSigningAuthority);
+      expect(Platform.DPoPSigningAuthority).toEqual(PlatformDefaults.DPoPSigningAuthority);
+      expect(Platform.DPoPNonceCache).toEqual(PlatformDefaults.DPoPNonceCache);
 
-      expect(__internalTimeCoordinator.now()).not.toEqual(CustomizedTimeCoordinator.now());
+      expect(PlatformDefaults.TimeCoordinator.now()).not.toEqual(CustomizedTimeCoordinator.now());
     });
   });
 });

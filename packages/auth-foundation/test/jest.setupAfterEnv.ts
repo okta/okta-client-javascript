@@ -1,10 +1,6 @@
 import { Platform } from 'src/platform/Platform';
-// eslint-disable-next-line no-restricted-syntax
-import { __internalTimeCoordinator } from 'src/utils/TimeCoordinator';
-// eslint-disable-next-line no-restricted-syntax
-import { __internalDPoPSigningAuthority } from 'src/oauth2/dpop';
+// eslint-disable-next-line no-restricted-imports
+import { PlatformDefaults } from 'src/platform/defaults';
 
-Platform.registerDefaultsLoader(() => ({
-  TimeCoordinator: __internalTimeCoordinator, 
-  DPoPSigningAuthority: __internalDPoPSigningAuthority
-}));
+
+Platform.registerDefaultsLoader(() => PlatformDefaults);

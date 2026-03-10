@@ -11,8 +11,8 @@ import { DPoPNonceCache } from './nonceCache.ts';
 import { DPoPError } from '../../errors/DPoPError.ts';
 import { Platform } from '../../platform/Platform.ts';
 
-export { DPoPNonceCache };
-export type { DPoPHeaders, DPoPClaims, DPoPProofParams, DPoPStorage };
+export { DPoPNonceCache, DPoPStorage };
+export type { DPoPHeaders, DPoPClaims, DPoPProofParams };
 
 
 /**
@@ -142,6 +142,3 @@ export class DPoPSigningAuthorityImpl implements DPoPSigningAuthority {
   }
 
 }
-
-/** @internal - Use `Platform.DPoPSigninAuthority instead */
-export const __internalDPoPSigningAuthority: DPoPSigningAuthority = new DPoPSigningAuthorityImpl(new DPoPStorage.MemoryStore());

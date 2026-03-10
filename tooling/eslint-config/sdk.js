@@ -128,12 +128,5 @@ module.exports = {
         ]
       },
     ],
-    'no-restricted-syntax': [
-      'error',
-      {
-        selector: "ImportDeclaration > ImportSpecifier[imported.name=/^__internal/]",
-        message: "Importing from '__internal*' paths is not allowed. Use Platform.X to access this singleton"
-      }
-    ]
   }
 }

@@ -7,7 +7,7 @@ import type { JsonPrimitive } from '../../types/index.ts';
 import { Token } from '../../Token.ts';
 import { OAuth2Request } from '../../http/index.ts';
 import { OAuth2Error } from '../../errors/index.ts';
-import { validateURL } from '../../internals/index.ts';
+import { validateURL } from '../../utils/index.ts';
 
 
 /**

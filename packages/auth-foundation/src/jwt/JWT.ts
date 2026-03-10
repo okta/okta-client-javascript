@@ -6,7 +6,7 @@
 
 import type { JsonRecord, RawRepresentable, Expires, TimeInterval } from '../types/index.ts';
 import { JWTError } from '../errors/index.ts';
-import { validateString } from '../internals/validators.ts';
+import { validateString } from '../utils/validators.ts';
 import { JWK, JWKS } from './JWK.ts';
 import { buf, b64u } from '../crypto/index.ts';
 import { IDTokenValidator } from './IDTokenValidator.ts';

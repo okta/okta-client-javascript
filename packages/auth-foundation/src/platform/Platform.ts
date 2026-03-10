@@ -1,7 +1,7 @@
 import { AuthSdkError } from '../errors/AuthSdkError.ts';
 import type { DPoPSigningAuthority } from '../oauth2/dpop/index.ts';
 import type { TimeCoordinator } from '../utils/TimeCoordinator.ts';
-
+import type { DPoPNonceCache } from '../oauth2/dpop/index.ts';
 
 /**
  * The required Platform dependencies
@@ -9,6 +9,7 @@ import type { TimeCoordinator } from '../utils/TimeCoordinator.ts';
 export interface PlatformDependencies {
   TimeCoordinator: TimeCoordinator;
   DPoPSigningAuthority: DPoPSigningAuthority;
+  DPoPNonceCache: DPoPNonceCache;
 }
 
 export class PlatformRegistryError extends AuthSdkError {}
@@ -112,7 +113,7 @@ export class PlatformRegistry implements PlatformDependencies {
    * @internal
    * Override in subclasses to provide platform-specific defaults
    */
-  protected getDefaults(): PlatformDependencies {
+  protected getDefaults (): PlatformDependencies {
     if (!this.#defaultsLoader) {
       throw new PlatformRegistryError(
         `No platform defaults available. Import from "@okta/auth-foundation" directly or call Platform.registerDefaultsLoader()`
@@ -127,7 +128,7 @@ export class PlatformRegistry implements PlatformDependencies {
    * @remarks
    * Returns configured override or factory default
    */
-  public get TimeCoordinator(): TimeCoordinator {
+  public get TimeCoordinator (): TimeCoordinator {
     return this.resolved.TimeCoordinator;
   }
 
@@ -137,8 +138,18 @@ export class PlatformRegistry implements PlatformDependencies {
    * @remarks
    * Returns configured override or factory default
    */
-  public get DPoPSigningAuthority(): DPoPSigningAuthority {
+  public get DPoPSigningAuthority (): DPoPSigningAuthority {
     return this.resolved.DPoPSigningAuthority;
+  }
+
+  /**
+   * Get the current TimeCoordinator instance
+   *
+   * @remarks
+   * Returns configured override or factory default
+   */
+  public get DPoPNonceCache (): DPoPNonceCache {
+    return this.resolved.DPoPNonceCache;
   }
 }
 

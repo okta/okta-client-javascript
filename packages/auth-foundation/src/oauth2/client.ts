@@ -11,7 +11,7 @@ import type {
 import type { IDTokenValidatorContext } from '../jwt/IDTokenValidator.ts';
 import { isJWKS, isOAuth2ErrorResponse, isOpenIdConfiguration } from '../types/index.ts';
 import { OAuth2Error, JWTError, TokenError } from '../errors/index.ts';
-import { validateURL, validateString } from '../internals/validators.ts';
+import { validateURL, validateString } from '../utils/validators.ts';
 import {
   JWT,
   JWKS,

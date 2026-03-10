@@ -968,7 +968,7 @@ describe('OAuth2Client', () => {
         });
         jest.spyOn((client as any), 'jwks').mockResolvedValue({ keys: [{ kid: 'foo', alg: 'bar'}]});
 
-        const TimeCoordinator = (await import('src/utils/TimeCoordinator')).__internalTimeCoordinator;
+        const TimeCoordinator = (await import('src/platform/defaults')).PlatformDefaults.TimeCoordinator;
         testContext = { client, original, tokenResponse, TimeCoordinator };
       });
 

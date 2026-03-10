@@ -13,11 +13,13 @@ addEnv(`${__PKG_NAME__}/${__PKG_VERSION__}`);
 
 import { Platform } from '@okta/auth-foundation/core';
 import { DefaultSigningAuthority } from './platform/dpop/authority.ts';
+import { PersistentCache } from './platform/dpop/nonceCache.ts';
 import { TimeCoordinator } from '@okta/auth-foundation/internal';
 
 Platform.registerDefaultsLoader(() => ({
   TimeCoordinator,
-  DPoPSigningAuthority: DefaultSigningAuthority
+  DPoPSigningAuthority: DefaultSigningAuthority,
+  DPoPNonceCache: new PersistentCache('foo')
 }));
 
 export * from '@okta/auth-foundation/core';
