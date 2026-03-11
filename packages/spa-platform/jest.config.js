@@ -15,12 +15,16 @@ const config = {
     '<rootDir>/src/index.ts',
   ],
   moduleNameMapper: {
-    // NOTE: auth-foundation/core maps to src/index.ts so Default Dependencies (like TimeCoordinator) are loaded
-    '^@okta/auth-foundation/core$': '<rootDir>/../auth-foundation/src/index.ts',
+    // NOTE: '@okta/auth-foundation' maps to '@okta/auth-foundation/core' since every src file
+    // imports from /core rather than the base entrypoint
+    '^@okta/auth-foundation$': '<rootDir>/../auth-foundation/src/core.ts',
+    '^@okta/auth-foundation/core$': '<rootDir>/../auth-foundation/src/core.ts',
     '^@okta/auth-foundation/internal$': '<rootDir>/../auth-foundation/src/internal.ts',
-    '^@okta/auth-foundation$': '<rootDir>/../auth-foundation/src/index.ts',
     '^@okta/oauth2-flows$': '<rootDir>/../oauth2-flows/src/index.ts',
-  }
+  },
+  setupFilesAfterEnv: [
+    '<rootDir>/test/jest.setupAfterEnv.ts'
+  ]
 };
 
 export default config;

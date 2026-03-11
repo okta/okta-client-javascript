@@ -29,7 +29,7 @@ export class PlatformRegistryError extends AuthSdkError {}
  * ```
  *
  * To enable tree-shaking and prevent including default implementations (bundle bloat) which 
- * will be instanceously overwritten, default implemenations can be selectively included.
+ * will be instanceously overwritten, default implementations can be selectively included.
  *
  * @remarks
  * Use `import * from '@okta/auth-foundation'` for standard usage, including all default platform

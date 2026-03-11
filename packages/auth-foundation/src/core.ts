@@ -32,4 +32,4 @@ export * from './FetchClient.ts';
 
 export { addEnv } from './http/oktaUserAgent.ts';
 
-export { Platform } from './platform/Platform.ts';
+export { Platform, type PlatformDependencies } from './platform/Platform.ts';

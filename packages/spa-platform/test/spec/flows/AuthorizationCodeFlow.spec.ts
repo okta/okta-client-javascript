@@ -1,5 +1,5 @@
-jest.mock('@okta/auth-foundation', () => {
-  const actual = jest.requireActual('@okta/auth-foundation');
+jest.mock('@okta/auth-foundation/core', () => {
+  const actual = jest.requireActual('@okta/auth-foundation/core');
   return {
     ...actual,
     PKCE: {
