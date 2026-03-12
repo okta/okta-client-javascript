@@ -1,6 +1,5 @@
-import { TokenOrchestrator, TokenOrchestratorError } from '@okta/auth-foundation';
+import { Token, TokenOrchestrator, TokenOrchestratorError, Platform } from '@okta/auth-foundation';
 import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
-import { Token } from 'src/platform';
 import { HostOrchestrator } from 'src/orchestrators/HostOrchestrator/index';
 import { LocalBroadcastChannel } from 'src/utils/LocalBroadcastChannel';
 
@@ -9,7 +8,7 @@ import { LocalBroadcastChannel } from 'src/utils/LocalBroadcastChannel';
 const testToken = new Token(mockTokenResponse(null, { tokenType: 'DPoP' }));
 // @ts-expect-error - forcing property for testing
 testToken.context = { dpopPairId: 'dpopkey' };
-testToken.dpopSigningAuthority.sign = jest.fn().mockImplementation(async (request) => {
+Platform.DPoPSigningAuthority.sign = jest.fn().mockImplementation(async (request) => {
   request.headers.set('dpop', 'fakedpopvalue');
   return request;
 });
@@ -305,7 +304,7 @@ describe('HostOrchestrator', () => {
         });
 
         // error case 2 - dpop header never added (should never occur)
-        testToken.dpopSigningAuthority.sign = jest.fn().mockImplementation(req => req);
+        Platform.DPoPSigningAuthority.sign = jest.fn().mockImplementation(req => req);
         findTokenSpy.mockResolvedValueOnce(testToken);
 
         await host.parseRequest(event, reply);

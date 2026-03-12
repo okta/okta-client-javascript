@@ -56,6 +56,8 @@ module.exports = {
         "max-len": 0,
         "max-statements": 0,
         "camelcase": 0,
+        "no-restricted-imports": 0,
+        "no-restricted-syntax": 0,
         "@typescript-eslint/ban-ts-comment": 0,
         "@typescript-eslint/no-non-null-assertion": 0
       }
@@ -113,6 +115,18 @@ module.exports = {
       "ignoreRestSiblings": true,
       "caughtErrors": "none"
     }],
-    "@typescript-eslint/no-namespace": 0
+    "@typescript-eslint/no-namespace": 0,
+    // NOTE: important linting rule
+    'no-restricted-imports': [
+      'error',
+      {
+        paths: [
+          {
+            name: '@okta/auth-foundation',
+            message: 'Import from "@okta/auth-foundation/core" instead to avoid bundling default platform implementations.',
+          },
+        ]
+      },
+    ],
   }
 }

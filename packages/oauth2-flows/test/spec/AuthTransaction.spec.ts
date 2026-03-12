@@ -1,5 +1,6 @@
 import { AuthTransaction, type DefaultTransactionStorage } from 'src/AuthTransaction';
 
+
 it('AuthTransaction', async () => {
   const storage = AuthTransaction.storage as DefaultTransactionStorage;
 

@@ -3,7 +3,7 @@
  * @internal
  */
 
-import { type DPoPStorage, DPoPSigningAuthorityImpl, DPoPSigningAuthority } from '@okta/auth-foundation';
+import { type DPoPStorage, DPoPSigningAuthorityImpl, DPoPSigningAuthority } from '@okta/auth-foundation/core';
 import { IndexedDBStore } from '../../utils/IndexedDBStore.ts';
 
 

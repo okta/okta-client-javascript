@@ -8,8 +8,10 @@ jest.mock('src/http/oktaUserAgent', () => {
 import { JWT } from 'src/jwt';
 import { Token } from 'src/Token';
 import { OAuth2Client } from 'src/oauth2/client';
-import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
 import { OAuth2Error } from 'src/errors';
+import { Platform } from 'src/platform/Platform';
+
+import { mockTokenResponse } from '@repo/jest-helpers/browser/helpers';
 
 
 interface TestContext {
@@ -255,7 +257,7 @@ describe('Token', () => {
           tokenType: 'DPoP',
           context: { dpopPairId: 'dpopPairId' }
         }));
-        jest.spyOn(token.dpopSigningAuthority, 'sign').mockImplementation((request) => {
+        jest.spyOn(Platform.DPoPSigningAuthority, 'sign').mockImplementation((request) => {
           request.headers.set('dpop', 'dpopproof');
           return Promise.resolve(request);
         });
@@ -268,8 +270,8 @@ describe('Token', () => {
           authorization: `DPoP ${token.accessToken}`,
           dpop: 'dpopproof'
         });
-        expect(token.dpopSigningAuthority.sign).toHaveBeenCalledTimes(1);
-        expect(token.dpopSigningAuthority.sign).toHaveBeenLastCalledWith(
+        expect(Platform.DPoPSigningAuthority.sign).toHaveBeenCalledTimes(1);
+        expect(Platform.DPoPSigningAuthority.sign).toHaveBeenLastCalledWith(
           expect.any(Request),
           expect.objectContaining({ keyPairId: 'dpopPairId', accessToken: token.accessToken })
         );
@@ -284,8 +286,8 @@ describe('Token', () => {
           authorization: `DPoP ${token.accessToken}`,
           dpop: 'dpopproof'
         });
-        expect(token.dpopSigningAuthority.sign).toHaveBeenCalledTimes(2);
-        expect(token.dpopSigningAuthority.sign).toHaveBeenLastCalledWith(
+        expect(Platform.DPoPSigningAuthority.sign).toHaveBeenCalledTimes(2);
+        expect(Platform.DPoPSigningAuthority.sign).toHaveBeenLastCalledWith(
           expect.any(Request),
           expect.objectContaining({ keyPairId: 'dpopPairId', accessToken: token.accessToken })
         );
@@ -298,8 +300,8 @@ describe('Token', () => {
           authorization: `DPoP ${token.accessToken}`,
           dpop: 'dpopproof'
         });
-        expect(token.dpopSigningAuthority.sign).toHaveBeenCalledTimes(3);
-        expect(token.dpopSigningAuthority.sign).toHaveBeenLastCalledWith(
+        expect(Platform.DPoPSigningAuthority.sign).toHaveBeenCalledTimes(3);
+        expect(Platform.DPoPSigningAuthority.sign).toHaveBeenLastCalledWith(
           expect.any(Request),
           expect.objectContaining({
             keyPairId: 'dpopPairId',

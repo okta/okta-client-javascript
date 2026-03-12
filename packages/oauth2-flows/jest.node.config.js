@@ -9,7 +9,7 @@ const config = {
     __PKG_VERSION__: pkg.version,
   },
   moduleNameMapper: {
-    '^@okta/auth-foundation/client$': '<rootDir>/../auth-foundation/src/client.ts',
+    '^@okta/auth-foundation/core$': '<rootDir>/../auth-foundation/src/core.ts',
     '^@okta/auth-foundation/internal$': '<rootDir>/../auth-foundation/src/internal.ts',
     '^@okta/auth-foundation$': '<rootDir>/../auth-foundation/src/index.ts',
   },

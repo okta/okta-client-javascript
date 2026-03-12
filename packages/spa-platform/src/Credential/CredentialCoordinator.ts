@@ -9,14 +9,14 @@ import type {
   TokenStorageEvents,
   JsonRecord,
   TokenInit,
-} from '@okta/auth-foundation';
+} from '@okta/auth-foundation/core';
 import {
+  Token,
   CredentialCoordinator,
   CredentialCoordinatorImpl as CredentialCoordinatorBase,
   shortID,
   pause,
-} from '@okta/auth-foundation';
-import { Token } from '../platform/index.ts';
+} from '@okta/auth-foundation/core';
 import { DefaultCredentialDataSource } from './CredentialDataSource.ts';
 import { BrowserTokenStorage } from './TokenStorage.ts';
 import { isFirefox } from '../utils/UserAgent.ts';

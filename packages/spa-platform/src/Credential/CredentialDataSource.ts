@@ -7,7 +7,7 @@ import {
   type ConfigurationParams,
   DefaultCredentialDataSource as BaseCredentialDataSource,
   CredentialDataSource
-} from '@okta/auth-foundation';
+} from '@okta/auth-foundation/core';
 import { OAuth2Client } from '../platform/index.ts';
 
 

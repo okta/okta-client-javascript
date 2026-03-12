@@ -1,7 +1,7 @@
 import {
   validateString,
   validateURL
-} from 'src/internals/validators';
+} from 'src/utils/validators';
 
 
 function testAgainstArbitaryInput (validatorFn) {

@@ -2,7 +2,7 @@
  * @module Core
  */
 
-import { AuthSdkError } from '@okta/auth-foundation';
+import { AuthSdkError } from '@okta/auth-foundation/core';
 import { AuthenticationFlow } from './AuthenticationFlow.ts';
 
 /**

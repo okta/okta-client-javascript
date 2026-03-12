@@ -2,7 +2,7 @@
  * @module Core
  */
 
-import { EventEmitter, Emitter, AuthSdkError } from '@okta/auth-foundation';
+import { EventEmitter, Emitter, AuthSdkError } from '@okta/auth-foundation/core';
 
 
 /**

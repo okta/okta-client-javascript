@@ -1,6 +1,9 @@
-import { AuthorizationCodeFlow } from '@okta/oauth2-flows';
-import { AuthorizationCodeFlowOrchestrator, HostOrchestrator } from '@okta/spa-platform';
-import { FetchClient } from '@okta/spa-platform/fetch';
+import {
+  AuthorizationCodeFlow,
+  AuthorizationCodeFlowOrchestrator,
+  HostOrchestrator,
+  FetchClient
+} from '@okta/spa-platform';
 import { client } from '@/auth';
 import { createMessageComponent } from '../createMessageComponent';
 

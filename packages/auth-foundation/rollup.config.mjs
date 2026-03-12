@@ -7,6 +7,6 @@ const base = baseConfig(ts, pkg);
 
 export default {
   ...base,
-  input: [base.input, 'src/client.ts', 'src/internal.ts'],
+  input: [base.input, 'src/core.ts', 'src/internal.ts'],
   external: [...Object.keys(pkg.dependencies)],
 };

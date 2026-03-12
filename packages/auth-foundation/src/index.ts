@@ -2,31 +2,15 @@
  * @module Core
  */
 
-// types
-export * from './types/index.ts';
+export * from './core.ts';
 
-// common
-export * from './http/index.ts';
-export * from './errors/index.ts';
-export * from './utils/index.ts';
-export * from './utils/EventEmitter.ts';
-export * from './utils/TimeCoordinator.ts';
-export * from './utils/TaskBridge.ts';
+import { Platform } from './platform/Platform.ts';
+// eslint-disable-next-line no-restricted-imports
+import { PlatformDefaults } from './platform/defaults.ts';
 
-// crypto / jwt
-export { randomBytes, shortID } from './crypto/index.ts';
-export * from './jwt/index.ts';
-
-// oauth2
-export * from './oauth2/pkce.ts';
-export * from './oauth2/dpop/index.ts';
-
-// Credential & Token
-export * from './Token.ts';
-export * from './Credential/index.ts';
-export * from './TokenOrchestrator.ts';
-
-// FetchClient
-export * from './FetchClient.ts';
-
-export { addEnv } from './http/oktaUserAgent.ts';
+/**
+ * @internal
+ * Registers all default implementations of Platform dependencies. This will include them all in any
+ * output bundle. Use `core.ts` if this is undesirable.
+ */
+Platform.registerDefaultsLoader(() => PlatformDefaults);

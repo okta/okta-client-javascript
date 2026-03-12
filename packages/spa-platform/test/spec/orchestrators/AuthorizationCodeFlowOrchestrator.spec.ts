@@ -1,5 +1,4 @@
-import { TokenOrchestratorError, OAuth2Error } from '@okta/auth-foundation';
-import { Token } from 'src/platform';
+import { Token, TokenOrchestratorError, OAuth2Error } from '@okta/auth-foundation';
 import { Credential } from 'src/Credential';
 import { AuthorizationCodeFlow } from 'src/flows/AuthorizationCodeFlow';
 import { AuthorizationCodeFlowOrchestrator } from 'src/orchestrators';

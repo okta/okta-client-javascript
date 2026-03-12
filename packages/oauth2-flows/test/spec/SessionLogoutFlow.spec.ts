@@ -1,5 +1,4 @@
-import { OAuth2Error } from '@okta/auth-foundation';
-import OAuth2Client from '@okta/auth-foundation/client';
+import { OAuth2Client, OAuth2Error } from '@okta/auth-foundation';
 import { SessionLogoutFlow } from 'src/SessionLogoutFlow';
 
 

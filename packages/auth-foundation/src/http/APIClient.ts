@@ -10,6 +10,7 @@ import { APIRequest } from './requests/APIRequest.ts';
 import { mergeHeaders } from '../utils/index.ts';
 import { EventEmitter } from '../utils/EventEmitter.ts';
 import { APIClientError } from '../errors/index.ts';
+import { Platform } from '../platform/Platform.ts';
 
 export * from './requests/APIRequest.ts';
 export * from './requests/OAuth2Request.ts';
@@ -27,7 +28,7 @@ function assertReadableResponse(response: Response) {
 export abstract class APIClient<E extends APIClient.Events = APIClient.Events> {
   readonly configuration: APIClient.Configuration;
   readonly emitter: EventEmitter<E> = new EventEmitter();
-  protected readonly dpopNonceCache: DPoPNonceCache = new DPoPNonceCache.InMemoryCache();
+  protected readonly dpopNonceCache: DPoPNonceCache;
   protected readonly interceptors: APIClient.RequestInterceptor[] = [];
 
   defaultHeaders: Record<string, string> = { 'X-Okta-User-Agent-Extended': getOktaUserAgent() };
@@ -35,6 +36,7 @@ export abstract class APIClient<E extends APIClient.Events = APIClient.Events> {
 
   constructor (params: APIClient.ConfigurationParams | APIClient.Configuration = {}) {
     this.configuration = params instanceof APIClient.Configuration ? params : new APIClient.Configuration(params);
+    this.dpopNonceCache = Platform.DPoPNonceCache;
   }
 
   get #fetch (): typeof fetch {

@@ -1,5 +1,4 @@
-import { CredentialError } from '@okta/auth-foundation';
-import { Token } from 'src/platform';
+import { Token, CredentialError } from '@okta/auth-foundation';
 import { BrowserTokenStorage } from 'src/Credential/TokenStorage';
 import { makeTestToken, MockIndexedDBStore } from '../helpers/makeTestResource';
 

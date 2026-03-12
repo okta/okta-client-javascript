@@ -7,7 +7,7 @@ import {
   Credential as CredentialBase,
   type RequestAuthorizer,
   type JSONSerializable,
-} from '@okta/auth-foundation';
+} from '@okta/auth-foundation/core';
 import { CredentialCoordinatorImpl } from './CredentialCoordinator.ts';
 
 

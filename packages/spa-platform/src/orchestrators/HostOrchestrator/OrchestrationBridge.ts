@@ -1,5 +1,5 @@
 import type { HostOrchestrator } from './index.ts';
-import { TaskBridge } from '@okta/auth-foundation';
+import { TaskBridge } from '@okta/auth-foundation/core';
 import { LocalBroadcastChannel } from '../../utils/LocalBroadcastChannel.ts';
 
 const defaultOptions = {

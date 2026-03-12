@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { useSearchParams } from 'react-router-dom';
-import { getSearchParam } from '@okta/auth-foundation';
+import { getSearchParam } from '@okta/spa-platform';
 import { Loading } from './Loading';
 
 

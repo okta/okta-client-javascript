@@ -1,4 +1,4 @@
-import { TokenOrchestrator, APIClientError, DPoPNonceCache } from '@okta/auth-foundation';
+import { TokenOrchestrator, APIClientError, DPoPNonceCache, Platform } from '@okta/auth-foundation';
 import { FetchClient } from 'src/FetchClient';
 import { randStr } from '@repo/jest-helpers/browser/helpers';
 import { makeTestToken } from '../helpers/makeTestResource';
@@ -62,7 +62,7 @@ describe('FetchClient', () => {
 
     // test with a (mocked) dpop-bound token
     const dpopToken = makeTestToken(null, { tokenType: 'DPoP' });
-    dpopToken.dpopSigningAuthority.sign = jest.fn().mockImplementation(async (request) => {
+    Platform.DPoPSigningAuthority.sign = jest.fn().mockImplementation(async (request) => {
       request.headers.set('dpop', 'fakedpopvalue');
       return request;
     });

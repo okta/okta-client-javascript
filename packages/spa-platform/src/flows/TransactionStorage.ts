@@ -1,4 +1,4 @@
-import type { JsonRecord } from '@okta/auth-foundation';
+import type { JsonRecord } from '@okta/auth-foundation/core';
 import type { TransactionStorage } from '@okta/oauth2-flows';
 import { LocalStorageCache } from '../utils/LocalStorageCache.ts';
 

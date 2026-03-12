@@ -4,14 +4,14 @@
  */
 
 import {
+  Token,
   hasSameValues,
   toRelativeUrl,
   TokenOrchestrator,
   TokenOrchestratorError,
   EventEmitter
-} from '@okta/auth-foundation';
+} from '@okta/auth-foundation/core';
 import { AuthorizationCodeFlow } from '../flows/index.ts';
-import { Token } from '../platform/index.ts';
 import { Credential } from '../Credential/index.ts';
 
 

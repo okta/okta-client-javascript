@@ -7,8 +7,8 @@
 // CORS requests are limited to the specific headers exposed. This by default will block the `date` header
 
 import type { TimeInterval, EpochTimestamp, Seconds } from '../types/index.ts';
+import { Platform } from '../platform/Platform.ts';
 
-// TODO: DOC THIS
 
 /**
  * Utility class for parse timestamps and performing time/date calculations
@@ -51,7 +51,7 @@ export class Timestamp {
   isBefore (t: EpochTimestamp | Date | Timestamp): boolean {
     t = Timestamp.from(t).value;
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return this.ts < t - TimeCoordinator.clockTolerance;
+    return this.ts < t - Platform.TimeCoordinator.clockTolerance;
   }
 
   isAfter (t: Timestamp): boolean;
@@ -60,7 +60,7 @@ export class Timestamp {
   isAfter (t: EpochTimestamp | Date | Timestamp): boolean {
     t = Timestamp.from(t).value;
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    return this.ts > t + TimeCoordinator.clockTolerance;
+    return this.ts > t + Platform.TimeCoordinator.clockTolerance;
   }
 
   timeSince (t: Timestamp): Seconds;
@@ -73,7 +73,7 @@ export class Timestamp {
 
   timeSinceNow () {
     // eslint-disable-next-line @typescript-eslint/no-use-before-define
-    const now = timeCoordinator.now();
+    const now = Platform.TimeCoordinator.now();
     return this.ts - now.value;
   }
 }
@@ -81,9 +81,18 @@ export class Timestamp {
 /**
  * @group TimeCoordinator
  */
-class TimeCoordinator {
+export interface TimeCoordinator {
+  clockSkew: Seconds;
+  clockTolerance: Seconds;
+  now: () => Timestamp;
+}
+
+/**
+ * @group TimeCoordinator
+ */
+export class DefaultTimeCoordinator implements TimeCoordinator {
   #skew = 0;
-  static #tolerance = 0;
+  #tolerance = 0;
 
   get clockSkew (): Seconds {
     return this.#skew;
@@ -93,12 +102,12 @@ class TimeCoordinator {
     this.#skew = skew;
   }
 
-  static get clockTolerance (): Seconds {
-    return TimeCoordinator.#tolerance;
+  get clockTolerance (): Seconds {
+    return this.#tolerance;
   }
 
-  static set clockTolerance (tolerance: Seconds) {
-    TimeCoordinator.#tolerance = tolerance;
+  set clockTolerance (tolerance: Seconds) {
+    this.#tolerance = tolerance;
   }
 
   now (): Timestamp {
@@ -106,8 +115,3 @@ class TimeCoordinator {
     return new Timestamp(now);
   }
 }
-
-const timeCoordinator = new TimeCoordinator();
-
-/** @internal */
-export default timeCoordinator;

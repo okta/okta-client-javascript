@@ -3,7 +3,7 @@
  * @mergeModuleWith Core
  */
 
-import { randomBytes, type JsonRecord } from '@okta/auth-foundation';
+import { randomBytes, type JsonRecord } from '@okta/auth-foundation/core';
 import { AuthContext } from './types.ts';
 
 
