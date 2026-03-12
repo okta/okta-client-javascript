@@ -29,7 +29,7 @@ export class PlatformRegistryError extends AuthSdkError {}
  * ```
  *
  * To enable tree-shaking and prevent including default implementations (bundle bloat) which 
- * will be instanceously overwritten, default implementations can be selectively included.
+ * will be instantaneously overwritten, default implementations can be selectively included.
  *
  * @remarks
  * Use `import * from '@okta/auth-foundation'` for standard usage, including all default platform
@@ -84,6 +84,7 @@ export class PlatformRegistry implements PlatformDependencies {
    *
    * Platform.registerDefaultsLoader(() => ({
    *   TimeCoordinator: MyCustomTimeCoordinator
+   *   // define other dependencies
    * }));
    *
    * // ensure this module is loaded before any other '@okta/*' dependencies
@@ -143,7 +144,7 @@ export class PlatformRegistry implements PlatformDependencies {
   }
 
   /**
-   * Get the current TimeCoordinator instance
+   * Get the current DPoPNonceCache instance
    *
    * @remarks
    * Returns configured override or factory default

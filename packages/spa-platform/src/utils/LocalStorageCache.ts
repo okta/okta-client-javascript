@@ -17,12 +17,22 @@ import {
  * in attempt to avoid orphaned records in `LocalStorage`
  */
 export class LocalStorageCache<T extends Json | JsonPrimitive = string> {
+  public ttl: Seconds;
+  public clearOnParseError: boolean;
+
   constructor (
     protected storageKey: string,
-    public clearOnParseError: boolean = true
-  ) {}
+    options: Partial<LocalStorageCache.Options> = {}
+  ) {
+    const { ttl, clearOnParseError } = { ...LocalStorageCache.DefaultOptions, ...options };
+    this.ttl = ttl;
+    this.clearOnParseError = clearOnParseError;
+  }
 
-  static cacheDuration: Seconds = 60 * 60 * 20;   // defaults to 20 hours
+  static DefaultOptions: LocalStorageCache.Options = {
+    ttl:  60 * 60 * 20,   // defaults to 20 hours
+    clearOnParseError: true
+  };
 
   protected getStore (): Record<string, { item: T; ts: number }> {
     let store: Record<string, any> = {};
@@ -43,7 +53,7 @@ export class LocalStorageCache<T extends Json | JsonPrimitive = string> {
     for (const [key, value] of Object.entries(store)) {
       // cast as `any` because .entries assumes type is `unknown`
       const ts = (value as any).ts;
-      if (!ts || Math.abs(Timestamp.from(ts).timeSinceNow()) > LocalStorageCache.cacheDuration) {
+      if (!ts || Math.abs(Timestamp.from(ts).timeSinceNow()) > this.ttl) {
         delete store[key];
       }
     }
@@ -84,4 +94,15 @@ export class LocalStorageCache<T extends Json | JsonPrimitive = string> {
   public clear (): void{
     localStorage.removeItem(this.storageKey);
   }
+}
+
+/**
+ * @internal
+ */
+export namespace LocalStorageCache {
+  export type Options = {
+    ttl: Seconds;
+    clearOnParseError: boolean;
+  };
+
 }
