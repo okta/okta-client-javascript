@@ -5,6 +5,14 @@ import { AuthSdkError } from '../errors/AuthSdkError.ts';
 /** @useDeclaredType */
 type TypeMap = Record<string, any>;
 
+/** @internal */
+function warn (message: string) {
+  // eslint-disable-next-line @typescript-eslint/no-use-before-define
+  if (TaskBridge.warnOnBusMessageMismatch) {
+    console.warn(message);
+  }
+}
+
 /**
  * A bridge for passing messages between a `TaskHandler` and a `Requestor`. The `Requestor` is "asking" the `TaskHandler`
  * To perform a `Task` on it's behave. Loosely based on TCP
@@ -111,6 +119,11 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
       // This channel is meant for the Receiver to send the results (aka `HandlerMessage<M>` messages)
       // ignore all Requestor events received (aka `RequestorMessage`)
       responseChannel.onmessage = (event) => {
+        const { __v } = event.data;
+        if (__v !== TaskBridge.BridgeVersion) {
+          warn(`[Requestor] received mismatched message (requestor=${TaskBridge.BridgeVersion}, message=${__v})`);
+        }
+
         if (request.signal.aborted || 'action' in event.data) {
           return;   // ignore message
         }
@@ -161,6 +174,10 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
     this.#channel = this.createBridgeChannel();
     this.#channel.onmessage = async (evt, reply) => {
       const { requestId, __v, ...rest } = evt.data;
+
+      if (__v !== TaskBridge.BridgeVersion) {
+        warn(`[Subscriber] received mismatched message (subscriber=${TaskBridge.BridgeVersion}, message=${__v})`);
+      }
 
       if (!requestId) {
         return;
@@ -259,6 +276,12 @@ export abstract class TaskBridge<M extends TypeMap, R extends TypeMap> {
 export namespace TaskBridge {
   // NOTE: update this value when the payload structure of the TaskBridge changes
   export const BridgeVersion = 2;
+
+  /**
+   * Toggles whether `console.warn` messages are broadcasted when bus messages are received with
+   * a mismatched BridgeVersion. Useful for debugging communication issues.
+   */
+  export let warnOnBusMessageMismatch: boolean = false;
 
   /**
    * Possible `status` values indicating the process of an orchestrated request

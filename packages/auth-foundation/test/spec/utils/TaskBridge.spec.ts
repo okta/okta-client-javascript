@@ -363,4 +363,61 @@ describe('TaskBridge', () => {
     jest.useRealTimers();
   });
 
+  describe('features', () => {
+    describe('Mismatch message version warning', () => {
+      let channel: BroadcastChannel;
+
+      beforeEach(() => {
+        TaskBridge.warnOnBusMessageMismatch = true;
+        channel = new BroadcastChannel('test');
+        jest.spyOn(console, 'warn').mockReturnValue();
+      });
+
+      afterEach(() => {
+        channel.close();
+        TaskBridge.warnOnBusMessageMismatch = false;
+      });
+
+      test('Requestor will warn get reply doesn\'t match version', async () => {
+        channel.onmessage = (event) => {
+          const responseChannel = new BroadcastChannel(event.data.requestId);
+          responseChannel.postMessage({ status: 'SUCCESS', data: { foo: '1' }, __v: 'foo' });
+          responseChannel.close();
+        };
+
+        const { result } = sender.send({ foo: 1, bar: 2 });
+        await result;
+
+        expect(console.warn).toHaveBeenCalled();
+      });
+  
+      test('Subscriber will warn get reply doesn\'t match version', async () => {
+        receiver.subscribe(async (message, reply) => {
+          reply({ foo: '2', bar: '1' });
+        });
+
+        channel.postMessage({ requestId: 'foo', __v: 'foo', data: { foo: 1 }});
+
+        // this message is only used in the test to give time for the first message to send
+        const { result } = sender.send({ foo: 1, bar: 2 });
+        await result;
+        
+        expect(console.warn).toHaveBeenCalled();
+      });
+  
+      test('No warnings when disabled', async () => {
+        TaskBridge.warnOnBusMessageMismatch = false;
+
+        receiver.subscribe(async (message, reply) => {
+          reply({ foo: '2', bar: '1' });
+        });
+
+        const { result } = sender.send({ foo: 1, bar: 2 });
+        await result;
+  
+        expect(console.warn).not.toHaveBeenCalled();
+      });
+    });
+  });
+
 });
