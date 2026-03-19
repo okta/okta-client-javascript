@@ -1,0 +1,46 @@
+{
+  "name": "@okta/react-native-webcrypto-bridge",
+  "version": "0.7.0",
+  "type": "module",
+  "main": "dist/esm/index.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/types/index.d.ts",
+  "author": "jared.perreault@okta.com",
+  "license": "Apache-2.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "files": [
+    "./LICENSE",
+    "./dist",
+    "*.md",
+    "package.json"
+  ],
+  "scripts": {
+  },
+  "peerDependencies": {
+    "@okta/auth-foundation": "*"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/rollup-config": "*",
+    "@repo/typescript-config": "*",
+    "eslint": "^8.56.0",
+    "rollup": "^4.52.4",
+    "jest": "^29.7.0",
+    "typescript": "^5.9.2"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=22.13.1",
+      "onFail": "warn"
+    },
+    "packageManager": {
+      "name": "yarn",
+      "version": ">=1.19.0",
+      "onFail": "warn"
+    }
+  }
+}
