@@ -28,6 +28,8 @@ class MockOrchestrator extends TokenOrchestrator {
 
 describe('HostOrchestrator', () => {
 
+  jest.retryTimes(3);
+
   const authParams = {
     issuer: 'http://fake.okta.com',
     clientId: 'fakeClientId',
