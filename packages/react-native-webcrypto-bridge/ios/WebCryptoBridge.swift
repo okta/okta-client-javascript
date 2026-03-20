@@ -6,6 +6,10 @@ import React
 @objc(WebCryptoBridge)
 class WebCryptoBridge: NSObject {
 
+    // Key storage
+    private static var keyStore: [String: [String: Any]] = [:]
+    private static let keyStoreLock = NSLock()
+
     @objc
     static func requiresMainQueueSetup() -> Bool {
         return false

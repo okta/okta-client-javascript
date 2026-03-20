@@ -12,6 +12,14 @@ import { WebCryptoBridgeError } from './lib.ts';
 // doing any string encoding in the native code
 type ByteArray = number[];
 
+/** 
+ * @internal
+ * Maps `CryptoKey` instances to the id assigned by the native code
+ */
+const cryptoKeyMap = new WeakMap<CryptoKey | CryptoKeyPair, string>();
+
+// MARK: - ArryBuffer Converters
+
 /**
  * Converts a `BufferSource` instance to an `ArrayBuffer`
  */
@@ -49,6 +57,20 @@ function byteArrayToArrayBuffer(bytes: ByteArray): ArrayBuffer {
   return new Uint8Array(bytes).buffer;
 }
 
+function getCryptoAlg (alg: string) {
+  switch (alg) {
+    case 'RS256':
+      return {
+        name: 'RSASSA-PKCS1-v1_5',
+        hash: { name: 'SHA-256' }
+      };
+    default:
+      throw new WebCryptoBridgeError('Unknown crypto algorithm', { context: { alg } });
+  }
+}
+
+// MARK: - SubtleCrypto Methods 
+
 const digest: SubtleCrypto['digest'] = async (algorithm, data) => {
   if (algorithm !== 'SHA-256') {
     throw new WebCryptoBridgeError(`Unsupported algorithm: ${algorithm}`);
@@ -66,19 +88,35 @@ const importKey: SubtleCrypto['importKey'] = async (
   algorithm,
   extractable,
   keyUsages
-) => {
+ ) => {
   if (format !== 'jwk') {
     throw new WebCryptoBridgeError(`Unsupported format: ${format}`);
   }
 
-  // TODO: how to store `keyData`?
+  const keyDataJson = JSON.stringify(keyData);
+  const algorithmJson = JSON.stringify({
+    name: algorithm.name,
+    hash: algorithm.hash,
+  });
 
-  return {
+  const keyId = await NativeWebCryptoBridge.importKey(
+    format,
+    keyDataJson,
+    algorithmJson,
+    extractable,
+    keyUsages
+  );
+
+  const key: CryptoKey = {
     algorithm,
     extractable,        // TODO: can extractable even be set to `true` and be used in a bridge?
-    type: 'secret',     // TODO: A string identifying whether the key is a symmetric ('secret') or asymmetric ('private' or 'public') key.
+    type: 'public',     // TODO: A string identifying whether the key is a symmetric ('secret') or asymmetric ('private' or 'public') key.
     usages: keyUsages
-  } satisfies CryptoKey
+  };
+
+  cryptoKeyMap.set(key, keyId);
+
+  return key;
 };
 
 // TODO: DPoP
@@ -99,8 +137,28 @@ const generateKey: SubtleCrypto['generateKey'] = async (
 }
 
 const verify: SubtleCrypto['verify'] = async (algorithm, key, signature, data) => {
-  return false;
+  const keyId = cryptoKeyMap.get(key);
+  if (!keyId) {
+    throw new WebCryptoBridgeError('Unable to locate key');
+  }
+
+  if (algorithm !== 'jwk') {
+    throw new WebCryptoBridgeError('Unsupported algorithm');
+  }
+
+  const algorithmJson = JSON.stringify(key.algorithm);
+  const signatureBytes = arrayBufferToByteArray(toArrayBuffer(signature));
+  const dataBytes = arrayBufferToByteArray(toArrayBuffer(data));
+
+  return await NativeWebCryptoBridge.verify(
+    algorithmJson,
+    keyId,
+    signatureBytes,
+    dataBytes
+  );
 }
+
+// MARK: - Types & Exports
 
 /**
  * SubtleCrypto implementation
@@ -114,16 +172,18 @@ const subtle: Partial<SubtleCrypto> = {
   verify
 };
 
+export interface WebCryptoPolyfill {
+  subtle: Partial<SubtleCrypto>;
+  getRandomValues: Crypto['getRandomValues']
+  randomUUID: Crypto['randomUUID']
+}
+
 /**
  * Crypto implementation
  */
-const cryptoPolyfill: Crypto = {
+const cryptoPolyfill: WebCryptoPolyfill = {
   subtle,
-
-  // TODO: replace
   getRandomValues<T extends ArrayBufferView>(array: T): T {
-    // For synchronous random values, we'll use Math.random as a fallback
-    // In production, you might want to pre-generate random values or use a sync native module
     const uint8Array = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
     
     const randomBytes = NativeWebCryptoBridge.getRandomValues(uint8Array.length);
@@ -134,7 +194,7 @@ const cryptoPolyfill: Crypto = {
     
     return array;
   },
-  randomUUID (): string {
+  randomUUID () {
     return NativeWebCryptoBridge.randomUUID();
   }
 };

@@ -1,4 +1,4 @@
-import { installWebCryptoPolyfill } from 'src/WebCryptoPolyfill';
+import { installWebCryptoPolyfill } from 'src/polyfill';
 
 describe('@okta/react-native-webcrypto-bridge', () => {
   beforeAll(() => {
