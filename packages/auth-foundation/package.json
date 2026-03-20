@@ -26,10 +26,6 @@
       "types": "./dist/types/core.d.ts",
       "import": "./dist/esm/core.js"
     },
-    "./client": {
-      "types": "./dist/types/client.d.ts",
-      "import": "./dist/esm/client.js"
-    },
     "./internal": {
       "types": "./dist/types/internal.d.ts",
       "import": "./dist/esm/internal.js"
