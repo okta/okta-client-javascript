@@ -3,5 +3,5 @@
  */
 
 
-export { installWebCryptoPolyfill } from './polyfill.ts';
+export { installWebCryptoPolyfill } from './WebCryptoPolyfill.ts';
 export * from './lib.ts';

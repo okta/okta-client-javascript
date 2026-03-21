@@ -360,6 +360,7 @@ class WebCryptoBridge: NSObject {
     }
 }
 
-#ifdef RCT_NEW_ARCH_ENABLED
-extension WebCryptoBridge: NativeWebCryptoBridgeSpec {}
+// Swift uses #if instead of #ifdef
+#if RCT_NEW_ARCH_ENABLED
+extension WebCryptoBridge: NativeRNWebCryptoBridgeSpec {}
 #endif

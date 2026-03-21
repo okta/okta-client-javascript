@@ -12,5 +12,6 @@ export default {
     ...Object.keys(pkg.peerDependencies || {}),
     'react-native',
     'react',
+    '@okta/auth-foundation/core'
   ],
 };

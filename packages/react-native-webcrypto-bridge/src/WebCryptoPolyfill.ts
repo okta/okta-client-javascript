@@ -4,7 +4,7 @@
  * Uses crypto utilities from @okta/auth-foundation for encoding/decoding
  */
 
-import NativeWebCryptoBridge from './bridge.ts';
+import NativeWebCryptoBridge from './NativeWebCryptoBridge.ts';
 import { WebCryptoBridgeError } from './lib.ts';
 
 // NOTE: Does not use `buf` or `b64` from `auth-foundation` because converting
@@ -185,17 +185,17 @@ const cryptoPolyfill: WebCryptoPolyfill = {
   subtle,
   getRandomValues<T extends ArrayBufferView>(array: T): T {
     const uint8Array = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
-    
+
     const randomBytes = NativeWebCryptoBridge.getRandomValues(uint8Array.length);
-    
+
     for (let i = 0; i < randomBytes.length; i++) {
       uint8Array[i] = randomBytes[i];
     }
-    
+
     return array;
   },
   randomUUID () {
-    return NativeWebCryptoBridge.randomUUID();
+    return NativeWebCryptoBridge.randomUUID() as ReturnType<Crypto['randomUUID']>;
   }
 };
 

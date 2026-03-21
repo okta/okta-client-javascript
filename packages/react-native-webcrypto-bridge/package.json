@@ -17,7 +17,6 @@
   "files": [
     "./LICENSE",
     "./dist",
-    "./src",
     "./ios",
     "./android",
     "./cpp",
@@ -54,12 +53,11 @@
     "@repo/eslint-config": "*",
     "@repo/rollup-config": "*",
     "@repo/typescript-config": "*",
-    "@types/react": "^18.0.0",
-    "@types/react-native": "^0.73.0",
+    "@types/react": "^19.2.14",
     "eslint": "^8.56.0",
     "jest": "^29.7.0",
-    "react": "^18.2.0",
-    "react-native": "^0.73.0",
+    "react": "^19.2.4",
+    "react-native": "^0.83.1",
     "rollup": "^4.52.4",
     "typescript": "^5.9.2"
   },
@@ -76,7 +74,7 @@
     }
   },
   "codegenConfig": {
-    "name": "RNWebCryptoBridgeSpec",
+    "name": "RNWebCryptoBridge",
     "type": "modules",
     "jsSrcsDir": "src",
     "android": {
