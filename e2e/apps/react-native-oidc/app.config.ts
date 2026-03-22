@@ -18,6 +18,12 @@ export default ({ config }: ConfigContext) => ({
   extra: {
     env
   },
+  "android": {
+    "package": "com.anonymous.reporeactnativeoidc"
+  },
+  "ios": {
+    "bundleIdentifier": "com.anonymous.reporeactnativeoidc"
+  },
   "plugins": [
     [
       "expo-build-properties",
