@@ -6,12 +6,12 @@ export interface Spec extends TurboModule {
   /**
    * Generate SHA-256 digest (async)
    */
-  digest (algorithm: string, data: number[]): Promise<number[]>;
+  digest(algorithm: string, data: number[]): Promise<number[]>;
 
   /**
    * Generate RSA key pair (async)
    */
-  generateKey (
+  generateKey(
     algorithm: string,
     extractable: boolean,
     keyUsages: string[]
@@ -20,12 +20,12 @@ export interface Spec extends TurboModule {
   /**
    * Export a key to JWK format (async)
    */
-  exportKey (format: string, keyId: string, keyType: string): Promise<string>;
+  exportKey(format: string, keyId: string, keyType: string): Promise<string>;
 
   /**
    * Import a key from JWK format (async)
    */
-  importKey (
+  importKey(
     format: string,
     keyData: string,
     algorithm: string,
@@ -36,12 +36,12 @@ export interface Spec extends TurboModule {
   /**
    * Sign data with a private key (async)
    */
-  sign (algorithm: string, keyId: string, data: number[]): Promise<number[]>;
+  sign(algorithm: string, keyId: string, data: number[]): Promise<number[]>;
 
   /**
    * Verify a signature (async)
    */
-  verify (
+  verify(
     algorithm: string,
     keyId: string,
     signature: number[],
@@ -51,12 +51,12 @@ export interface Spec extends TurboModule {
   /**
    * Generate cryptographically secure random values (sync)
    */
-  getRandomValues (length: number): number[];
+  getRandomValues(length: number): number[];
 
   /**
    * Generate a random UUID v4 (sync)
    */
-  randomUUID (): string;
+  randomUUID(): string;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('WebCryptoBridge');

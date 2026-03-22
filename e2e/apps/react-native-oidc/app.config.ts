@@ -17,5 +17,18 @@ export default ({ config }: ConfigContext) => ({
   ...config,
   extra: {
     env
-  }
+  },
+  "plugins": [
+    [
+      "expo-build-properties",
+      {
+        "ios": {
+          "newArchEnabled": true
+        },
+        "android": {
+          "newArchEnabled": true
+        }
+      }
+    ]
+  ]
 });

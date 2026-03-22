@@ -25,4 +25,7 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, 'node_modules'),
 ];
 
+// Ensure workspace packages are resolved
+config.resolver.disableHierarchicalLookup = false;
+
 module.exports = config;
