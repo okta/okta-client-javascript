@@ -30,8 +30,8 @@ config.resolver.disableHierarchicalLookup = false;
 
 // Don't try to transform react-native internals
 config.resolver.blockList = [
-  // Exclude react-native source files that shouldn't be transformed
-  /.*\/react-native\/.*\/node_modules\/.*/,
+  // Block nested node_modules in workspace packages
+  /packages\/[^/]+\/node_modules\/.*/,
 ];
 
 module.exports = config;

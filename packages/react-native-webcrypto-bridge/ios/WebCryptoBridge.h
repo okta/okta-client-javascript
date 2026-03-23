@@ -1,10 +1,9 @@
 #import <React/RCTBridgeModule.h>
 
 #ifdef RCT_NEW_ARCH_ENABLED
-#import <React/RCTEventEmitter.h>
 #import "RNWebCryptoBridge.h"
 
-@interface WebCryptoBridge : NSObject <NativeRNWebCryptoBridgeSpec>
+@interface WebCryptoBridge : NSObject <RCTBridgeModule, NativeWebCryptoBridgeSpec>
 #else
 @interface WebCryptoBridge : NSObject <RCTBridgeModule>
 #endif

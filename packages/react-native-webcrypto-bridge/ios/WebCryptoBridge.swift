@@ -3,6 +3,7 @@ import Security
 import CommonCrypto
 import React
 
+
 @objc(WebCryptoBridge)
 class WebCryptoBridge: NSObject {
 
@@ -13,6 +14,16 @@ class WebCryptoBridge: NSObject {
     @objc
     static func requiresMainQueueSetup() -> Bool {
         return false
+    }
+
+    @objc
+    static func moduleName() -> String! {
+        return "WebCryptoBridge"
+    }
+
+    @objc
+    func constantsToExport() -> [AnyHashable : Any]! {
+        return [:]
     }
     
     // MARK: - Helper Methods
@@ -111,7 +122,7 @@ class WebCryptoBridge: NSObject {
         var error: Unmanaged<CFError>?
         guard let privateKey = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
             let err = error?.takeRetainedValue()
-            reject("key_generation_failed", err?.localizedDescription ?? "Unknown error", err as? Error)
+            reject("key_generation_failed", err?.localizedDescription ?? "Unknown error", err)
             return
         }
         
@@ -157,7 +168,7 @@ class WebCryptoBridge: NSObject {
         Self.keyStoreLock.unlock()
         
         guard let keyPair = keyPair,
-              let key = keyPair[keyType == "public" ? "publicKey" : "privateKey"] as? SecKey else {
+              let key = keyPair[keyType == "public" ? "publicKey" : "privateKey"] as! SecKey? else {
             reject("key_not_found", "Key not found", nil)
             return
         }
@@ -165,7 +176,7 @@ class WebCryptoBridge: NSObject {
         var error: Unmanaged<CFError>?
         guard let keyData = SecKeyCopyExternalRepresentation(key, &error) as Data? else {
             let err = error?.takeRetainedValue()
-            reject("export_failed", err?.localizedDescription ?? "Export failed", err as? Error)
+            reject("export_failed", err?.localizedDescription ?? "Export failed", err)
             return
         }
         
@@ -246,7 +257,7 @@ class WebCryptoBridge: NSObject {
         
         guard let publicKey = SecKeyCreateWithData(keyData as CFData, attributes as CFDictionary, &error) else {
             let err = error?.takeRetainedValue()
-            reject("import_failed", err?.localizedDescription ?? "Import failed", err as? Error)
+            reject("import_failed", err?.localizedDescription ?? "Import failed", err)
             return
         }
         
@@ -273,7 +284,7 @@ class WebCryptoBridge: NSObject {
         Self.keyStoreLock.unlock()
         
         guard let keyPair = keyPair,
-              let privateKey = keyPair["privateKey"] as? SecKey else {
+              let privateKey = keyPair["privateKey"] as! SecKey? else {
             reject("key_not_found", "Private key not found", nil)
             return
         }
@@ -288,7 +299,7 @@ class WebCryptoBridge: NSObject {
             &error
         ) as Data? else {
             let err = error?.takeRetainedValue()
-            reject("signing_failed", err?.localizedDescription ?? "Signing failed", err as? Error)
+            reject("signing_failed", err?.localizedDescription ?? "Signing failed", err)
             return
         }
         
@@ -310,7 +321,7 @@ class WebCryptoBridge: NSObject {
         Self.keyStoreLock.unlock()
         
         guard let keyPair = keyPair,
-              let publicKey = keyPair["publicKey"] as? SecKey else {
+              let publicKey = keyPair["publicKey"] as! SecKey? else {
             reject("key_not_found", "Public key not found", nil)
             return
         }
@@ -360,7 +371,3 @@ class WebCryptoBridge: NSObject {
     }
 }
 
-// Swift uses #if instead of #ifdef
-#if RCT_NEW_ARCH_ENABLED
-extension WebCryptoBridge: NativeRNWebCryptoBridgeSpec {}
-#endif
