@@ -29,7 +29,7 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 //   }
 // }
 
-installWebCryptoPolyfill();
+// installWebCryptoPolyfill();
 
 
 export default function RootLayout() {

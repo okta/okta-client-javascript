@@ -24,7 +24,10 @@ export default ({ config }: ConfigContext) => ({
   "ios": {
     "bundleIdentifier": "com.anonymous.reporeactnativeoidc"
   },
+  scheme: "com.oktapreview.jperreault-test",
   "plugins": [
+    "expo-font",
+    "expo-router",
     [
       "expo-build-properties",
       {

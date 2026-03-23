@@ -115,7 +115,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
         if (parsedDate.toString() !== 'Invalid Date') {
           const serverTime = Timestamp.from(parsedDate);
           const skew = Math.round(serverTime.timeSince(Date.now() / 1000));
-          Platform.TimeCoordinator.clockSkew = skew;
+          // Platform.TimeCoordinator.clockSkew = skew;
         }
       }
     }
