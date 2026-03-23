@@ -3,7 +3,7 @@ import { Button, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
-import { Credential, Token } from '@okta/auth-foundation';
+import { Credential, Token } from '@okta/auth-foundation/core';
 import { useAuth } from '@/hooks/useAuth';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';

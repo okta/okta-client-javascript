@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useRouter, type Router } from 'expo-router';
 import { openAuthSessionAsync } from 'expo-web-browser';
 import { AuthorizationCodeFlow, SessionLogoutFlow, AuthTransaction } from '@okta/oauth2-flows';
-import { Credential } from '@okta/auth-foundation';
+import { Credential } from '@okta/auth-foundation/core';
 import { client } from '@/auth';
 
 

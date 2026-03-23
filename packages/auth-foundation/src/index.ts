@@ -15,6 +15,6 @@ console.log('main index imported')
  * Registers all default implementations of Platform dependencies. This will include them all in any
  * output bundle. Use `core.ts` if this is undesirable.
  */
+console.log('[auth-foundation/index.ts] Before Platform registration');
 Platform.registerDefaultsLoader(() => PlatformDefaults);
-
-console.log('platform: ', PlatformDefaults, Platform.TimeCoordinator)
+console.log('[auth-foundation/index.ts] After Platform registration');
