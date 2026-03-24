@@ -2,7 +2,6 @@
  * @module Core
  */
 
-console.log('auth-foundation imported');
 
 // types
 export * from './types/index.ts';

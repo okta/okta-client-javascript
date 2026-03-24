@@ -91,9 +91,7 @@ export class PlatformRegistry implements PlatformDependencies {
    * ```
    */
    public registerDefaultsLoader(loader: () => PlatformDependencies): void {
-    console.log('[Platform.registerDefaultsLoader] Called. Instance:', this);
     this.#defaultsLoader = loader;
-    console.log('[Platform.registerDefaultsLoader] Loader set:', !!this.#defaultsLoader);
   }
 
   /**
@@ -117,16 +115,12 @@ export class PlatformRegistry implements PlatformDependencies {
    * Override in subclasses to provide platform-specific defaults
    */
   protected getDefaults (): PlatformDependencies {
-    console.log('[Platform.getDefaults] Called. Loader exists:', !!this.#defaultsLoader);
     if (!this.#defaultsLoader) {
       throw new PlatformRegistryError(
         `No platform defaults available. Import from "@okta/auth-foundation" directly or call Platform.registerDefaultsLoader()`
       );
     }
-    // return this.#defaultsLoader();
-    const defaults = this.#defaultsLoader();
-    console.log('[Platform.getDefaults] Returning defaults:', defaults);
-    return defaults;
+    return this.#defaultsLoader();
   }
 
   /**
@@ -136,7 +130,6 @@ export class PlatformRegistry implements PlatformDependencies {
    * Returns configured override or factory default
    */
   public get TimeCoordinator (): TimeCoordinator {
-    console.log('[Platform.TimeCoordinator] Accessing TimeCoordinator. Resolved:', this.resolved);
     return this.resolved.TimeCoordinator;
   }
 

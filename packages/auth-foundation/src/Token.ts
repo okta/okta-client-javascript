@@ -109,11 +109,6 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
    * The constructor of Token
    */
   constructor (obj: TokenInit) {
-    console.log('[Token constructor] About to access Platform.TimeCoordinator');
-    console.log('[Token constructor] Platform instance:', Platform);
-    console.log('[Token constructor] Platform.TimeCoordinator:', Platform.TimeCoordinator);
-    
-
     const id = obj?.id ?? shortID();
     this.id = id;
     this.issuedAt = obj?.issuedAt ? new Date(obj?.issuedAt) : Platform.TimeCoordinator.now().asDate;
