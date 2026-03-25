@@ -51,6 +51,24 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
         }
     }
 
+    private fun base64URLEncode(data: ByteArray): String {
+        var base64 = Base64.encodeToString(data, Base64.NO_WRAP)
+        base64 = base64.replace('+', '-')
+        base64 = base64.replace('/', '_')
+        base64 = base64.replace("=", "")
+        return base64
+    }
+
+    private fun base64URLDecode(input: String): ByteArray {
+        var base64 = input.replace('-', '+').replace('_', '/')
+        // Add padding
+        when (base64.length % 4) {
+            2 -> base64 += "=="
+            3 -> base64 += "="
+        }
+        return Base64.decode(base64, Base64.NO_WRAP)
+    }
+
     // MARK: - Synchronous Methods
     
     @ReactMethod(isBlockingSynchronousMethod = true)
@@ -101,9 +119,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
     ) {
         try {
             val algorithm = JSONObject(algorithmJson)
-            val algorithmName = algorithm.getString("name")
-
-            if (algorithmName != "RSASSA-PKCS1-v1_5") {
+            if (algorithm.getString("name") != "RSASSA-PKCS1-v1_5") {
                 promise.reject("unsupported_algorithm", "Only RSASSA-PKCS1-v1_5 is supported")
                 return
             }
@@ -157,49 +173,31 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
                 return
             }
 
-            val key = if (keyType == "public") {
-                keyPairEntry.publicKey
-            } else {
-                keyPairEntry.privateKey
+            val key = if (keyType == "public") keyPair.public else keyPair.private
+            val rsaPublicKey = key as? java.security.interfaces.RSAPublicKey
+
+            if (rsaPublicKey == null) {
+                promise.reject("export_failed", "Key is not an RSA public key")
+                return
             }
 
-            val jwk = when (key) {
-                is java.security.interfaces.RSAPublicKey -> {
-                    JSONObject().apply {
-                        put("kty", "RSA")
-                        put("alg", "RS256")
-                        put("n", android.util.Base64.encodeToString(
-                            toUnsignedByteArray(key.modulus),
-                            android.util.Base64.NO_WRAP
-                        ))
-                        put("e", android.util.Base64.encodeToString(
-                            toUnsignedByteArray(key.publicExponent),
-                            android.util.Base64.NO_WRAP
-                        ))
-                    }
-                }
-                is java.security.interfaces.RSAPrivateKey -> {
-                    // For private keys, we need the CRT parameters
-                    // This is a simplified version
-                    JSONObject().apply {
-                        put("kty", "RSA")
-                        put("alg", "RS256")
-                        put("n", android.util.Base64.encodeToString(
-                            toUnsignedByteArray(key.modulus),
-                            android.util.Base64.NO_WRAP
-                        ))
-                        // Private key components would go here in a full implementation
-                    }
-                }
-                else -> {
-                    promise.reject("unsupported_key_type", "Unsupported key type")
-                    return
-                }
-            }
+            // Extract modulus and exponent
+            val modulus = rsaPublicKey.modulus.toByteArray()
+            val exponent = rsaPublicKey.publicExponent.toByteArray()
+
+            // Remove leading zero bytes if present (BigInteger adds these for sign)
+            val modulusClean = if (modulus[0].toInt() == 0) modulus.copyOfRange(1, modulus.size) else modulus
+            val exponentClean = if (exponent[0].toInt() == 0) exponent.copyOfRange(1, exponent.size) else exponent
+
+            val jwk = JSONObject()
+            jwk.put("kty", "RSA")
+            jwk.put("alg", "RS256")
+            jwk.put("n", base64URLEncode(modulusClean))
+            jwk.put("e", base64URLEncode(exponentClean))
 
             promise.resolve(jwk.toString())
         } catch (e: Exception) {
-            promise.reject("export_failed", "Failed to export key", e)
+            promise.reject("export_failed", e.message, e)
         }
     }
 
@@ -226,45 +224,27 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
                 return
             }
 
-            // Decode modulus and exponent from standard base64
-            val modulusBytes = android.util.Base64.decode(jwk.getString("n"), android.util.Base64.NO_WRAP)
-            val exponentBytes = android.util.Base64.decode(jwk.getString("e"), android.util.Base64.NO_WRAP)
-            
-            val modulus = BigInteger(1, modulusBytes)
-            val exponent = BigInteger(1, exponentBytes)
+            val nString = jwk.getString("n")
+            val eString = jwk.getString("e")
 
-            // Determine if this is a public or private key
-            val keyUsagesList = mutableListOf<String>()
-            for (i in 0 until keyUsages.size()) {
-                keyUsagesList.add(keyUsages.getString(i) ?: "")
-            }
-            val isPrivateKey = keyUsagesList.contains("sign")
+            val modulusBytes = base64URLDecode(nString)
+            val exponentBytes = base64URLDecode(eString)
 
+            // Build ASN.1 DER encoded RSA public key
+            val publicKeyData = constructRSAPublicKeyData(modulusBytes, exponentBytes)
+
+            // Import the key
             val keyFactory = KeyFactory.getInstance("RSA")
-            
-            if (isPrivateKey) {
-                // For private key import, we'd need the private exponent (d)
-                promise.reject("not_implemented", "Private key import not yet implemented")
-                return
-            } else {
-                // Import public key
-                val keySpec = RSAPublicKeySpec(modulus, exponent)
-                val publicKey = keyFactory.generatePublic(keySpec)
+            val keySpec = X509EncodedKeySpec(publicKeyData)
+            val publicKey = keyFactory.generatePublic(keySpec)
 
-                val keyId = UUID.randomUUID().toString()
+            val keyId = UUID.randomUUID().toString()
+            // Store as KeyPair with null private key
+            keyStore[keyId] = KeyPair(publicKey, null)
 
-                synchronized(keyStore) {
-                    keyStore[keyId] = KeyPairEntry(
-                        publicKey = publicKey,
-                        privateKey = publicKey as PrivateKey, // Placeholder - won't be used
-                        extractable = extractable
-                    )
-                }
-
-                promise.resolve(keyId)
-            }
+            promise.resolve(keyId)
         } catch (e: Exception) {
-            promise.reject("import_failed", "Failed to import key", e)
+            promise.reject("import_failed", e.message, e)
         }
     }
 
@@ -324,4 +304,77 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
             promise.reject("verification_failed", "Failed to verify signature", e)
         }
     }
+
+  // MARK: - ASN.1 Encoding Helpers
+
+  private fun constructRSAPublicKeyData(modulus: ByteArray, exponent: ByteArray): ByteArray {
+      // Build X.509 SubjectPublicKeyInfo structure
+      // This matches the Swift implementation
+
+      var modulusBytes = modulus
+      val exponentBytes = exponent
+
+      // Ensure modulus starts with 0x00 if MSB is set
+      if (modulusBytes[0].toInt() and 0x80 != 0) {
+          modulusBytes = byteArrayOf(0x00) + modulusBytes
+      }
+
+      // Build inner SEQUENCE: SEQUENCE { INTEGER modulus, INTEGER exponent }
+      val innerSequence = encodeASN1Integer(modulusBytes) + encodeASN1Integer(exponentBytes)
+      val innerSequenceEncoded = encodeASN1Sequence(innerSequence)
+
+      // Wrap in BIT STRING
+      val bitString = byteArrayOf(0x00) + innerSequenceEncoded
+      val bitStringEncoded = encodeASN1BitString(bitString)
+
+      // Algorithm identifier: SEQUENCE { OID rsaEncryption, NULL }
+      val rsaOID = byteArrayOf(
+          0x06, 0x09, 0x2a.toByte(), 0x86.toByte(), 0x48, 0x86.toByte(),
+          0xf7.toByte(), 0x0d, 0x01, 0x01, 0x01
+      )
+      val nullTag = byteArrayOf(0x05, 0x00)
+      val algorithmIdentifier = encodeASN1Sequence(rsaOID + nullTag)
+
+      // Build outer SEQUENCE
+      val outerSequence = algorithmIdentifier + bitStringEncoded
+      return encodeASN1Sequence(outerSequence)
+  }
+
+  private fun encodeASN1Integer(data: ByteArray): ByteArray {
+      var intData = data
+
+      // Remove leading zeros (but keep one if needed for sign)
+      while (intData.size > 1 && intData[0].toInt() == 0 && intData[1].toInt() and 0x80 == 0) {
+          intData = intData.copyOfRange(1, intData.size)
+      }
+
+      // Add leading zero if high bit is set
+      if (intData[0].toInt() and 0x80 != 0) {
+          intData = byteArrayOf(0x00) + intData
+      }
+
+      return byteArrayOf(0x02) + encodeLength(intData.size) + intData
+  }
+
+  private fun encodeASN1Sequence(data: ByteArray): ByteArray {
+      return byteArrayOf(0x30) + encodeLength(data.size) + data
+  }
+
+  private fun encodeASN1BitString(data: ByteArray): ByteArray {
+      return byteArrayOf(0x03) + encodeLength(data.size) + data
+  }
+
+  private fun encodeLength(length: Int): ByteArray {
+      return if (length < 128) {
+          byteArrayOf(length.toByte())
+      } else {
+          val lengthBytes = mutableListOf<Byte>()
+          var len = length
+          while (len > 0) {
+              lengthBytes.add(0, (len and 0xFF).toByte())
+              len = len shr 8
+          }
+          byteArrayOf((0x80 or lengthBytes.size).toByte()) + lengthBytes.toByteArray()
+      }
+  }
 }
