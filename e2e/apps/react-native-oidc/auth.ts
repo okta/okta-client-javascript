@@ -7,8 +7,8 @@ export const client = new OAuth2Client({
   baseURL: Constants?.expoConfig?.extra?.env.ISSUER,
   clientId: Constants?.expoConfig?.extra?.env.NATIVE_CLIENT_ID,
   // TODO: skip OIDC to avoid PK import errors
-  // scopes: ['openid', 'email', 'profile', 'offline_access'],
-  scopes: ['offline_access'],
+  scopes: ['openid', 'email', 'profile', 'offline_access'],
+  // scopes: ['offline_access'],
   dpop: false,
   fetchImpl: async (input: string | URL | Request, init?: RequestInit) => {
     // const { body, ...rest } = { body: undefined, ...init };

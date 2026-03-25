@@ -142,9 +142,12 @@ const verify: SubtleCrypto['verify'] = async (algorithm, key, signature, data) =
     throw new WebCryptoBridgeError('Unable to locate key');
   }
 
-  if (algorithm !== 'jwk') {
+  const alg = typeof algorithm === 'string' ? algorithm : algorithm.name;
+  if (alg !== 'RSASSA-PKCS1-v1_5') {
     throw new WebCryptoBridgeError('Unsupported algorithm');
   }
+
+  // TODO: check if `algorithm` matches the provided `key`? Is that worth it?
 
   const algorithmJson = JSON.stringify(key.algorithm);
   const signatureBytes = arrayBufferToByteArray(toArrayBuffer(signature));

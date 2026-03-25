@@ -45,6 +45,7 @@
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@babel/plugin-transform-class-static-block": "^7.28.6",
+    "@react-native-community/cli": "latest",
     "@repo/env": "*",
     "@types/react": "~19.0.10",
     "eslint": "^9.25.0",

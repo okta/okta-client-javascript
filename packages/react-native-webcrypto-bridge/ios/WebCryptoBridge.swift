@@ -4,6 +4,31 @@ import CommonCrypto
 import React
 
 
+extension String {
+  public var base64URLDecoded: String  { convertToBase64URLDecoded() }
+
+  private func convertToBase64URLDecoded() -> String {
+      var result = replacingOccurrences(of: "-", with: "+")
+          .replacingOccurrences(of: "_", with: "/")
+
+      while result.count % 4 != 0 {
+          result.append(contentsOf: "=")
+      }
+
+      return result
+  }
+}
+
+extension Data {
+  public func base64URLEncodedString() -> String {
+      var base64 = self.base64EncodedString()
+      base64 = base64.replacingOccurrences(of: "+", with: "-")
+      base64 = base64.replacingOccurrences(of: "/", with: "_")
+      base64 = base64.replacingOccurrences(of: "=", with: "")
+      return base64
+  }
+}
+
 @objc(WebCryptoBridge)
 class WebCryptoBridge: NSObject {
 
@@ -191,8 +216,8 @@ class WebCryptoBridge: NSObject {
             let modulus = extractModulus(from: keyData)
             let exponent = Data([0x01, 0x00, 0x01]) // Standard exponent (65537)
             
-            jwk["n"] = modulus.base64EncodedString()
-            jwk["e"] = exponent.base64EncodedString()
+            jwk["n"] = modulus.base64URLEncodedString()
+            jwk["e"] = exponent.base64URLEncodedString()
         }
         
         if let jsonData = try? JSONSerialization.data(withJSONObject: jwk),
@@ -217,57 +242,48 @@ class WebCryptoBridge: NSObject {
             reject("unsupported_format", "Only JWK format is supported", nil)
             return
         }
-        
+
         guard let jwkData = keyData.data(using: .utf8),
               let jwk = try? JSONSerialization.jsonObject(with: jwkData) as? [String: Any],
               jwk["kty"] as? String == "RSA" else {
             reject("invalid_jwk", "Invalid JWK format", nil)
             return
         }
-        
+
         guard let nString = jwk["n"] as? String,
               let eString = jwk["e"] as? String,
-              let modulusData = Data(base64Encoded: nString),
-              let exponentData = Data(base64Encoded: eString) else {
+              let modulusData = Data(base64Encoded: nString.base64URLDecoded),
+              let exponentData = Data(base64Encoded: eString.base64URLDecoded) else {
             reject("invalid_jwk", "Invalid JWK components", nil)
             return
         }
-        
-        // Build RSA public key data (simplified)
-        let isPrivateKey = keyUsages.contains("sign")
-        
+
         let keyId = UUID().uuidString
-        
-        // For now, reject private key import as it requires more complex handling
-        if isPrivateKey {
-            reject("not_implemented", "Private key import not yet implemented", nil)
-            return
-        }
-        
+
+        // Construct key data (simplified - proper ASN.1 encoding needed)
+        let publicKeyData = constructRSAPublicKeyData(modulus: modulusData, exponent: exponentData)
+
         // Import public key
         var error: Unmanaged<CFError>?
-        let attributes: [String: Any] = [
-            kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
-            kSecAttrKeyClass as String: kSecAttrKeyClassPublic,
-            kSecAttrKeySizeInBits as String: modulusData.count * 8
+        let attributes: [CFString: Any] = [
+            kSecAttrKeyType: kSecAttrKeyTypeRSA,
+            kSecAttrKeyClass: kSecAttrKeyClassPublic,
+            kSecAttrKeySizeInBits: NSNumber(value: publicKeyData.count * 8)
         ]
-        
-        // Construct key data (simplified - proper ASN.1 encoding needed)
-        let keyData = constructRSAPublicKeyData(modulus: modulusData, exponent: exponentData)
-        
-        guard let publicKey = SecKeyCreateWithData(keyData as CFData, attributes as CFDictionary, &error) else {
+
+        guard let publicKey = SecKeyCreateWithData(publicKeyData as NSData, attributes as NSDictionary, &error) else {
             let err = error?.takeRetainedValue()
             reject("import_failed", err?.localizedDescription ?? "Import failed", err)
             return
         }
-        
+
         Self.keyStoreLock.lock()
         Self.keyStore[keyId] = [
             "publicKey": publicKey,
             "extractable": extractable
         ]
         Self.keyStoreLock.unlock()
-        
+
         resolve(keyId)
     }
     
@@ -357,17 +373,61 @@ class WebCryptoBridge: NSObject {
     }
     
     private func constructRSAPublicKeyData(modulus: Data, exponent: Data) -> Data {
-        // Simplified RSA public key construction
-        // In production, use proper ASN.1 encoding
-        var keyData = Data()
+        // Based on Okta's Data+SigningExtensions.swift
         
-        // Add modulus
-        keyData.append(modulus)
+        var modulusBytes = [UInt8](modulus)
+        let exponentBytes = [UInt8](exponent)
         
-        // Add exponent
-        keyData.append(exponent)
+        // Make sure modulus starts with 0x00
+        if let prefix = modulusBytes.first, prefix != 0x00 {
+            modulusBytes.insert(0x00, at: 0)
+        }
         
-        return keyData
+        // Encode lengths
+        let modulusLengthOctets = encodedOctets(modulusBytes.count)
+        let exponentLengthOctets = encodedOctets(exponentBytes.count)
+        
+        // Total length
+        let totalLength = modulusLengthOctets.count + modulusBytes.count + exponentLengthOctets.count + exponentBytes.count + 2
+        let totalLengthOctets = encodedOctets(totalLength)
+        
+        // Build the data
+        var result = Data()
+        
+        // SEQUENCE tag and length
+        result.append(0x30)
+        result.append(contentsOf: totalLengthOctets)
+        
+        // INTEGER tag, length, and modulus
+        result.append(0x02)
+        result.append(contentsOf: modulusLengthOctets)
+        result.append(contentsOf: modulusBytes)
+        
+        // INTEGER tag, length, and exponent
+        result.append(0x02)
+        result.append(contentsOf: exponentLengthOctets)
+        result.append(contentsOf: exponentBytes)
+        
+        return result
+    }
+
+    private func encodedOctets(_ length: Int) -> [UInt8] {
+        // Short form
+        if length < 128 {
+            return [UInt8(length)]
+        }
+        
+        // Long form
+        let index = (length / 256) + 1
+        var len = length
+        var result: [UInt8] = [UInt8(index + 0x80)]
+        
+        for _ in 0..<index {
+            result.insert(UInt8(len & 0xFF), at: 1)
+            len = len >> 8
+        }
+        
+        return result
     }
 }
 
