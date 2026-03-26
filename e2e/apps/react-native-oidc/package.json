@@ -15,7 +15,7 @@
     "@expo/vector-icons": "^15.0.3",
     "@okta/auth-foundation": "*",
     "@okta/oauth2-flows": "*",
-    "@okta/react-native-webcrypto-bridge": "*",
+    "@okta/react-native-platform": "*",
     "expo": "^54.0.0",
     "expo-blur": "~15.0.7",
     "expo-constants": "~18.0.10",

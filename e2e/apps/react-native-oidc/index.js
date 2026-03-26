@@ -1,11 +1,7 @@
 import '@expo/metro-runtime';
 import 'expo-router/entry';
 
-import '@okta/auth-foundation';
-import { Platform } from '@okta/auth-foundation';
-
-// Install WebCrypto polyfill
-import { installWebCryptoPolyfill } from '@okta/react-native-webcrypto-bridge';
+import { Platform, installWebCryptoPolyfill } from '@okta/react-native-platform';
 installWebCryptoPolyfill();
 
 console.log('Plat', Platform, Platform.TimeCoordinator)
