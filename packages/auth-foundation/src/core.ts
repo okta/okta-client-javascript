@@ -2,7 +2,6 @@
  * @module Core
  */
 
-
 // types
 export * from './types/index.ts';
 
