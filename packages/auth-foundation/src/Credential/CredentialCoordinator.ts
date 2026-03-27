@@ -247,7 +247,12 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
   }
 
   protected async loadDefaultCredential (): Promise<Credential | null> {
-    const defaultTokenId = this.tokenStorage.defaultTokenId;
+    let defaultTokenId = this.tokenStorage.defaultTokenId;
+    if (defaultTokenId === undefined) {
+      // `undefined` value indicates storage (source-of-truth) hasn't been checked yet
+      // the value should only be `undefined` at bootstrapping time
+      defaultTokenId = await this.tokenStorage.loadDefaultTokenId();
+    }
     if (!defaultTokenId) {
       return null;
     }

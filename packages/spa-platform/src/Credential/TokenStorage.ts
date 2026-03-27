@@ -62,6 +62,10 @@ export class BrowserTokenStorage implements TokenStorage {
     return `${this.tokenPrefix}:v2:${id}`;
   }
 
+  async loadDefaultTokenId (): Promise<string | null> {
+    return this.defaultTokenId;
+  }
+
   async setDefaultTokenId (id: string | null): Promise<void> {
     if (id === this.defaultTokenId) {
       return;

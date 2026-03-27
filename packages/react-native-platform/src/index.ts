@@ -26,3 +26,7 @@ Platform.registerDefaultsLoader(() => PlatformDefaults);
 
 import { installWebCryptoPolyfill } from '@okta/react-native-webcrypto-bridge';
 export { installWebCryptoPolyfill };
+import { ReactNativeTokenStorage } from './Credential/TokenStorage.ts';
+import { Credential } from '@okta/auth-foundation/core';
+// @ts-ignore
+Credential.coordinator.tokenStorage = ReactNativeTokenStorage;
