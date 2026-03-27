@@ -92,6 +92,8 @@ export class FetchClient<E extends APIClient.Events = APIClient.Events> extends 
       await this.prepareAcrStepUpRetry(response, request, wwwAuthError);
     }
 
+    // TODO: clear token???
+
     // super.send() will sign call .authorize()
   }
 

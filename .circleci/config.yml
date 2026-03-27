@@ -20,7 +20,7 @@ executors:
     resource_class: m4pro.medium
 
 jobs:
-  test-android:
+  test-rn-webcrypto-android:
     executor:
       name: android/android_machine
       resource_class: large
@@ -52,7 +52,7 @@ jobs:
           path: packages/react-native-webcrypto-bridge/android/build/reports
           destination: android-test-reports
 
-  test-ios:
+  test-rn-webcrypto-ios:
     executor: macos
     steps:
       - checkout
@@ -80,9 +80,71 @@ jobs:
           path: packages/react-native-webcrypto-bridge/ios/.build
           destination: ios-build-artifacts
 
+  test-rn-platform-android:
+    executor:
+      name: android/android_machine
+      resource_class: large
+      tag: default
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - gradle-rn-platform-{{ checksum "packages/react-native-platform/android/build.gradle" }}
+            - gradle-rn-platform-
+
+      - run:
+          name: Run React Native Platform Android Tests
+          command: |
+            cd packages/react-native-platform/android
+            ./gradlew testDebugUnitTest --info
+
+      - save_cache:
+          key: gradle-rn-platform-{{ checksum "packages/react-native-platform/android/build.gradle" }}
+          paths:
+            - ~/.gradle
+            - .gradle
+
+      - store_test_results:
+          path: packages/react-native-platform/android/build/test-results
+
+      - store_artifacts:
+          path: packages/react-native-platform/android/build/reports
+          destination: react-native-platform-android-test-reports
+
+  test-rn-platform-ios:
+    executor: macos
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - swift-spm-rn-platform-{{ checksum "packages/react-native-platform/ios/Package.swift" }}
+            - swift-spm-rn-platform-
+
+      - run:
+          name: Run React Native Platform iOS Tests
+          command: |
+            cd packages/react-native-platform/ios
+            swift test --verbose
+
+      - save_cache:
+          key: swift-spm-rn-platform-{{ checksum "packages/react-native-platform/ios/Package.swift" }}
+          paths:
+            - packages/react-native-platform/ios/.build
+
+      - store_test_results:
+          path: packages/react-native-platform/ios/.build/test-results
+
+      - store_artifacts:
+          path: packages/react-native-platform/ios/.build
+          destination: react-native-platform-ios-build-artifacts
+
 workflows:
   version: 2
   build_and_test:
     jobs:
-      - test-android
-      - test-ios
+      - test-rn-webcrypto-android
+      - test-rn-webcrypto-ios
+      - test-rn-platform-android
+      - test-rn-platform-ios
