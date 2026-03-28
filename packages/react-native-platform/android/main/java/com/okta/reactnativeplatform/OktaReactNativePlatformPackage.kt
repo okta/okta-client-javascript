@@ -1,4 +1,4 @@
-package com.reactnative
+package com.okta.reactnative
 
 import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule

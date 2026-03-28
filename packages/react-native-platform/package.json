@@ -21,7 +21,7 @@
     "./cpp",
     "*.md",
     "package.json",
-    "react-native-webcrypto-bridge.podspec"
+    "react-native-platform.podspec"
   ],
   "exports": {
     ".": {
@@ -72,6 +72,14 @@
       "name": "yarn",
       "version": ">=1.19.0",
       "onFail": "warn"
+    }
+  },
+  "codegenConfig": {
+    "name": "RNTokenStorageSpec",
+    "type": "modules",
+    "jsSrcsDir": "src/specs",
+    "android": {
+      "javaPackageName": "com.okta.reactnativeplatform"
     }
   }
 }

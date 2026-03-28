@@ -7,19 +7,25 @@ class TokenStorageBridge: NSObject {
     
     private static let SERVICE_TOKENS = "com.okta.auth-foundation.tokens"
     private static let SERVICE_METADATA = "com.okta.auth-foundation.metadata"
-    private static let DEFAULT_TOKEN_KEY = "okta-default-token"
+    private static let SERVICE_DEFAULT = "com.okta.auth-foundation.default"
     
     @objc
     static func requiresMainQueueSetup() -> Bool {
         return false
     }
     
-    // MARK: - Token Operations (Secure Storage - Keychain)
+    // MARK: - Token Operations (Secure Storage - Keychain with strict access)
     
     @objc
     func saveToken(_ id: String, tokenData: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
-            try KeychainHelper.save(service: Self.SERVICE_TOKENS, key: id, value: tokenData)
+            // More restrictive: requires device unlock
+            try KeychainHelper.save(
+                service: Self.SERVICE_TOKENS,
+                key: id,
+                value: tokenData,
+                accessibility: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+            )
             resolve(nil)
         } catch {
             reject("token_save_error", "Failed to save token", error)
@@ -40,7 +46,7 @@ class TokenStorageBridge: NSObject {
     func removeToken(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             try KeychainHelper.delete(service: Self.SERVICE_TOKENS, key: id)
-            UserDefaults.standard.removeObject(forKey: metadataKey(id))
+            try KeychainHelper.delete(service: Self.SERVICE_METADATA, key: id)
             resolve(nil)
         } catch {
             reject("token_remove_error", "Failed to remove token", error)
@@ -62,55 +68,80 @@ class TokenStorageBridge: NSObject {
         do {
             try KeychainHelper.clearAll(service: Self.SERVICE_TOKENS)
             try KeychainHelper.clearAll(service: Self.SERVICE_METADATA)
-            UserDefaults.standard.removeObject(forKey: Self.DEFAULT_TOKEN_KEY)
+            try KeychainHelper.clearAll(service: Self.SERVICE_DEFAULT)
             resolve(nil)
         } catch {
             reject("token_clear_error", "Failed to clear tokens", error)
         }
     }
     
-    // MARK: - Metadata Operations (Regular Storage - UserDefaults)
+    // MARK: - Metadata Operations (Keychain with relaxed access)
     
     @objc
     func saveMetadata(_ id: String, metadataData: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        UserDefaults.standard.set(metadataData, forKey: metadataKey(id))
-        resolve(nil)
+        do {
+            // Less restrictive: accessible after first unlock (survives reboots)
+            try KeychainHelper.save(
+                service: Self.SERVICE_METADATA,
+                key: id,
+                value: metadataData,
+                accessibility: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            )
+            resolve(nil)
+        } catch {
+            reject("metadata_save_error", "Failed to save metadata", error)
+        }
     }
     
     @objc
     func getMetadata(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        let value = UserDefaults.standard.string(forKey: metadataKey(id))
-        resolve(value)
+        do {
+            let value = try KeychainHelper.load(service: Self.SERVICE_METADATA, key: id)
+            resolve(value)
+        } catch {
+            resolve(nil)
+        }
     }
     
     @objc
     func removeMetadata(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        UserDefaults.standard.removeObject(forKey: metadataKey(id))
-        resolve(nil)
+        do {
+            try KeychainHelper.delete(service: Self.SERVICE_METADATA, key: id)
+            resolve(nil)
+        } catch {
+            reject("metadata_remove_error", "Failed to remove metadata", error)
+        }
     }
     
-    // MARK: - Default Token ID
+    // MARK: - Default Token ID (Keychain with relaxed access)
     
     @objc
     func setDefaultTokenId(_ id: String?, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        if let id = id {
-            UserDefaults.standard.set(id, forKey: Self.DEFAULT_TOKEN_KEY)
-        } else {
-            UserDefaults.standard.removeObject(forKey: Self.DEFAULT_TOKEN_KEY)
+        do {
+            if let id = id {
+                try KeychainHelper.save(
+                    service: Self.SERVICE_DEFAULT,
+                    key: "default",
+                    value: id,
+                    accessibility: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+                )
+            } else {
+                try KeychainHelper.delete(service: Self.SERVICE_DEFAULT, key: "default")
+            }
+            resolve(nil)
+        } catch {
+            reject("default_token_error", "Failed to set default token ID", error)
         }
-        resolve(nil)
     }
     
     @objc
     func getDefaultTokenId(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
-        let value = UserDefaults.standard.string(forKey: Self.DEFAULT_TOKEN_KEY)
-        resolve(value)
-    }
-    
-    // MARK: - Helpers
-    
-    private func metadataKey(_ id: String) -> String {
-        return "metadata:\(id)"
+        do {
+            let value = try KeychainHelper.load(service: Self.SERVICE_DEFAULT, key: "default")
+            resolve(value)
+        } catch {
+            resolve(nil)
+        }
     }
 }
 
@@ -118,7 +149,12 @@ class TokenStorageBridge: NSObject {
 
 class KeychainHelper {
     
-    static func save(service: String, key: String, value: String) throws {
+    static func save(
+        service: String,
+        key: String,
+        value: String,
+        accessibility: CFString
+    ) throws {
         let data = value.data(using: .utf8)!
         
         let query: [String: Any] = [
@@ -126,7 +162,7 @@ class KeychainHelper {
             kSecAttrService as String: service,
             kSecAttrAccount as String: key,
             kSecValueData as String: data,
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            kSecAttrAccessible as String: accessibility
         ]
         
         // Delete existing item first

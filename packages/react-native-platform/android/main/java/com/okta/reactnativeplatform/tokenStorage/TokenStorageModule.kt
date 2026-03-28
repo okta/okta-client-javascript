@@ -1,4 +1,4 @@
-package com.reactnativeplatform
+package com.okta.reactnativeplatform
 
 import android.content.Context
 import android.content.SharedPreferences

@@ -52,4 +52,6 @@ repositories {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'com.facebook.react:react-native:+'
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+
 }
