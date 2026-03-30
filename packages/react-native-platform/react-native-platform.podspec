@@ -14,6 +14,11 @@ Pod::Spec.new do |s|
   s.source       = { :git => "https://github.com/okta/okta-client-javascript.git", :tag => "v#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,mm,swift}"
+
+  s.pod_target_xcconfig = {
+    'DEFINES_MODULE' => 'YES',
+    'SWIFT_COMPILATION_MODE' => 'wholemodule'
+  }
   
   s.dependency "React-Core"
   

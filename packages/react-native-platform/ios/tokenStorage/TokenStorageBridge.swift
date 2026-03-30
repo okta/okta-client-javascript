@@ -3,7 +3,22 @@ import Security
 import React
 
 @objc(TokenStorageBridge)
-class TokenStorageBridge: NSObject {
+class TokenStorageBridge: NSObject, RCTBridgeModule {
+    
+    override init() {
+            super.init()
+            print("✅ TokenStorageBridge initialized!")
+            // Debug: Print all methods
+            let methodCount = UnsafeMutablePointer<UInt32>.allocate(capacity: 1)
+            let methods = class_copyMethodList(type(of: self), methodCount)
+            print("📋 TokenStorageBridge methods:")
+            for i in 0..<Int(methodCount.pointee) {
+                if let method = methods?[i] {
+                    print("  - \(NSStringFromSelector(method_getName(method)))")
+                }
+            }
+            free(methods)
+        }
     
     private static let SERVICE_TOKENS = "com.okta.auth-foundation.tokens"
     private static let SERVICE_METADATA = "com.okta.auth-foundation.metadata"
@@ -13,10 +28,15 @@ class TokenStorageBridge: NSObject {
     static func requiresMainQueueSetup() -> Bool {
         return false
     }
+
+    @objc
+    static func moduleName() -> String! {
+        return "TokenStorageBridge"
+    }
     
     // MARK: - Token Operations (Secure Storage - Keychain with strict access)
     
-    @objc
+    @objc(saveToken:tokenData:resolve:reject:)
     func saveToken(_ id: String, tokenData: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             // More restrictive: requires device unlock
@@ -32,7 +52,7 @@ class TokenStorageBridge: NSObject {
         }
     }
     
-    @objc
+    @objc(saveToken:resolve:reject:)
     func getToken(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             let value = try KeychainHelper.load(service: Self.SERVICE_TOKENS, key: id)
@@ -42,7 +62,7 @@ class TokenStorageBridge: NSObject {
         }
     }
     
-    @objc
+    @objc(removeToken:resolve:reject:)
     func removeToken(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             try KeychainHelper.delete(service: Self.SERVICE_TOKENS, key: id)
@@ -53,7 +73,7 @@ class TokenStorageBridge: NSObject {
         }
     }
     
-    @objc
+    @objc(getAllTokenIds:reject:)
     func getAllTokenIds(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             let keys = try KeychainHelper.allKeys(service: Self.SERVICE_TOKENS)
@@ -63,7 +83,7 @@ class TokenStorageBridge: NSObject {
         }
     }
     
-    @objc
+    @objc(clearTokens:reject:)
     func clearTokens(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             try KeychainHelper.clearAll(service: Self.SERVICE_TOKENS)
@@ -77,7 +97,7 @@ class TokenStorageBridge: NSObject {
     
     // MARK: - Metadata Operations (Keychain with relaxed access)
     
-    @objc
+    @objc(saveMetadata:metadataData:resolve:reject:)
     func saveMetadata(_ id: String, metadataData: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             // Less restrictive: accessible after first unlock (survives reboots)
@@ -93,7 +113,7 @@ class TokenStorageBridge: NSObject {
         }
     }
     
-    @objc
+    @objc(getMetadata:resolve:reject:)
     func getMetadata(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             let value = try KeychainHelper.load(service: Self.SERVICE_METADATA, key: id)
@@ -103,7 +123,7 @@ class TokenStorageBridge: NSObject {
         }
     }
     
-    @objc
+    @objc(removeMetadata:resolve:reject:)
     func removeMetadata(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             try KeychainHelper.delete(service: Self.SERVICE_METADATA, key: id)
@@ -115,7 +135,7 @@ class TokenStorageBridge: NSObject {
     
     // MARK: - Default Token ID (Keychain with relaxed access)
     
-    @objc
+    @objc(setDefaultTokenId:resolve:reject:)
     func setDefaultTokenId(_ id: String?, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             if let id = id {
@@ -134,7 +154,7 @@ class TokenStorageBridge: NSObject {
         }
     }
     
-    @objc
+    @objc(getDefaultTokenId:reject:)
     func getDefaultTokenId(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             let value = try KeychainHelper.load(service: Self.SERVICE_DEFAULT, key: "default")

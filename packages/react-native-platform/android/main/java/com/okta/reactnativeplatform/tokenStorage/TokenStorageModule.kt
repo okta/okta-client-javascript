@@ -6,14 +6,18 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.facebook.react.bridge.*
 
+@ReactModule(name = TokenStorageModule.NAME)
 class TokenStorageModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     companion object {
+       const val NAME = "TokenStorageBridge"
         private const val PREFS_TOKENS = "okta_tokens"
         private const val PREFS_METADATA = "okta_metadata"
         private const val DEFAULT_TOKEN_KEY = "okta-default-token"
     }
+
+    override fun getName(): String = NAME
 
     private val masterKey = MasterKey.Builder(reactContext)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)

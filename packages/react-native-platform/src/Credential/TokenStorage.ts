@@ -10,7 +10,14 @@ import {
   EventEmitter,
   CredentialError
 } from '@okta/auth-foundation/core';
+// import NativeTokenStorage from '../specs/NativeTokenStorageBridge.ts';
+
+console.log('EventEmitter:', EventEmitter);
+console.log('Token:', Token);
+console.log('CredentialError:', CredentialError);
+
 import NativeTokenStorage from '../specs/NativeTokenStorageBridge.ts';
+console.log('NativeTokenStorage:', NativeTokenStorage);
 
 /**
  * React Native implementation of TokenStorage

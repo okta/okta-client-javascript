@@ -34,16 +34,11 @@ RCT_EXTERN_METHOD(removeMetadata:(NSString *)id
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 
-RCT_EXTERN_METHOD(setDefaultTokenId:(NSString *)id
+RCT_EXTERN_METHOD(setDefaultTokenId:(nullable NSString *)id
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(getDefaultTokenId:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
-
-+ (BOOL)requiresMainQueueSetup
-{
-  return NO;
-}
 
 @end
