@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, Button } from 'react-native';
 import { Image } from 'expo-image';
 import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import { useAuth } from '@/hooks/useAuth';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -11,43 +12,13 @@ import { HelloWave } from '@/components/HelloWave';
 
 
 export default function LoginScreen () {
-  const { signIn } = useAuth();
-  const [ authError, setAuthError ] = useState<Error | null>(null);
+  const router = useRouter();
+  const { signIn, signOut } = useAuth();
 
-  const signInFunc = useCallback(async () => {
-    try {
-      await signIn('/(login)/token');
-    }
-    catch (err) {
-      setAuthError(err as Error);
-    }
-  }, [signIn, setAuthError]);
-
-  useEffect(() => {
-    (async () => {
-      await signInFunc();
-    })();
-  }, [signInFunc]);
-
-  let view  = (
-    <>
-      <ThemedText type="title">Loading...</ThemedText>
-      <HelloWave />
-    </>
-  );
-
-  if (authError) {
-    view = (
-      <>
-        <ThemedText type="title">Error</ThemedText>
-        <ThemedText type="default">{authError.message}</ThemedText>
-        <Button
-          title="Login"
-          onPress={() => { setAuthError(null); signInFunc(); }}
-        />
-      </>
-    );
-  }
+  const signInFn = useCallback(async () => {
+    const id = await signIn();
+    router.navigate(`(login)/token/${id}`);
+  }, [signIn]);
 
   return (
     <ParallaxScrollView
@@ -59,7 +30,16 @@ export default function LoginScreen () {
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        {view}
+        <Button
+          title="Request Token"
+          onPress={() => signInFn()}
+        />
+      </ThemedView>
+      <ThemedView style={styles.titleContainer}>
+        <Button
+          title="Logout"
+          onPress={async () => await signOut('/(tabs)')}
+        />
       </ThemedView>
     </ParallaxScrollView>
   );

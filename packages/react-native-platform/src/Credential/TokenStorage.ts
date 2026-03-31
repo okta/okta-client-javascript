@@ -147,7 +147,7 @@ export class ReactNativeTokenStorage implements TokenStorage {
 
     console.log('token', token);
 
-    return new Token(token);
+    return new Token({ id, ...token });
   }
 
   async getMetadata (id: string): Promise<Token.Metadata | null> {

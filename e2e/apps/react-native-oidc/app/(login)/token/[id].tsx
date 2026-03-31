@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import Constants from 'expo-constants';
 import { Credential, Token } from '@okta/react-native-platform';
 
@@ -14,8 +14,10 @@ import { HelloWave } from '@/components/HelloWave';
 export default function TokenScreen () {
   const router = useRouter();
   const [token, setToken] = useState<Token | null>(null);
+  const params = useLocalSearchParams<{ id: string; }>();
 
   useEffect(() => {
+    console.log('params: ', params);
     (async () => {
       console.log('token.tsx useEffect')
       try {

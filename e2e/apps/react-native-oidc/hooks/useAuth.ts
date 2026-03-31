@@ -15,42 +15,41 @@ import { client } from '@/auth';
 async function performSignIn () {
   console.log('performSignIn called');
 
-  const credential = await Credential.getDefault();
+  let credential = await Credential.getDefault();
   console.log('performSignIn default cred', credential);
-  if (credential) {
-    console.log('default cred found, exitting...');
-    return;
+  if (!credential) {
+    try {
+      console.log('here 1')
+      // TODO: move to env
+      const flow = new AuthorizationCodeFlow(client, {
+        redirectUri: 'com.oktapreview.jperreault-test:/callback'
+      });
+  
+      // TODO: improve this pattern, too awkward
+      // .save was migrated away from AuthCodeFlow
+      const uri = await flow.start();
+      console.log('here 2')
+      console.log('authorize url', uri);
+  
+      // @ts-ignore
+      const transaction = new AuthTransaction(flow.context);
+      await transaction.save();
+      const result = await openAuthSessionAsync(uri.href, 'com.oktapreview.jperreault-test:/callback');
+      console.log('result: ', result)
+      // @ts-ignore
+      const { token, context } = await flow.resume(result.url);
+      console.log('token', token);
+      console.log('context', context);
+      credential = await Credential.store(token);
+    }
+    catch (err) {
+      console.log('here 3');
+      console.log(err, (err as Error)?.stack);
+      throw err;
+    }
   }
 
-  try {
-    console.log('here 1')
-    // TODO: move to env
-    const flow = new AuthorizationCodeFlow(client, {
-      redirectUri: 'com.oktapreview.jperreault-test:/callback'
-    });
-
-    // TODO: improve this pattern, too awkward
-    // .save was migrated away from AuthCodeFlow
-    const uri = await flow.start();
-    console.log('here 2')
-    console.log('authorize url', uri);
-
-    // @ts-ignore
-    const transaction = new AuthTransaction(flow.context);
-    await transaction.save();
-    const result = await openAuthSessionAsync(uri.href, 'com.oktapreview.jperreault-test:/callback');
-    console.log('result: ', result)
-    // @ts-ignore
-    const { token, context } = await flow.resume(result.url);
-    console.log('token', token);
-    console.log('context', context);
-    Credential.store(token);
-  }
-  catch (err) {
-    console.log('here 3');
-    console.log(err, (err as Error)?.stack);
-    throw err;
-  }
+  return credential.id;
 }
 
 // TODO: cannot use oidc logout as openid is not a request scope currently
@@ -71,10 +70,9 @@ async function performSignOut () {
 export function useAuth () {
   const router = useRouter();
 
-  const signIn = useCallback(async (redirectTo: Parameters<Router['navigate']>[0]) => {
-    // Credential.clear();
-    await performSignIn();
-    router.navigate(redirectTo);
+  const signIn = useCallback(async () => {
+    const id = await performSignIn();
+    return id;
   }, [router]);
 
   const signOut = useCallback(async (redirectTo: Parameters<Router['navigate']>[0]) => {
