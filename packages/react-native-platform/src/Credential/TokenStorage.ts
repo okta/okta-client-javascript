@@ -17,7 +17,7 @@ console.log('Token:', Token);
 console.log('CredentialError:', CredentialError);
 
 import NativeTokenStorage from '../specs/NativeTokenStorageBridge.ts';
-console.log('NativeTokenStorage:', NativeTokenStorage);
+console.log('NativeTokenStorage:', NativeTokenStorage, Object.keys(NativeTokenStorage));
 
 /**
  * React Native implementation of TokenStorage
@@ -68,6 +68,7 @@ export class ReactNativeTokenStorage implements TokenStorage {
   }
 
   async add (token: Token, metadata?: Token.Metadata): Promise<void> {
+    console.log('add called', token);
     metadata ??= Token.Metadata(token);
     if (token.id !== metadata.id) {
       throw new CredentialError('metadataConsistency');
@@ -119,6 +120,7 @@ export class ReactNativeTokenStorage implements TokenStorage {
 
   async get (id: string): Promise<Token | null> {
     const raw = await NativeTokenStorage.getToken(id);
+    console.log('get called', id, raw);
 
     if (!raw) {
       return null;
@@ -142,6 +144,8 @@ export class ReactNativeTokenStorage implements TokenStorage {
     if (metadata) {
       token.context = Token.extractContext(metadata);
     }
+
+    console.log('token', token);
 
     return new Token(token);
   }

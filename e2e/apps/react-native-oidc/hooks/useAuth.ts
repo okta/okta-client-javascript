@@ -13,6 +13,15 @@ import { client } from '@/auth';
 
 
 async function performSignIn () {
+  console.log('performSignIn called');
+
+  const credential = await Credential.getDefault();
+  console.log('performSignIn default cred', credential);
+  if (credential) {
+    console.log('default cred found, exitting...');
+    return;
+  }
+
   try {
     console.log('here 1')
     // TODO: move to env
@@ -63,7 +72,7 @@ export function useAuth () {
   const router = useRouter();
 
   const signIn = useCallback(async (redirectTo: Parameters<Router['navigate']>[0]) => {
-    Credential.clear();
+    // Credential.clear();
     await performSignIn();
     router.navigate(redirectTo);
   }, [router]);

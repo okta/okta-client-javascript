@@ -12,23 +12,17 @@ import { ThemedView } from '@/components/ThemedView';
 import { HelloWave } from '@/components/HelloWave';
 
 
-export default function TokenScreen () {
+export default function CredentialsScreen () {
   const router = useRouter();
   const { signOut } = useAuth();
-  const [token, setToken] = useState<Token | null>(null);
+  const [credentialIDs, setCredentialIDs] = useState<string[]>([]);
 
   useEffect(() => {
     (async () => {
-      console.log('token.tsx useEffect')
+      console.log('credentials.tsx useEffect')
       try {
-        const credential = await Credential.getDefault();
-        console.log('default cred: ', credential);
-        if (credential) {
-          setToken(credential.token);
-        }
-        else {
-          router.navigate('/(login)');
-        }
+        const allIds = await Credential.allIDs();
+        setCredentialIDs(allIds);
       }
       catch (err) {
         console.log('error');
@@ -36,7 +30,7 @@ export default function TokenScreen () {
         throw err;
       }
     })();
-  }, [router, token, setToken]);
+  }, [router, setCredentialIDs]);
 
   let body = (
     <ThemedView style={styles.titleContainer}>
@@ -45,28 +39,18 @@ export default function TokenScreen () {
     </ThemedView>
   );
 
-  if (token) {
+  if (credentialIDs.length > 0) {
    body = (
-    <>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Token</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Access Token</ThemedText>
-        <ThemedText>{token.accessToken}</ThemedText>
-        <ThemedText type="subtitle">ID Token</ThemedText>
-        <ThemedText>{token?.idToken?.rawValue}</ThemedText>
-        <ThemedText type="subtitle">Refresh Token</ThemedText>
-        <ThemedText>{token?.refreshToken}</ThemedText>
-      </ThemedView>
-      <ThemedView>
-      <Button
-          title="Logout"
-          onPress={async () => await signOut('/(tabs)')}
-        />
-      </ThemedView>
-    </>
+      <>
+        <ThemedView style={styles.titleContainer}>
+          <ThemedText type="title">Credentials</ThemedText>
+        </ThemedView>
+        {credentialIDs.map((id) => (
+          <ThemedView key={id} style={styles.stepContainer}>
+            <ThemedText type="subtitle">{id}</ThemedText>
+          </ThemedView>
+        ))}
+      </>
    );
   }
 

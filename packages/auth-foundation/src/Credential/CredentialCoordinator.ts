@@ -47,7 +47,7 @@ export interface CredentialCoordinator {
    */
   getDefault (): Promise<Credential | null>;
   setDefault (cred: Credential | null): Promise<void>;
-  get tokenStorage (): TokenStorage;
+  tokenStorage: TokenStorage;
   /**
    * Writes the provided {@link Token.Token | Token} (and {@link Token.Token.Metadata:TYPE | Token.Metadata}) to storage and creates a {@link Credential}
    * instance to represent the {@link Token.Token | Token} via the {@link CredentialDataSource}

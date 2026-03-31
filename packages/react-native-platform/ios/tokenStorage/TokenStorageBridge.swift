@@ -3,7 +3,7 @@ import Security
 import React
 
 @objc(TokenStorageBridge)
-class TokenStorageBridge: NSObject, RCTBridgeModule {
+class TokenStorageBridge: NSObject {
     
     override init() {
             super.init()
@@ -34,6 +34,13 @@ class TokenStorageBridge: NSObject, RCTBridgeModule {
         return "TokenStorageBridge"
     }
     
+    @objc
+    func constantsToExport() -> [String: Any]! {
+        return [
+            "isAvailable": true
+        ]
+    }
+    
     // MARK: - Token Operations (Secure Storage - Keychain with strict access)
     
     @objc(saveToken:tokenData:resolve:reject:)
@@ -52,7 +59,7 @@ class TokenStorageBridge: NSObject, RCTBridgeModule {
         }
     }
     
-    @objc(saveToken:resolve:reject:)
+    @objc(getToken:resolve:reject:)
     func getToken(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             let value = try KeychainHelper.load(service: Self.SERVICE_TOKENS, key: id)

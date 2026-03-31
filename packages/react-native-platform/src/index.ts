@@ -22,11 +22,15 @@ import { Platform } from '@okta/auth-foundation/core';
 // eslint-disable-next-line no-restricted-imports
 import { PlatformDefaults } from './platform/defaults.ts';
 
+// Register the React Native Platform default singleton dependencies
 Platform.registerDefaultsLoader(() => PlatformDefaults);
 
+// Install the React Native WebCrypto Bridge Polyfill
 import { installWebCryptoPolyfill } from '@okta/react-native-webcrypto-bridge';
 export { installWebCryptoPolyfill };
+installWebCryptoPolyfill();
+
+// Override TokenStorage to use React Native Storage Bridge
 import { ReactNativeTokenStorage } from './Credential/TokenStorage.ts';
 import { Credential } from '@okta/auth-foundation/core';
-// @ts-ignore
-Credential.coordinator.tokenStorage = ReactNativeTokenStorage;
+Credential.coordinator.tokenStorage = new ReactNativeTokenStorage();

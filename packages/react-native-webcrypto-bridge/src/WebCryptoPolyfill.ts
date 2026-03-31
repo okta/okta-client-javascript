@@ -7,6 +7,13 @@
 import NativeWebCryptoBridge from './NativeWebCryptoBridge.ts';
 import { WebCryptoBridgeError } from './lib.ts';
 
+console.log('NativeWebCryptoBridge', NativeWebCryptoBridge);
+
+console.log('NativeWebCryptoBridge:', NativeWebCryptoBridge);
+console.log('NativeWebCryptoBridge methods:', Object.keys(NativeWebCryptoBridge || {}));
+console.log('NativeWebCryptoBridge getOwnPropertyNames:', Object.getOwnPropertyNames(NativeWebCryptoBridge || {}));
+
+
 // NOTE: Does not use `buf` or `b64` from `auth-foundation` because converting
 // to a byte array (number[]) makes the bridge code much simplier and avoids
 // doing any string encoding in the native code
