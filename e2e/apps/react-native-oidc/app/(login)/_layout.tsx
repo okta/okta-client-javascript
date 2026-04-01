@@ -37,14 +37,14 @@ export default function TabLayout() {
         name="credentials"
         options={{
           title: 'Creds',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
         }}
       />
       <Tabs.Screen
-        name="token"
+        name="token/[id]"
         options={{
           title: 'Token',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="lock.document.fill" color={color} />,
         }}
       />
     </Tabs>

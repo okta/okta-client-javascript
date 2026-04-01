@@ -16,8 +16,9 @@ export default function TokenScreen () {
   const [token, setToken] = useState<Token | null>(null);
   const params = useLocalSearchParams<{ id: string; }>();
 
+  console.log('params: ', params);
+
   useEffect(() => {
-    console.log('params: ', params);
     (async () => {
       console.log('token.tsx useEffect')
       try {

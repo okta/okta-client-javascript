@@ -17,7 +17,7 @@ export default function LoginScreen () {
 
   const signInFn = useCallback(async () => {
     const id = await signIn();
-    router.navigate(`(login)/token/${id}`);
+    router.navigate(`(login)/(token)/${id}`);
   }, [signIn]);
 
   return (

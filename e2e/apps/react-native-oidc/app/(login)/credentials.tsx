@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
@@ -9,10 +9,14 @@ import { useAuth } from '@/hooks/useAuth';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
+import { IconSymbol } from '@/components/ui/IconSymbol';
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
 import { HelloWave } from '@/components/HelloWave';
 
 
 export default function CredentialsScreen () {
+  const theme = useColorScheme() ?? 'light';
   const router = useRouter();
   const { signOut } = useAuth();
   const [credentialIDs, setCredentialIDs] = useState<string[]>([]);
@@ -47,7 +51,13 @@ export default function CredentialsScreen () {
         </ThemedView>
         {credentialIDs.map((id) => (
           <ThemedView key={id} style={styles.stepContainer}>
-            <ThemedText type="subtitle">{id}</ThemedText>
+            <Pressable>
+              <ThemedText type="defaultSemiBold">{id}</ThemedText>
+              <IconSymbol
+                name="eye"
+                color={theme === 'light' ? Colors.light.icon : Colors.dark.icon} 
+              />
+            </Pressable>
           </ThemedView>
         ))}
       </>
