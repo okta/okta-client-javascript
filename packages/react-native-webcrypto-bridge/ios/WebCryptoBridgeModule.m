@@ -3,7 +3,7 @@
 @interface RCT_EXTERN_MODULE(WebCryptoBridge, NSObject)
 
 RCT_EXTERN_METHOD(digest:(NSString *)algorithm
-                  data:(NSArray *)data
+                  data:(NSString *)data
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 
@@ -29,14 +29,14 @@ RCT_EXTERN_METHOD(importKey:(NSString *)format
 
 RCT_EXTERN_METHOD(sign:(NSString *)algorithm
                   keyId:(NSString *)keyId
-                  data:(NSArray *)data
+                  data:(NSString *)data
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 
 RCT_EXTERN_METHOD(verify:(NSString *)algorithm
                   keyId:(NSString *)keyId
-                  signature:(NSArray *)signature
-                  data:(NSArray *)data
+                  signature:(NSString *)signature
+                  data:(NSString *)data
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 

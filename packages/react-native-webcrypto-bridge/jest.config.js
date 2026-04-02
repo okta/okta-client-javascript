@@ -6,8 +6,8 @@ const config = {
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   testMatch: [
-    '**/__tests__/**/*.test.ts',
-    '**/__tests__/**/*.test.tsx',
+    '<rootDir>/test/spec/**/*.spec.ts',
+    '<rootDir>/test/spec/**/*.spec.tsx',
   ],
   transform: {
     '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
@@ -15,7 +15,7 @@ const config = {
   transformIgnorePatterns: [
     'node_modules/(?!(react-native|@react-native|@okta)/)',
   ],
-  setupFiles: ['<rootDir>/jest.setup.js'],
+  setupFiles: ['<rootDir>/test/jest.setup.js'],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
     '!src/**/__tests__/**',

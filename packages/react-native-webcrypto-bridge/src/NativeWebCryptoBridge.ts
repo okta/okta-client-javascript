@@ -4,9 +4,11 @@ import { TurboModuleRegistry } from 'react-native';
 
 export interface Spec extends TurboModule {
   /**
-   * Generate SHA-256 digest (async)
+   * Generate SHA-256 digest (async).
+   * @param data - Standard Base64-encoded input data
+   * @returns Standard Base64-encoded digest
    */
-  digest(algorithm: string, data: number[]): Promise<number[]>;
+  digest(algorithm: string, data: string): Promise<string>;
 
   /**
    * Generate RSA key pair (async)
@@ -34,24 +36,30 @@ export interface Spec extends TurboModule {
   ): Promise<string>;
 
   /**
-   * Sign data with a private key (async)
+   * Sign data with a private key (async).
+   * @param data - Standard Base64-encoded input data
+   * @returns Standard Base64-encoded signature
    */
-  sign(algorithm: string, keyId: string, data: number[]): Promise<number[]>;
+  sign(algorithm: string, keyId: string, data: string): Promise<string>;
 
   /**
-   * Verify a signature (async)
+   * Verify a signature (async).
+   * @param signature - Standard Base64-encoded signature
+   * @param data - Standard Base64-encoded input data
    */
   verify(
     algorithm: string,
     keyId: string,
-    signature: number[],
-    data: number[]
+    signature: string,
+    data: string
   ): Promise<boolean>;
 
   /**
-   * Generate cryptographically secure random values (sync)
+   * Generate cryptographically secure random values (sync).
+   * @param length - Number of random bytes to generate
+   * @returns Standard Base64-encoded random bytes
    */
-  getRandomValues(length: number): number[];
+  getRandomValues(length: number): string;
 
   /**
    * Generate a random UUID v4 (sync)

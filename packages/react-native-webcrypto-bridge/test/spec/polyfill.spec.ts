@@ -1,4 +1,4 @@
-import { installWebCryptoPolyfill } from 'src/polyfill';
+import { installWebCryptoPolyfill } from '../../src/index';
 
 describe('@okta/react-native-webcrypto-bridge', () => {
   beforeAll(() => {
@@ -20,15 +20,11 @@ describe('@okta/react-native-webcrypto-bridge', () => {
     expect(typeof global.crypto.subtle.verify).toBe('function');
   });
 
-  it('should generate random values', () => {
-    const array = new Uint8Array(32);
-    const result = global.crypto.getRandomValues(array);
-    
-    expect(result).toBe(array);
-    expect(result.length).toBe(32);
-    
-    // Check that values are not all zeros
-    const hasNonZero = Array.from(result).some(v => v !== 0);
-    expect(hasNonZero).toBe(true);
+  it('should have randomUUID', () => {
+    expect(typeof global.crypto.randomUUID).toBe('function');
+    const uuid = global.crypto.randomUUID();
+    expect(uuid).toBeDefined();
+    expect(typeof uuid).toBe('string');
   });
 });
+

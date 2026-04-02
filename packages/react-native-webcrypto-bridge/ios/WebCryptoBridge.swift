@@ -5,35 +5,46 @@ import React
 
 
 extension String {
-  public var base64URLDecoded: String  { convertToBase64URLDecoded() }
+    public var base64URLDecoded: String { convertToBase64URLDecoded() }
 
-  private func convertToBase64URLDecoded() -> String {
-      var result = replacingOccurrences(of: "-", with: "+")
-          .replacingOccurrences(of: "_", with: "/")
+    private func convertToBase64URLDecoded() -> String {
+        var result = replacingOccurrences(of: "-", with: "+")
+            .replacingOccurrences(of: "_", with: "/")
 
-      while result.count % 4 != 0 {
-          result.append(contentsOf: "=")
-      }
+        while result.count % 4 != 0 {
+            result.append(contentsOf: "=")
+        }
 
-      return result
-  }
+        return result
+    }
 }
 
 extension Data {
-  public func base64URLEncodedString() -> String {
-      var base64 = self.base64EncodedString()
-      base64 = base64.replacingOccurrences(of: "+", with: "-")
-      base64 = base64.replacingOccurrences(of: "/", with: "_")
-      base64 = base64.replacingOccurrences(of: "=", with: "")
-      return base64
-  }
+    public func base64URLEncodedString() -> String {
+        var base64 = self.base64EncodedString()
+        base64 = base64.replacingOccurrences(of: "+", with: "-")
+        base64 = base64.replacingOccurrences(of: "/", with: "_")
+        base64 = base64.replacingOccurrences(of: "=", with: "")
+        return base64
+    }
 }
+
+// MARK: - Key Entry
+
+/// Type-safe key storage entry, replacing the previous `[String: Any]` dictionary.
+struct KeyEntry {
+    let publicKey: SecKey
+    let privateKey: SecKey?
+    let extractable: Bool
+}
+
+// MARK: - WebCryptoBridge
 
 @objc(WebCryptoBridge)
 class WebCryptoBridge: NSObject {
 
-    // Key storage
-    private static var keyStore: [String: [String: Any]] = [:]
+    // Key storage — typed struct instead of [String: Any]
+    private static var keyStore: [String: KeyEntry] = [:]
     private static let keyStoreLock = NSLock()
 
     @objc
@@ -47,56 +58,57 @@ class WebCryptoBridge: NSObject {
     }
 
     @objc
-    func constantsToExport() -> [AnyHashable : Any]! {
+    func constantsToExport() -> [AnyHashable: Any]! {
         return [:]
     }
-    
+
     // MARK: - Helper Methods
-    
-    private func byteArrayToData(_ byteArray: [NSNumber]) -> Data {
-        var data = Data(capacity: byteArray.count)
-        for byte in byteArray {
-            data.append(byte.uint8Value)
-        }
-        return data
+
+    /// Decode a standard Base64 string to Data.
+    private func base64ToData(_ base64: String) -> Data? {
+        return Data(base64Encoded: base64)
     }
-    
-    private func dataToByteArray(_ data: Data) -> [NSNumber] {
-        return data.map { NSNumber(value: $0) }
+
+    /// Encode Data to a standard Base64 string.
+    private func dataToBase64(_ data: Data) -> String {
+        return data.base64EncodedString()
     }
-    
+
     // MARK: - Synchronous Methods
-    
+
     @objc(getRandomValues:)
-    func getRandomValues(_ length: Double) -> [NSNumber] {
+    func getRandomValues(_ length: Double) -> String {
         let len = Int(length)
         var randomData = Data(count: len)
-        
+
         let result = randomData.withUnsafeMutableBytes { bytes -> Int32 in
             guard let baseAddress = bytes.baseAddress else {
                 return errSecParam
             }
             return SecRandomCopyBytes(kSecRandomDefault, len, baseAddress)
         }
-        
+
         if result != errSecSuccess {
-            return []
+            // SecRandomCopyBytes failure indicates a fundamentally broken system RNG.
+            // Returning empty/zero data would silently produce weak randomness, which
+            // is a critical security failure. Crash explicitly rather than risk it.
+            fatalError("WebCryptoBridge: SecRandomCopyBytes failed with status \(result). The system CSPRNG is unavailable.")
         }
-        
-        return dataToByteArray(randomData)
+
+        return dataToBase64(randomData)
     }
-    
+
     @objc
     func randomUUID() -> String {
         return UUID().uuidString.lowercased()
     }
-    
+
     // MARK: - Async Methods
-    
+
     @objc(digest:data:resolve:reject:)
     func digest(
         _ algorithm: String,
-        data: [NSNumber],
+        data: String,
         resolve: @escaping RCTPromiseResolveBlock,
         reject: @escaping RCTPromiseRejectBlock
     ) {
@@ -104,20 +116,21 @@ class WebCryptoBridge: NSObject {
             reject("unsupported_algorithm", "Only SHA-256 is supported", nil)
             return
         }
-        
-        let inputData = byteArrayToData(data)
-        
+
+        guard let inputData = base64ToData(data) else {
+            reject("invalid_input", "Invalid Base64 input data", nil)
+            return
+        }
+
         var hash = [UInt8](repeating: 0, count: Int(CC_SHA256_DIGEST_LENGTH))
         inputData.withUnsafeBytes { bytes in
             _ = CC_SHA256(bytes.baseAddress, CC_LONG(inputData.count), &hash)
         }
-        
+
         let hashData = Data(hash)
-        let result = dataToByteArray(hashData)
-        
-        resolve(result)
+        resolve(dataToBase64(hashData))
     }
-    
+
     @objc(generateKey:extractable:keyUsages:resolve:reject:)
     func generateKey(
         _ algorithmJson: String,
@@ -132,7 +145,7 @@ class WebCryptoBridge: NSObject {
             reject("unsupported_algorithm", "Only RSASSA-PKCS1-v1_5 is supported", nil)
             return
         }
-        
+
         let attributes: [String: Any] = [
             kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
             kSecAttrKeySizeInBits as String: 2048,
@@ -143,29 +156,29 @@ class WebCryptoBridge: NSObject {
                 kSecAttrIsPermanent as String: false
             ]
         ]
-        
+
         var error: Unmanaged<CFError>?
         guard let privateKey = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
             let err = error?.takeRetainedValue()
             reject("key_generation_failed", err?.localizedDescription ?? "Unknown error", err)
             return
         }
-        
+
         guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
             reject("key_generation_failed", "Failed to get public key", nil)
             return
         }
-        
+
         let keyId = UUID().uuidString
-        
+
         Self.keyStoreLock.lock()
-        Self.keyStore[keyId] = [
-            "publicKey": publicKey,
-            "privateKey": privateKey,
-            "extractable": extractable
-        ]
+        Self.keyStore[keyId] = KeyEntry(
+            publicKey: publicKey,
+            privateKey: privateKey,
+            extractable: extractable
+        )
         Self.keyStoreLock.unlock()
-        
+
         let result = ["id": keyId]
         if let jsonData = try? JSONSerialization.data(withJSONObject: result),
            let jsonString = String(data: jsonData, encoding: .utf8) {
@@ -174,7 +187,7 @@ class WebCryptoBridge: NSObject {
             reject("serialization_failed", "Failed to serialize result", nil)
         }
     }
-    
+
     @objc(exportKey:keyId:keyType:resolve:reject:)
     func exportKey(
         _ format: String,
@@ -187,39 +200,50 @@ class WebCryptoBridge: NSObject {
             reject("unsupported_format", "Only JWK format is supported", nil)
             return
         }
-        
+
         Self.keyStoreLock.lock()
-        let keyPair = Self.keyStore[keyId]
+        let entry = Self.keyStore[keyId]
         Self.keyStoreLock.unlock()
-        
-        guard let keyPair = keyPair,
-              let key = keyPair[keyType == "public" ? "publicKey" : "privateKey"] as! SecKey? else {
+
+        guard let entry = entry else {
             reject("key_not_found", "Key not found", nil)
             return
         }
-        
+
+        let key: SecKey
+        if keyType == "public" {
+            key = entry.publicKey
+        } else {
+            guard let privateKey = entry.privateKey else {
+                reject("key_not_found", "Private key not available for this key", nil)
+                return
+            }
+            key = privateKey
+        }
+
         var error: Unmanaged<CFError>?
         guard let keyData = SecKeyCopyExternalRepresentation(key, &error) as Data? else {
             let err = error?.takeRetainedValue()
             reject("export_failed", err?.localizedDescription ?? "Export failed", err)
             return
         }
-        
-        // Create JWK (simplified - proper ASN.1 parsing would be better)
+
         var jwk: [String: Any] = [
             "kty": "RSA",
             "alg": "RS256"
         ]
-        
-        // Extract RSA components (simplified)
+
         if keyType == "public" {
-            let modulus = extractModulus(from: keyData)
-            let exponent = Data([0x01, 0x00, 0x01]) // Standard exponent (65537)
-            
-            jwk["n"] = modulus.base64URLEncodedString()
-            jwk["e"] = exponent.base64URLEncodedString()
+            // SecKeyCopyExternalRepresentation returns PKCS#1 RSAPublicKey for RSA public keys:
+            // SEQUENCE { INTEGER modulus, INTEGER exponent }
+            guard let components = RSAPublicKeyComponents(derData: keyData) else {
+                reject("export_failed", "Failed to parse RSA public key components", nil)
+                return
+            }
+            jwk["n"] = components.modulus.base64URLEncodedString()
+            jwk["e"] = components.exponent.base64URLEncodedString()
         }
-        
+
         if let jsonData = try? JSONSerialization.data(withJSONObject: jwk),
            let jsonString = String(data: jsonData, encoding: .utf8) {
             resolve(jsonString)
@@ -227,7 +251,7 @@ class WebCryptoBridge: NSObject {
             reject("serialization_failed", "Failed to serialize JWK", nil)
         }
     }
-    
+
     @objc(importKey:keyData:algorithm:extractable:keyUsages:resolve:reject:)
     func importKey(
         _ format: String,
@@ -260,15 +284,17 @@ class WebCryptoBridge: NSObject {
 
         let keyId = UUID().uuidString
 
-        // Construct key data (simplified - proper ASN.1 encoding needed)
-        let publicKeyData = constructRSAPublicKeyData(modulus: modulusData, exponent: exponentData)
+        let components = RSAPublicKeyComponents(modulus: modulusData, exponent: exponentData)
+        let publicKeyData = components.derData
 
-        // Import public key
+        // Key size is derived from the modulus, not the DER blob
+        let keySizeInBits = components.keySizeInBits
+
         var error: Unmanaged<CFError>?
         let attributes: [CFString: Any] = [
             kSecAttrKeyType: kSecAttrKeyTypeRSA,
             kSecAttrKeyClass: kSecAttrKeyClassPublic,
-            kSecAttrKeySizeInBits: NSNumber(value: publicKeyData.count * 8)
+            kSecAttrKeySizeInBits: NSNumber(value: keySizeInBits)
         ]
 
         guard let publicKey = SecKeyCreateWithData(publicKeyData as NSData, attributes as NSDictionary, &error) else {
@@ -278,35 +304,43 @@ class WebCryptoBridge: NSObject {
         }
 
         Self.keyStoreLock.lock()
-        Self.keyStore[keyId] = [
-            "publicKey": publicKey,
-            "extractable": extractable
-        ]
+        Self.keyStore[keyId] = KeyEntry(
+            publicKey: publicKey,
+            privateKey: nil,
+            extractable: extractable
+        )
         Self.keyStoreLock.unlock()
 
         resolve(keyId)
     }
-    
+
     @objc(sign:keyId:data:resolve:reject:)
     func sign(
         _ algorithmJson: String,
         keyId: String,
-        data: [NSNumber],
+        data: String,
         resolve: @escaping RCTPromiseResolveBlock,
         reject: @escaping RCTPromiseRejectBlock
     ) {
         Self.keyStoreLock.lock()
-        let keyPair = Self.keyStore[keyId]
+        let entry = Self.keyStore[keyId]
         Self.keyStoreLock.unlock()
-        
-        guard let keyPair = keyPair,
-              let privateKey = keyPair["privateKey"] as! SecKey? else {
-            reject("key_not_found", "Private key not found", nil)
+
+        guard let entry = entry else {
+            reject("key_not_found", "Key not found", nil)
             return
         }
-        
-        let inputData = byteArrayToData(data)
-        
+
+        guard let privateKey = entry.privateKey else {
+            reject("key_not_found", "Private key not available for this key", nil)
+            return
+        }
+
+        guard let inputData = base64ToData(data) else {
+            reject("invalid_input", "Invalid Base64 input data", nil)
+            return
+        }
+
         var error: Unmanaged<CFError>?
         guard let signature = SecKeyCreateSignature(
             privateKey,
@@ -318,33 +352,40 @@ class WebCryptoBridge: NSObject {
             reject("signing_failed", err?.localizedDescription ?? "Signing failed", err)
             return
         }
-        
-        let result = dataToByteArray(signature)
-        resolve(result)
+
+        resolve(dataToBase64(signature))
     }
-    
+
     @objc(verify:keyId:signature:data:resolve:reject:)
     func verify(
         _ algorithmJson: String,
         keyId: String,
-        signature: [NSNumber],
-        data: [NSNumber],
+        signature: String,
+        data: String,
         resolve: @escaping RCTPromiseResolveBlock,
         reject: @escaping RCTPromiseRejectBlock
     ) {
         Self.keyStoreLock.lock()
-        let keyPair = Self.keyStore[keyId]
+        let entry = Self.keyStore[keyId]
         Self.keyStoreLock.unlock()
-        
-        guard let keyPair = keyPair,
-              let publicKey = keyPair["publicKey"] as! SecKey? else {
+
+        guard let entry = entry else {
             reject("key_not_found", "Public key not found", nil)
             return
         }
-        
-        let inputData = byteArrayToData(data)
-        let signatureData = byteArrayToData(signature)
-        
+
+        guard let inputData = base64ToData(data) else {
+            reject("invalid_input", "Invalid Base64 input data", nil)
+            return
+        }
+
+        guard let signatureData = base64ToData(signature) else {
+            reject("invalid_input", "Invalid Base64 signature data", nil)
+            return
+        }
+
+        let publicKey = entry.publicKey
+
         var error: Unmanaged<CFError>?
         let verified = SecKeyVerifySignature(
             publicKey,
@@ -353,81 +394,13 @@ class WebCryptoBridge: NSObject {
             signatureData as CFData,
             &error
         )
-        
+
         if let err = error?.takeRetainedValue() {
             reject("verification_failed", err.localizedDescription, err as Error)
             return
         }
-        
+
         resolve(verified)
     }
-    
-    // MARK: - Helper Methods for RSA Key Handling
-    
-    private func extractModulus(from keyData: Data) -> Data {
-        // Simplified extraction - skip ASN.1 header
-        // In production, use proper ASN.1 parsing
-        let offset = min(24, keyData.count)
-        let length = min(256, keyData.count - offset)
-        return keyData.subdata(in: offset..<(offset + length))
-    }
-    
-    private func constructRSAPublicKeyData(modulus: Data, exponent: Data) -> Data {
-        // Based on Okta's Data+SigningExtensions.swift
-        
-        var modulusBytes = [UInt8](modulus)
-        let exponentBytes = [UInt8](exponent)
-        
-        // Make sure modulus starts with 0x00
-        if let prefix = modulusBytes.first, prefix != 0x00 {
-            modulusBytes.insert(0x00, at: 0)
-        }
-        
-        // Encode lengths
-        let modulusLengthOctets = encodedOctets(modulusBytes.count)
-        let exponentLengthOctets = encodedOctets(exponentBytes.count)
-        
-        // Total length
-        let totalLength = modulusLengthOctets.count + modulusBytes.count + exponentLengthOctets.count + exponentBytes.count + 2
-        let totalLengthOctets = encodedOctets(totalLength)
-        
-        // Build the data
-        var result = Data()
-        
-        // SEQUENCE tag and length
-        result.append(0x30)
-        result.append(contentsOf: totalLengthOctets)
-        
-        // INTEGER tag, length, and modulus
-        result.append(0x02)
-        result.append(contentsOf: modulusLengthOctets)
-        result.append(contentsOf: modulusBytes)
-        
-        // INTEGER tag, length, and exponent
-        result.append(0x02)
-        result.append(contentsOf: exponentLengthOctets)
-        result.append(contentsOf: exponentBytes)
-        
-        return result
-    }
 
-    private func encodedOctets(_ length: Int) -> [UInt8] {
-        // Short form
-        if length < 128 {
-            return [UInt8(length)]
-        }
-        
-        // Long form
-        let index = (length / 256) + 1
-        var len = length
-        var result: [UInt8] = [UInt8(index + 0x80)]
-        
-        for _ in 0..<index {
-            result.insert(UInt8(len & 0xFF), at: 1)
-            len = len >> 8
-        }
-        
-        return result
-    }
 }
-
