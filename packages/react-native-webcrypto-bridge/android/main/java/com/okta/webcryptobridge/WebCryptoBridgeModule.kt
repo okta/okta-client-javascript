@@ -19,27 +19,13 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
 
     data class KeyPairEntry(
         val publicKey: PublicKey,
-        val privateKey: PrivateKey,
+        val privateKey: PrivateKey?,
         val extractable: Boolean
     )
 
     override fun getName(): String = NAME
 
     // MARK: - Helper Methods
-    
-    private fun readableArrayToByteArray(array: ReadableArray): ByteArray {
-        val bytes = ByteArray(array.size())
-        for (i in 0 until array.size()) {
-            bytes[i] = array.getInt(i).toByte()
-        }
-        return bytes
-    }
-
-    private fun byteArrayToWritableArray(bytes: ByteArray): WritableArray {
-        val array = Arguments.createArray()
-        bytes.forEach { array.pushInt(it.toInt() and 0xFF) }
-        return array
-    }
 
     private fun toUnsignedByteArray(value: BigInteger): ByteArray {
         val bytes = value.toByteArray()
@@ -72,12 +58,12 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
     // MARK: - Synchronous Methods
     
     @ReactMethod(isBlockingSynchronousMethod = true)
-    fun getRandomValues(length: Double): WritableArray {
+    fun getRandomValues(length: Double): String {
         val len = length.toInt()
         val random = SecureRandom()
         val bytes = ByteArray(len)
         random.nextBytes(bytes)
-        return byteArrayToWritableArray(bytes)
+        return Base64.encodeToString(bytes, Base64.NO_WRAP)
     }
 
     @ReactMethod(isBlockingSynchronousMethod = true)
@@ -90,7 +76,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
     @ReactMethod
     fun digest(
         algorithm: String,
-        data: ReadableArray,
+        data: String,
         promise: Promise
     ) {
         try {
@@ -99,12 +85,11 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
                 return
             }
 
-            val inputData = readableArrayToByteArray(data)
+            val inputData = Base64.decode(data, Base64.NO_WRAP)
             val digest = MessageDigest.getInstance("SHA-256")
             val hash = digest.digest(inputData)
-            val result = byteArrayToWritableArray(hash)
 
-            promise.resolve(result)
+            promise.resolve(Base64.encodeToString(hash, Base64.NO_WRAP))
         } catch (e: Exception) {
             promise.reject("digest_failed", "Failed to compute digest", e)
         }
@@ -167,13 +152,13 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
                 return
             }
 
-            val keyPairEntry = keyStore[keyId]
+            val keyPairEntry = synchronized(keyStore) { keyStore[keyId] }
             if (keyPairEntry == null) {
                 promise.reject("key_not_found", "Key not found")
                 return
             }
 
-            val key = if (keyType == "public") keyPair.public else keyPair.private
+            val key = if (keyType == "public") keyPairEntry.publicKey else keyPairEntry.privateKey
             val rsaPublicKey = key as? java.security.interfaces.RSAPublicKey
 
             if (rsaPublicKey == null) {
@@ -181,19 +166,11 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
                 return
             }
 
-            // Extract modulus and exponent
-            val modulus = rsaPublicKey.modulus.toByteArray()
-            val exponent = rsaPublicKey.publicExponent.toByteArray()
-
-            // Remove leading zero bytes if present (BigInteger adds these for sign)
-            val modulusClean = if (modulus[0].toInt() == 0) modulus.copyOfRange(1, modulus.size) else modulus
-            val exponentClean = if (exponent[0].toInt() == 0) exponent.copyOfRange(1, exponent.size) else exponent
-
             val jwk = JSONObject()
             jwk.put("kty", "RSA")
             jwk.put("alg", "RS256")
-            jwk.put("n", base64URLEncode(modulusClean))
-            jwk.put("e", base64URLEncode(exponentClean))
+            jwk.put("n", base64URLEncode(toUnsignedByteArray(rsaPublicKey.modulus)))
+            jwk.put("e", base64URLEncode(toUnsignedByteArray(rsaPublicKey.publicExponent)))
 
             promise.resolve(jwk.toString())
         } catch (e: Exception) {
@@ -230,17 +207,21 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
             val modulusBytes = base64URLDecode(nString)
             val exponentBytes = base64URLDecode(eString)
 
-            // Build ASN.1 DER encoded RSA public key
-            val publicKeyData = constructRSAPublicKeyData(modulusBytes, exponentBytes)
+            val modulus = BigInteger(1, modulusBytes)
+            val exponent = BigInteger(1, exponentBytes)
 
-            // Import the key
             val keyFactory = KeyFactory.getInstance("RSA")
-            val keySpec = X509EncodedKeySpec(publicKeyData)
+            val keySpec = RSAPublicKeySpec(modulus, exponent)
             val publicKey = keyFactory.generatePublic(keySpec)
 
             val keyId = UUID.randomUUID().toString()
-            // Store as KeyPair with null private key
-            keyStore[keyId] = KeyPair(publicKey, null)
+            synchronized(keyStore) {
+                keyStore[keyId] = KeyPairEntry(
+                    publicKey = publicKey,
+                    privateKey = null,
+                    extractable = extractable
+                )
+            }
 
             promise.resolve(keyId)
         } catch (e: Exception) {
@@ -252,25 +233,30 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
     fun sign(
         algorithmJson: String,
         keyId: String,
-        data: ReadableArray,
+        data: String,
         promise: Promise
     ) {
         try {
-            val keyPairEntry = keyStore[keyId]
+            val keyPairEntry = synchronized(keyStore) { keyStore[keyId] }
             if (keyPairEntry == null) {
                 promise.reject("key_not_found", "Key not found")
                 return
             }
 
-            val inputData = readableArrayToByteArray(data)
+            val privateKey = keyPairEntry.privateKey
+            if (privateKey == null) {
+                promise.reject("key_not_found", "Private key not available for this key")
+                return
+            }
+
+            val inputData = Base64.decode(data, Base64.NO_WRAP)
 
             val signature = Signature.getInstance("SHA256withRSA")
-            signature.initSign(keyPairEntry.privateKey)
+            signature.initSign(privateKey)
             signature.update(inputData)
             val signatureBytes = signature.sign()
 
-            val result = byteArrayToWritableArray(signatureBytes)
-            promise.resolve(result)
+            promise.resolve(Base64.encodeToString(signatureBytes, Base64.NO_WRAP))
         } catch (e: Exception) {
             promise.reject("signing_failed", "Failed to sign data", e)
         }
@@ -280,19 +266,19 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
     fun verify(
         algorithmJson: String,
         keyId: String,
-        signatureArray: ReadableArray,
-        data: ReadableArray,
+        signatureBase64: String,
+        data: String,
         promise: Promise
     ) {
         try {
-            val keyPairEntry = keyStore[keyId]
+            val keyPairEntry = synchronized(keyStore) { keyStore[keyId] }
             if (keyPairEntry == null) {
                 promise.reject("key_not_found", "Key not found")
                 return
             }
 
-            val inputData = readableArrayToByteArray(data)
-            val signatureBytes = readableArrayToByteArray(signatureArray)
+            val inputData = Base64.decode(data, Base64.NO_WRAP)
+            val signatureBytes = Base64.decode(signatureBase64, Base64.NO_WRAP)
 
             val signature = Signature.getInstance("SHA256withRSA")
             signature.initVerify(keyPairEntry.publicKey)
@@ -305,76 +291,4 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
         }
     }
 
-  // MARK: - ASN.1 Encoding Helpers
-
-  private fun constructRSAPublicKeyData(modulus: ByteArray, exponent: ByteArray): ByteArray {
-      // Build X.509 SubjectPublicKeyInfo structure
-      // This matches the Swift implementation
-
-      var modulusBytes = modulus
-      val exponentBytes = exponent
-
-      // Ensure modulus starts with 0x00 if MSB is set
-      if (modulusBytes[0].toInt() and 0x80 != 0) {
-          modulusBytes = byteArrayOf(0x00) + modulusBytes
-      }
-
-      // Build inner SEQUENCE: SEQUENCE { INTEGER modulus, INTEGER exponent }
-      val innerSequence = encodeASN1Integer(modulusBytes) + encodeASN1Integer(exponentBytes)
-      val innerSequenceEncoded = encodeASN1Sequence(innerSequence)
-
-      // Wrap in BIT STRING
-      val bitString = byteArrayOf(0x00) + innerSequenceEncoded
-      val bitStringEncoded = encodeASN1BitString(bitString)
-
-      // Algorithm identifier: SEQUENCE { OID rsaEncryption, NULL }
-      val rsaOID = byteArrayOf(
-          0x06, 0x09, 0x2a.toByte(), 0x86.toByte(), 0x48, 0x86.toByte(),
-          0xf7.toByte(), 0x0d, 0x01, 0x01, 0x01
-      )
-      val nullTag = byteArrayOf(0x05, 0x00)
-      val algorithmIdentifier = encodeASN1Sequence(rsaOID + nullTag)
-
-      // Build outer SEQUENCE
-      val outerSequence = algorithmIdentifier + bitStringEncoded
-      return encodeASN1Sequence(outerSequence)
-  }
-
-  private fun encodeASN1Integer(data: ByteArray): ByteArray {
-      var intData = data
-
-      // Remove leading zeros (but keep one if needed for sign)
-      while (intData.size > 1 && intData[0].toInt() == 0 && intData[1].toInt() and 0x80 == 0) {
-          intData = intData.copyOfRange(1, intData.size)
-      }
-
-      // Add leading zero if high bit is set
-      if (intData[0].toInt() and 0x80 != 0) {
-          intData = byteArrayOf(0x00) + intData
-      }
-
-      return byteArrayOf(0x02) + encodeLength(intData.size) + intData
-  }
-
-  private fun encodeASN1Sequence(data: ByteArray): ByteArray {
-      return byteArrayOf(0x30) + encodeLength(data.size) + data
-  }
-
-  private fun encodeASN1BitString(data: ByteArray): ByteArray {
-      return byteArrayOf(0x03) + encodeLength(data.size) + data
-  }
-
-  private fun encodeLength(length: Int): ByteArray {
-      return if (length < 128) {
-          byteArrayOf(length.toByte())
-      } else {
-          val lengthBytes = mutableListOf<Byte>()
-          var len = length
-          while (len > 0) {
-              lengthBytes.add(0, (len and 0xFF).toByte())
-              len = len shr 8
-          }
-          byteArrayOf((0x80 or lengthBytes.size).toByte()) + lengthBytes.toByteArray()
-      }
-  }
 }

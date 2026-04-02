@@ -1,86 +1,74 @@
 /**
  * WebCrypto API polyfill for React Native
- * 
- * Uses crypto utilities from @okta/auth-foundation for encoding/decoding
+ *
+ * Bridges JavaScript WebCrypto API calls to native platform cryptography
+ * (Apple Security / Android JCA) via a React Native TurboModule.
+ *
+ * Binary data crosses the bridge as standard Base64 strings for efficiency.
  */
 
 import NativeWebCryptoBridge from './NativeWebCryptoBridge.ts';
 import { WebCryptoBridgeError } from './lib.ts';
 
-// NOTE: Does not use `buf` or `b64` from `auth-foundation` because converting
-// to a byte array (number[]) makes the bridge code much simplier and avoids
-// doing any string encoding in the native code
-type ByteArray = number[];
-
-/** 
+/**
  * @internal
  * Maps `CryptoKey` instances to the id assigned by the native code
  */
 const cryptoKeyMap = new WeakMap<CryptoKey | CryptoKeyPair, string>();
 
-// MARK: - ArryBuffer Converters
+// MARK: - ArrayBuffer ↔ Base64 Converters
 
 /**
  * Converts a `BufferSource` instance to an `ArrayBuffer`
  */
-function toArrayBuffer (source: BufferSource): ArrayBuffer {
+function toArrayBuffer(source: BufferSource): ArrayBuffer {
   if (source instanceof ArrayBuffer) {
-    // If it is already an ArrayBuffer, return it directly.
     return source;
   } else if (ArrayBuffer.isView(source)) {
-    // If it is an ArrayBufferView (Uint8Array, DataView, Buffer, etc.):
     const typedArray = source;
-    
-    // For a Node.js Buffer or a standard typed array, the .buffer property
-    // gives the underlying ArrayBuffer.
-    // Use .slice() to create a *copy* of only the relevant bytes if the view
-    // does not span the entire underlying buffer's length. This is crucial for
+    // .slice() creates a copy of only the relevant bytes. This is crucial for
     // Node.js Buffers which might share a larger memory pool.
     return typedArray.buffer.slice(typedArray.byteOffset, typedArray.byteOffset + typedArray.byteLength);
   } else {
-    // Handle other potential cases or throw an error if the type is unexpected
-    throw new Error("Unsupported BufferSource type.");
+    throw new WebCryptoBridgeError('Unsupported BufferSource type.');
   }
 }
 
 /**
- * Convert ArrayBuffer to byte array for native bridge
+ * Encode an ArrayBuffer to a standard Base64 string for the native bridge.
  */
-function arrayBufferToByteArray(buffer: ArrayBuffer): ByteArray {
-  return Array.from(new Uint8Array(buffer));
+function arrayBufferToBase64(buffer: ArrayBuffer): string {
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
+  }
+  return btoa(binary);
 }
 
 /**
- * Convert byte array from native bridge to ArrayBuffer
+ * Decode a standard Base64 string from the native bridge to an ArrayBuffer.
  */
-function byteArrayToArrayBuffer(bytes: ByteArray): ArrayBuffer {
-  return new Uint8Array(bytes).buffer;
-}
-
-function getCryptoAlg (alg: string) {
-  switch (alg) {
-    case 'RS256':
-      return {
-        name: 'RSASSA-PKCS1-v1_5',
-        hash: { name: 'SHA-256' }
-      };
-    default:
-      throw new WebCryptoBridgeError('Unknown crypto algorithm', { context: { alg } });
+function base64ToArrayBuffer(base64: string): ArrayBuffer {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
   }
+  return bytes.buffer;
 }
 
-// MARK: - SubtleCrypto Methods 
+// MARK: - SubtleCrypto Methods
 
 const digest: SubtleCrypto['digest'] = async (algorithm, data) => {
   if (algorithm !== 'SHA-256') {
     throw new WebCryptoBridgeError(`Unsupported algorithm: ${algorithm}`);
   }
 
-  // Convert ArrayBuffer to byte array for native bridge
-  const bytes = arrayBufferToByteArray(toArrayBuffer(data));
-  const resultBytes = await NativeWebCryptoBridge.digest('SHA-256', bytes);
-  return byteArrayToArrayBuffer(resultBytes);
-}
+  const base64Data = arrayBufferToBase64(toArrayBuffer(data));
+  const resultBase64 = await NativeWebCryptoBridge.digest('SHA-256', base64Data);
+  return base64ToArrayBuffer(resultBase64);
+};
 
 const importKey: SubtleCrypto['importKey'] = async (
   format,
@@ -88,7 +76,7 @@ const importKey: SubtleCrypto['importKey'] = async (
   algorithm,
   extractable,
   keyUsages
- ) => {
+) => {
   if (format !== 'jwk') {
     throw new WebCryptoBridgeError(`Unsupported format: ${format}`);
   }
@@ -109,8 +97,8 @@ const importKey: SubtleCrypto['importKey'] = async (
 
   const key: CryptoKey = {
     algorithm,
-    extractable,        // TODO: can extractable even be set to `true` and be used in a bridge?
-    type: 'public',     // TODO: A string identifying whether the key is a symmetric ('secret') or asymmetric ('private' or 'public') key.
+    extractable,
+    type: 'public',     // TODO: Determine from key data when private key import is supported
     usages: keyUsages
   };
 
@@ -119,22 +107,22 @@ const importKey: SubtleCrypto['importKey'] = async (
   return key;
 };
 
-// TODO: DPoP
-const exportKey: SubtleCrypto['exportKey'] = async (format, key) => {
-  throw new Error('Not Implemented');
-}
+// TODO: DPoP — wire to native implementation when ready
+const exportKey: SubtleCrypto['exportKey'] = async (_format, _key) => {
+  throw new WebCryptoBridgeError('exportKey is not yet implemented');
+};
 
-// TODO: DPoP
-const sign: SubtleCrypto['sign'] = async (algorithm, key, data) => {
-  throw new Error('Not Implemented');
-}
+// TODO: DPoP — wire to native implementation when ready
+const sign: SubtleCrypto['sign'] = async (_algorithm, _key, _data) => {
+  throw new WebCryptoBridgeError('sign is not yet implemented');
+};
 
-// TODO: DPoP
+// TODO: DPoP — wire to native implementation when ready
 const generateKey: SubtleCrypto['generateKey'] = async (
-  algorithm, extractable, keyUsages
+  _algorithm, _extractable, _keyUsages
 ) => {
-  throw new Error('Not Implemented');
-}
+  throw new WebCryptoBridgeError('generateKey is not yet implemented');
+};
 
 const verify: SubtleCrypto['verify'] = async (algorithm, key, signature, data) => {
   const keyId = cryptoKeyMap.get(key);
@@ -147,19 +135,23 @@ const verify: SubtleCrypto['verify'] = async (algorithm, key, signature, data) =
     throw new WebCryptoBridgeError('Unsupported algorithm');
   }
 
-  // TODO: check if `algorithm` matches the provided `key`? Is that worth it?
+  if (!key.usages.includes('verify')) {
+    throw new WebCryptoBridgeError('Key does not support verify operation', {
+      context: { usages: key.usages }
+    });
+  }
 
   const algorithmJson = JSON.stringify(key.algorithm);
-  const signatureBytes = arrayBufferToByteArray(toArrayBuffer(signature));
-  const dataBytes = arrayBufferToByteArray(toArrayBuffer(data));
+  const signatureBase64 = arrayBufferToBase64(toArrayBuffer(signature));
+  const dataBase64 = arrayBufferToBase64(toArrayBuffer(data));
 
   return await NativeWebCryptoBridge.verify(
     algorithmJson,
     keyId,
-    signatureBytes,
-    dataBytes
+    signatureBase64,
+    dataBase64
   );
-}
+};
 
 // MARK: - Types & Exports
 
@@ -177,8 +169,8 @@ const subtle: Partial<SubtleCrypto> = {
 
 export interface WebCryptoPolyfill {
   subtle: Partial<SubtleCrypto>;
-  getRandomValues: Crypto['getRandomValues']
-  randomUUID: Crypto['randomUUID']
+  getRandomValues: Crypto['getRandomValues'];
+  randomUUID: Crypto['randomUUID'];
 }
 
 /**
@@ -188,16 +180,25 @@ const cryptoPolyfill: WebCryptoPolyfill = {
   subtle,
   getRandomValues<T extends ArrayBufferView>(array: T): T {
     const uint8Array = new Uint8Array(array.buffer, array.byteOffset, array.byteLength);
+    const requestedLength = uint8Array.length;
 
-    const randomBytes = NativeWebCryptoBridge.getRandomValues(uint8Array.length);
+    const base64Result = NativeWebCryptoBridge.getRandomValues(requestedLength);
 
-    for (let i = 0; i < randomBytes.length; i++) {
-      uint8Array[i] = randomBytes[i];
+    // Decode the Base64 string from the native bridge
+    const binary = atob(base64Result);
+    if (binary.length !== requestedLength) {
+      throw new WebCryptoBridgeError(
+        `getRandomValues: expected ${requestedLength} bytes, received ${binary.length}`
+      );
+    }
+
+    for (let i = 0; i < binary.length; i++) {
+      uint8Array[i] = binary.charCodeAt(i);
     }
 
     return array;
   },
-  randomUUID () {
+  randomUUID() {
     return NativeWebCryptoBridge.randomUUID() as ReturnType<Crypto['randomUUID']>;
   }
 };

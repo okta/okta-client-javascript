@@ -10,7 +10,6 @@
   "source": "src/index.ts",
   "author": "jared.perreault@okta.com",
   "license": "Apache-2.0",
-  "private": true,
   "engines": {
     "node": ">=20.11.0"
   },
@@ -19,7 +18,6 @@
     "./dist",
     "./ios",
     "./android",
-    "./cpp",
     "*.md",
     "package.json",
     "react-native-webcrypto-bridge.podspec"
