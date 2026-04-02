@@ -13,11 +13,11 @@ import { client } from '@/auth';
 
 
 async function performSignIn () {
-  console.log('performSignIn called');
+  console.log('performSignIn called', await Credential.allIDs());
 
-  let credential = await Credential.getDefault();
-  console.log('performSignIn default cred', credential);
-  if (!credential) {
+  // let credential = await Credential.getDefault();
+  // console.log('performSignIn default cred', credential);
+  // if (!credential) {
     try {
       console.log('here 1')
       // TODO: move to env
@@ -40,16 +40,18 @@ async function performSignIn () {
       const { token, context } = await flow.resume(result.url);
       console.log('token', token);
       console.log('context', context);
-      credential = await Credential.store(token);
+      // credential = await Credential.store(token);
+      const credential = await Credential.store(token);
+      return credential.id;
     }
     catch (err) {
       console.log('here 3');
       console.log(err, (err as Error)?.stack);
       throw err;
     }
-  }
-
-  return credential.id;
+  // }
+  // 
+  // return credential.id;
 }
 
 // TODO: cannot use oidc logout as openid is not a request scope currently
