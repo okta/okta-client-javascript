@@ -1,5 +1,4 @@
 import type {
-  RequestAuthorizer,
   RequestAuthorizerInit,
   JsonRecord,
   AcrValues
@@ -23,7 +22,7 @@ import { EventEmitter } from './utils/EventEmitter.ts';
  *
  * @see {@link FetchClient}
  */
-export abstract class TokenOrchestrator<E extends TokenOrchestrator.Events = TokenOrchestrator.Events> implements RequestAuthorizer {
+export abstract class TokenOrchestrator<E extends TokenOrchestrator.Events = TokenOrchestrator.Events> {
   protected readonly emitter: EventEmitter<E> = new EventEmitter();
 
   on (...args: Parameters<EventEmitter<E>['on']>) {
@@ -42,6 +41,12 @@ export abstract class TokenOrchestrator<E extends TokenOrchestrator.Events = Tok
   public abstract getToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null>;
 
   /**
+   * @abstract
+   * Invalidates a {@link Token.Token | Token}, so subsequent {@link TokenOrchestrator.getToken | getToken} calls will result in the invalidated token
+   */
+  public abstract invalidateToken (id: string): Promise<void>;
+
+  /**
    * Signs an outgoing {@link !Request} with an `Authorization` header via {@link Token.Token | Token} retrieved from {@link getToken}
    * 
    * Optionally {@link TokenOrchestrator.AuthorizeParams | AuthorizeParams} can be provided to be passed along to {@link getToken}
@@ -51,7 +56,7 @@ export abstract class TokenOrchestrator<E extends TokenOrchestrator.Events = Tok
   public async authorize (
     input: string | URL | Request,
     init: RequestAuthorizerInit & TokenOrchestrator.AuthorizeParams = {}
-  ): Promise<Request> {
+  ): Promise<{ request: Request, tokenId: string }> {
     // `fetchInit` will include dpopNonce
     const { authParams, rest: fetchInit } = TokenOrchestrator.extractAuthParams(init);
 
@@ -60,7 +65,10 @@ export abstract class TokenOrchestrator<E extends TokenOrchestrator.Events = Tok
       throw new TokenOrchestratorError('Unable to acquire token to sign request');
     }
 
-    return token.authorize(input, fetchInit);
+    return {
+      request: await token.authorize(input, fetchInit),
+      tokenId: token.id
+    };
   }
 }
 
