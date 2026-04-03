@@ -92,6 +92,10 @@ export class FetchClient<E extends APIClient.Events = APIClient.Events> extends 
       await this.prepareAcrStepUpRetry(response, request, wwwAuthError);
     }
 
+    if (request.context.tokenId) {
+      // instruct the orchestrator to invalidate the token, as the 401 indicates the server did not accept it
+      await this.orchestrator.invalidateToken(request.context.tokenId);
+    }
     // super.send() will sign call .authorize()
   }
 
@@ -101,7 +105,8 @@ export class FetchClient<E extends APIClient.Events = APIClient.Events> extends 
 
   protected async authorize (request: APIRequest): Promise<void> {
     const { authParams, rest: { dpopNonce } } = TokenOrchestrator.extractAuthParams(request.context);
-    await this.orchestrator.authorize(request, {...authParams, dpopNonce });
+    const { tokenId } = await this.orchestrator.authorize(request, { ...authParams, dpopNonce });
+    request.context.tokenId = tokenId;
   }
 
   public async fetch (

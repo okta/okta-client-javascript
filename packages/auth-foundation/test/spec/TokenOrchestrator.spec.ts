@@ -13,6 +13,10 @@ class TestOrchestrator extends TokenOrchestrator {
   async getToken (): Promise<Token | null> {
     return testToken;
   }
+
+  async invalidateToken (): Promise<void> {
+    return undefined;
+  }
 }
 
 describe('TokenOrchestrator', () => {
@@ -28,10 +32,11 @@ describe('TokenOrchestrator', () => {
   describe('authorize impl', () => {
     it('should sign request with dpop signature', async () => {
       const orch = new TestOrchestrator();
-      const request = await orch.authorize('http://localhost:8080/foo');
+      const { request, tokenId } = await orch.authorize('http://localhost:8080/foo');
       expect(request).toBeInstanceOf(Request);
       expect(request.headers.get('dpop')).toBe('fakedpopvalue');
       expect(request.headers.get('authorization')).toBe(`DPoP ${testToken.accessToken}`);
+      expect(tokenId).toEqual(testToken.id);
     });
 
     it('throw if no token is return', async () => {

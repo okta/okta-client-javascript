@@ -53,6 +53,17 @@ export namespace HostOrchestrator {
 
       return token;
     }
+    
+    async invalidateToken (tokenId: string): Promise<Partial<ErrorResponse>> {
+      try {
+        await this.orchestrator.invalidateToken(tokenId);
+      }
+      catch (err) {
+        return { error: `Unable to invalidate token: ${tokenId}` };
+      }
+
+      return {};
+    }
   }
 
   /**
@@ -116,6 +127,14 @@ export namespace HostOrchestrator {
 
   /**
    * @group Types
+   */
+  export type InvalidateEvent = {
+    eventName: 'INVALIDATE';
+    data: { tokenId: string; };
+  };
+
+  /**
+   * @group Types
    * Lose typing of the request event object structure. Provides slightly more type-safety than
    * using `any` or `unknown` like most generic messaging APIs
    */
@@ -130,6 +149,7 @@ export namespace HostOrchestrator {
   & {
     ACTIVATED: ActivatedEvent;
     PING: PingEvent;
+    INVALIDATE: InvalidateEvent;
   }
 );
 
@@ -153,6 +173,9 @@ export namespace HostOrchestrator {
     nonce?: string;
   };
 
+  /** @group Types */
+  export type InvalidateRequest = InvalidateEvent['data'];
+
   /**
    * @group Types
    * Map of responses from a HostOrchestrator request event
@@ -163,6 +186,7 @@ export namespace HostOrchestrator {
     'PROFILE': ProfileResponse;
     'PING': PingResponse;
     'ACTIVATED': object;
+    'INVALIDATE': InvalidateResponse;
   }
 
   /**
@@ -184,6 +208,7 @@ export namespace HostOrchestrator {
    * @group Types
    */
   export type AuthorizeResponse = {
+    tokenId: string;
     tokenType: string;
     dpop?: string;
     authorization: string;
@@ -194,4 +219,8 @@ export namespace HostOrchestrator {
    */
   export type ProfileResponse = { profile: JsonRecord } | ErrorResponse;
 
+  /**
+   * @group Types
+   */
+  export type InvalidateResponse = Partial<ErrorResponse>;
 }

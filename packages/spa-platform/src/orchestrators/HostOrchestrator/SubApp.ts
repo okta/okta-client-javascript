@@ -140,10 +140,10 @@ export class SubAppOrchestrator<E extends HO.SubAppEvents = HO.SubAppEvents> ext
     return request;
   }
 
-  public async authorize(
+  public async authorize (
     input: string | URL | Request,
     init?: RequestInit & { dpopNonce?: string; } & TokenOrchestrator.AuthorizeParams
-  ): Promise<Request> {
+  ): ReturnType<TokenOrchestrator['authorize']> {
     const request = input instanceof Request ? input : new Request(input, init);
     const { issuer, clientId, scopes, acrValues, maxAge, dpopNonce } = {
       ...this.authParams,
@@ -162,7 +162,7 @@ export class SubAppOrchestrator<E extends HO.SubAppEvents = HO.SubAppEvents> ext
       throw new TokenOrchestratorError(response.error);
     }
 
-    const { dpop, authorization, tokenType } = response;
+    const { tokenId, dpop, authorization, tokenType } = response;
 
     if (tokenType === 'DPoP') {
       if (!validateString(dpop)) {
@@ -177,6 +177,15 @@ export class SubAppOrchestrator<E extends HO.SubAppEvents = HO.SubAppEvents> ext
     }
 
     request.headers.set('authorization', authorization);
-    return request;
+    return { request, tokenId };
+  }
+
+  public async invalidateToken (id: string): Promise<void> {
+    const response = await this.broadcast('INVALIDATE', { tokenId: id });
+
+    // `in` syntax required for TS to infer type
+    if ('error' in response) {
+      throw new TokenOrchestratorError(response.error);
+    }
   }
 }

@@ -182,6 +182,14 @@ export class AuthorizationCodeFlowOrchestrator<
 
     return this.requestToken(params);
   }
+
+  /**
+   * Removes invalidated tokens from storage
+   */
+  public async invalidateToken (id: string): Promise<void> {
+    const credential = await Credential.with(id);
+    return credential?.remove();
+  }
 }
 
 export namespace AuthorizationCodeFlowOrchestrator {

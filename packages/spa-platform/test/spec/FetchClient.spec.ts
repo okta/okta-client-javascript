@@ -11,6 +11,10 @@ class MockOrchestrator extends TokenOrchestrator {
   public getToken() {
     return Promise.resolve(null);
   }
+
+  public invalidateToken (): Promise<void> {
+    return Promise.resolve(undefined);
+  }
 }
 
 describe('FetchClient', () => {
@@ -339,6 +343,7 @@ describe('FetchClient', () => {
           firstAuthHeader = fetchSpy.mock.calls[0][0].headers.get('authorization');
           return Promise.resolve(makeTestToken());
         });
+      const invalidateTokenSpy = jest.spyOn(mockOrchestrator, 'invalidateToken');
 
       fetchSpy
         .mockResolvedValueOnce(new Response(null, { status: 401, statusText: 'Unauthorized' }))
@@ -351,6 +356,7 @@ describe('FetchClient', () => {
 
       expect(orchestratorSpy).toHaveBeenCalledTimes(2);   // 2 tokens will have been fetched
       expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(invalidateTokenSpy).toHaveBeenCalledTimes(1);
       // first request returns 401
       expect(fetchSpy.mock.calls[0][0].url).toEqual('http://localhost:8080/foo');
       expect((await fetchSpy.mock.results[0].value).status).toEqual(401);
@@ -421,7 +427,8 @@ describe('FetchClient', () => {
 
     it('should maintain dpopNonce when retrying (for a non-dpop nonce reason)', async () => {
       const { client, mockOrchestrator, fetchSpy } = context;
-      jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(makeTestToken());
+      const testToken = makeTestToken();
+      jest.spyOn(mockOrchestrator, 'getToken').mockResolvedValue(testToken);
       jest.spyOn((client as any), 'send');
       jest.spyOn((client as any), 'processErrorResponse');
 
@@ -447,8 +454,8 @@ describe('FetchClient', () => {
       expect(fetchSpy).toHaveBeenCalledTimes(3);
       expect(client.send).toHaveBeenCalledTimes(3);
       expect(client.processErrorResponse).toHaveBeenCalledTimes(2);
-      expect(client.send.mock.calls[1][0]?.context).toEqual({ dpopNonce });
-      expect(client.send.mock.calls[2][0]?.context).toEqual({ dpopNonce });
+      expect(client.send.mock.calls[1][0]?.context).toEqual({ dpopNonce, tokenId: testToken.id });
+      expect(client.send.mock.calls[2][0]?.context).toEqual({ dpopNonce, tokenId: testToken.id });
       expect(response.status).toEqual(200);
     });
   });
