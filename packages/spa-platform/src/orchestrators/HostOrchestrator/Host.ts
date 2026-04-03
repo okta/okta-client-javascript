@@ -101,6 +101,7 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
         break;
       case 'INVALIDATE':
         response = await this.handleInvalidateRequest(request.data);
+        break;
       default:
         response = { error: 'Unknown eventName provided' } satisfies HO.ErrorResponse;
     }

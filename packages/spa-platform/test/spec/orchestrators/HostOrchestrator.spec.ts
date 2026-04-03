@@ -17,11 +17,19 @@ class MockHost extends HostOrchestrator.Host {
   async findToken(): Promise<Token | HostOrchestrator.ErrorResponse> {
     return testToken;
   }
+
+  async invalidateToken (): Promise<HostOrchestrator.InvalidateResponse> {
+    return {};
+  }
 }
 
 class MockOrchestrator extends TokenOrchestrator {
   async getToken(): Promise<Token | null> {
     return testToken;
+  }
+
+  async invalidateToken (): Promise<void> {
+    return undefined;
   }
 }
 
@@ -236,7 +244,8 @@ describe('HostOrchestrator', () => {
         expect(reply).toHaveBeenCalled();
         expect(reply).toHaveBeenLastCalledWith({
           tokenType: nonDpopToken.tokenType,
-          authorization: `${nonDpopToken.tokenType} ${nonDpopToken.accessToken}`
+          authorization: `${nonDpopToken.tokenType} ${nonDpopToken.accessToken}`,
+          tokenId: nonDpopToken.id
         });
         expect(findTokenSpy).toHaveBeenCalled();
         expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
@@ -247,7 +256,8 @@ describe('HostOrchestrator', () => {
           request: event,
           response: {
             tokenType: nonDpopToken.tokenType,
-            authorization: `${nonDpopToken.tokenType} ${nonDpopToken.accessToken}`
+            authorization: `${nonDpopToken.tokenType} ${nonDpopToken.accessToken}`,
+            tokenId: nonDpopToken.id
           }
         });
 
@@ -257,7 +267,8 @@ describe('HostOrchestrator', () => {
         expect(reply).toHaveBeenLastCalledWith({
           tokenType: testToken.tokenType,
           authorization: `${testToken.tokenType} ${testToken.accessToken}`,
-          dpop: 'fakedpopvalue'
+          dpop: 'fakedpopvalue',
+          tokenId: testToken.id
         });
         expect(findTokenSpy).toHaveBeenCalled();
         expect(findTokenSpy).toHaveBeenLastCalledWith(authParams);
@@ -269,7 +280,8 @@ describe('HostOrchestrator', () => {
           response: {
             tokenType: testToken.tokenType,
             authorization: `${testToken.tokenType} ${testToken.accessToken}`,
-            dpop: 'fakedpopvalue'
+            dpop: 'fakedpopvalue',
+            tokenId: testToken.id
           }
         });
 
@@ -511,37 +523,42 @@ describe('HostOrchestrator', () => {
       const broadcastSpy = jest.spyOn((sub as any), 'broadcast').mockResolvedValue({
         tokenType: 'DPoP',
         authorization: 'authorization header',
-        dpop: 'dpop header'
+        dpop: 'dpop header',
+        tokenId: 'mockId1'
       });
 
       // Testing DPoP Tokens
       const request1 = new Request('http://localhost:8080/foo');
-      const result1 = await sub.authorize(request1);
+      const { request: result1, tokenId: tokenId1 } = await sub.authorize(request1);
       expect(result1).toBeInstanceOf(Request);
       expect(result1.headers.get('authorization')).toBe('authorization header');
       expect(result1.headers.get('dpop')).toBe('dpop header');
       expect(result1.url).toEqual(request1.url);
       expect(result1.method).toEqual('GET');
+      expect(tokenId1).toBe('mockId1');
       expect(broadcastSpy).toHaveBeenCalledTimes(1);
 
-      const result2 = await sub.authorize('http://localhost:8080/foo', { method: 'POST' });
+      const { request: result2, tokenId: tokenId2 } = await sub.authorize('http://localhost:8080/foo', { method: 'POST' });
       expect(result2).toBeInstanceOf(Request);
       expect(result2.headers.get('authorization')).toBe('authorization header');
       expect(result2.headers.get('dpop')).toBe('dpop header');
       expect(result2.url).toEqual('http://localhost:8080/foo');
       expect(result2.method).toEqual('POST');
+      expect(tokenId2).toBe('mockId1');
       expect(broadcastSpy).toHaveBeenCalledTimes(2);
 
       broadcastSpy.mockResolvedValue({
         tokenType: 'Bearer',
         authorization: 'authorization header',
+        tokenId: 'mockId2'
       });
 
       // Testing Bearer Tokens
-      const result3 = await sub.authorize('http://localhost:8080/foo');
+      const { request: result3, tokenId: tokenId3 } = await sub.authorize('http://localhost:8080/foo');
       expect(result3).toBeInstanceOf(Request);
       expect(result3.headers.get('authorization')).toBe('authorization header');
       expect(result3.method).toEqual('GET');
+      expect(tokenId3).toBe('mockId2');
       expect(broadcastSpy).toHaveBeenCalledTimes(3);
     
       // Error Scenarios
