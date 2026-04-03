@@ -23,7 +23,12 @@ describe('Orchestrators', () => {
     await OrchestratorApp.waitForLoad();
   };
 
-  beforeEach(async () => {
+
+  let messagesMock;
+
+  beforeEach(async function setup () {
+    messagesMock = await browser.mock(`**/api/messages`, { method: 'get' });
+
     browser.url('/');
     await RedirectModelApp.signIn();
     await performSignIn();
@@ -76,30 +81,37 @@ describe('Orchestrators', () => {
       await testOrchestrator('/silent');
     });
 
+    // Test to confirm AuthCodeOrchestrator gracefully handles access tokens being revoked outside of the application itself
     it('Out-of-band Token Revocation', async () => {
-      // Test to confirm AuthCodeOrchestrator gracefully handles access tokens being revoked outside of the application itself
-
       // load app as normal
-      await testOrchestrator('/redirect');
+      await bootstrap('/redirect');
+      await OrchestratorApp.waitForMessages();
+      const message1 = await OrchestratorApp.firstMessageSelector.getText();
+      expect(message1).toBeDefined();
 
-      // Establish network mocks
+      expect(messagesMock.calls.length).toBe(1);
+
       // /api/messages -> returns 401 (mocking token being revoked out-of-band; using revoked token against RS will result in 401)
-      const messagesMock = await browser.mock(`/api/messages`, { method: 'get' });
-      messagesMock.respond({}, { statusCode: 401, fetchResponse: false });
-      // /oauth2/v1/authorize - no override, simply track calls
-      const authorizeMock = await browser.mock(`${new URL(process.env.ISSUER).origin}/**/oauth2/v1/authorize`, { method: 'get' });
-      expect(authorizeMock.calls.length).toEqual(0);
+      messagesMock.respondOnce({}, { statusCode: 401, fetchResponse: false });
 
       // This should return mocked 401 and trigger redirect to /authorize (since previously used access token has been removed from storage)
       await OrchestratorApp.refreshMessagesBtn.click();
-      
       await performSignIn(true);    // expected bounce redirect since IDP session exists
-      expect(authorizeMock.calls.length).toEqual(0);    // further verify the bounce redirect to authorize occurred
 
       // confirm the app loads after bounce redirect
       await OrchestratorApp.waitForMessages();
-      const message = await OrchestratorApp.firstMessageSelector.getText();
-      expect(message).toBeDefined();
+      const message2 = await OrchestratorApp.firstMessageSelector.getText();
+      expect(message2).toBeDefined();
+
+      expect(messagesMock.calls.length).toBe(3);
+
+      // first request: Page load request
+      // second request: Mocked 401 response, triggers token storage removal
+      // third (final) request: No token is availabe, makes /authorize call to fetch new token (bounce redirect), and makes request with new token
+      const authHeaders = messagesMock.calls.map(call => call.headers['Authorization']);
+      expect(authHeaders[0]).toEqual(authHeaders[1]);         // page load request and 401 will use the same token (app doesn't know token is revoked yet)
+      expect(authHeaders[0]).not.toEqual(authHeaders[2]);     // page load request and final request will use different tokens (once 401 occurs, token will be replaced)
+      expect(authHeaders[1]).not.toEqual(authHeaders[2]);     // 401 and final request also use different tokens (401 will trigger token to be replaced)
     });
   });
 
