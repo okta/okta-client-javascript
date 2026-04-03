@@ -75,6 +75,32 @@ describe('Orchestrators', () => {
     it('silent', async () => {
       await testOrchestrator('/silent');
     });
+
+    it('Out-of-band Token Revocation', async () => {
+      // Test to confirm AuthCodeOrchestrator gracefully handles access tokens being revoked outside of the application itself
+
+      // load app as normal
+      await testOrchestrator('/redirect');
+
+      // Establish network mocks
+      // /api/messages -> returns 401 (mocking token being revoked out-of-band; using revoked token against RS will result in 401)
+      const messagesMock = await browser.mock(`/api/messages`, { method: 'get' });
+      messagesMock.respond({}, { statusCode: 401, fetchResponse: false });
+      // /oauth2/v1/authorize - no override, simply track calls
+      const authorizeMock = await browser.mock(`${new URL(process.env.ISSUER).origin}/**/oauth2/v1/authorize`, { method: 'get' });
+      expect(authorizeMock.calls.length).toEqual(0);
+
+      // This should return mocked 401 and trigger redirect to /authorize (since previously used access token has been removed from storage)
+      await OrchestratorApp.refreshMessagesBtn.click();
+      
+      await performSignIn(true);    // expected bounce redirect since IDP session exists
+      expect(authorizeMock.calls.length).toEqual(0);    // further verify the bounce redirect to authorize occurred
+
+      // confirm the app loads after bounce redirect
+      await OrchestratorApp.waitForMessages();
+      const message = await OrchestratorApp.firstMessageSelector.getText();
+      expect(message).toBeDefined();
+    });
   });
 
   describe('HostOrchestrator.ProxyHost', () => {
