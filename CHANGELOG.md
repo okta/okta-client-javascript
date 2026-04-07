@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 #### Added
 - Added `invalidateToken` abstract method to `TokenOrchestrator` ([#26](https://github.com/okta/okta-client-javascript/pull/26))
 
+#### Fixed
+- `FetchClient` will now remove tokens when `401` is received (via `invalidateToken`) ([#26](https://github.com/okta/okta-client-javascript/pull/26))
+
 ### `@okta/spa-platform`
 
 #### Added
@@ -16,14 +19,14 @@ All notable changes to this project will be documented in this file.
 
 ## [0.7.0] - 2026-03-19
 
-### @okta/auth-foundation
+### `@okta/auth-foundation`
 
 #### Added
 - Warnings for mismatched `TaskBridge` message versions ([#21](https://github.com/okta/okta-client-javascript/pull/21))
 
 ## [0.6.0] - 2026-03-18
 
-### @okta/auth-foundation
+### `@okta/auth-foundation`
 
 #### Added
 - Clock synchronization with Authorization Server ([#16](https://github.com/okta/okta-client-javascript/pull/16))
@@ -60,7 +63,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.5.3] - 2025-12-05
 
-### @okta/auth-foundation
+### `@okta/auth-foundation`
 
 #### Added
 - Adds object hashing function to produce predictable cache keys ([#11](https://github.com/okta/okta-client-javascript/pull/11))
