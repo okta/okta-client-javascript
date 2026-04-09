@@ -2,12 +2,11 @@ import {
   Credential,
   OAuth2Client,
   clearDPoPKeyPairs,
-  AuthorizationCodeFlow,
-  SessionLogoutFlow,
   type AcrValues,
   type JsonRecord,
   isOAuth2ErrorResponse,
 } from '@okta/spa-platform';
+import { AuthorizationCodeFlow, SessionLogoutFlow } from '@okta/spa-platform/flows';
 
 
 const ADMIN_SPA_REFRESH_TOKEN_TAG = 'admin-spa:mordor-token';
