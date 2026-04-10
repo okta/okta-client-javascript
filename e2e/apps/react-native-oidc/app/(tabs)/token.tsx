@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useState, useCallback } from 'react';
+import { StyleSheet, ScrollView, ActivityIndicator, Button } from 'react-native';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
@@ -9,14 +9,17 @@ import { Credential } from '@okta/react-native-platform';
 import type { Token } from '@okta/react-native-platform';
 
 export default function TokenScreen() {
+  const router = useRouter();
   const params = useLocalSearchParams<{ id?: string }>();
   const [token, setToken] = useState<Token | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadToken();
-  }, [params.id]);
+  useFocusEffect(
+    useCallback(() => {
+      loadToken();
+    }, [params.id])
+  );
 
   const loadToken = async () => {
     try {
@@ -33,7 +36,11 @@ export default function TokenScreen() {
       if (credential) {
         setToken(credential.token);
       } else {
-        setError('No credential found');
+        let errMsg = 'No credential found';
+        if (params.id) {
+          errMsg += ` (${params.id})`;
+        }
+        setError(errMsg);
       }
     } catch (err) {
       console.error('Failed to load token:', err);
@@ -42,6 +49,14 @@ export default function TokenScreen() {
       setLoading(false);
     }
   };
+
+  const handleRevoke = async () => {
+    if (token) {
+      const cred = await Credential.with(token.id);
+      await cred?.revoke();
+      router.navigate('/credentials')
+    }
+  }
 
   if (loading) {
     return (
@@ -80,7 +95,7 @@ export default function TokenScreen() {
         </ThemedView>
         <ThemedView style={styles.errorContainer}>
           <ThemedText style={styles.errorText}>
-            {error || 'No token selected'}
+            {error || `No token selected (${params.id})`}
           </ThemedText>
           <ThemedText style={styles.hintText}>
             Go to Credentials tab and select a credential
@@ -185,6 +200,10 @@ export default function TokenScreen() {
           </ThemedView>
         </ThemedView>
       )}
+
+      <ThemedView style={styles.section}>
+        <Button title="Revoke Token" onPress={handleRevoke} />
+      </ThemedView>
     </ParallaxScrollView>
   );
 }

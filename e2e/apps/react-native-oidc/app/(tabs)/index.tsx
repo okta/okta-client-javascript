@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
-import { useState, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { Button, StyleSheet, View, ActivityIndicator } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -15,9 +16,12 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      checkAuth();
+    }, [])
+  );
 
   const checkAuth = async () => {
     try {

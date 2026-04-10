@@ -24,9 +24,7 @@ async function performSignIn () {
       const flow = new AuthorizationCodeFlow(client, {
         redirectUri: 'com.oktapreview.jperreault-test:/callback'
       });
-  
-      // TODO: improve this pattern, too awkward
-      // .save was migrated away from AuthCodeFlow
+
       const uri = await flow.start();
       console.log('here 2')
       console.log('authorize url', uri);
@@ -40,6 +38,7 @@ async function performSignIn () {
       const { token, context } = await flow.resume(result.url);
       console.log('token', token);
       console.log('context', context);
+      console.log('access token', token.accessToken);
       // credential = await Credential.store(token);
       const credential = await Credential.store(token);
       return credential.id;
@@ -54,19 +53,11 @@ async function performSignIn () {
   // return credential.id;
 }
 
-// TODO: cannot use oidc logout as openid is not a request scope currently
 async function performSignOut () {
   const isOIDC = client.configuration.scopes.includes('openid');
 
-  if (isOIDC) {
-    // TODO:
-    throw new Error('Not implemented');
-  }
-  else {
-    // TODO: /revoke fails due to same URLSearchParams issue
-    await (await Credential.getDefault())?.revoke();
-    // await (await Credential.getDefault())?.remove();
-  }
+  // TODO: implement oidc logout
+  await (await Credential.getDefault())?.revoke();
 }
 
 export function useAuth () {
