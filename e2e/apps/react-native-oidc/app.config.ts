@@ -17,5 +17,28 @@ export default ({ config }: ConfigContext) => ({
   ...config,
   extra: {
     env
-  }
+  },
+  newArchEnabled: true,
+  "android": {
+    "package": "com.anonymous.reporeactnativeoidc"
+  },
+  "ios": {
+    "bundleIdentifier": "com.anonymous.reporeactnativeoidc"
+  },
+  scheme: "com.oktapreview.jperreault-test",
+  "plugins": [
+    "expo-font",
+    "expo-router",
+    [
+      "expo-build-properties",
+      {
+        "ios": {
+          "newArchEnabled": true
+        },
+        "android": {
+          "newArchEnabled": true
+        }
+      }
+    ]
+  ]
 });

@@ -37,7 +37,10 @@
     "./package.json": "./package.json"
   },
   "sideEffects": [
-    "./src/oktaUserAgent.ts"
+    "./src/index.ts",
+    "./src/oktaUserAgent.ts",
+    "./dist/esm/index.js",
+    "./dist/esm/oktaUserAgent.ts"
   ],
   "scripts": {
     "lint": "eslint --ext .js,.ts,.jsx .",
