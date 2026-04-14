@@ -1,6 +1,6 @@
 {
   "name": "@okta/spa-platform",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "type": "module",
   "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
@@ -17,6 +17,10 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
+    },
+    "./flows" : {
+      "types": "./dist/types/flows.d.ts",
+      "import": "./dist/esm/flows.js"
     },
     "./package.json": "./package.json"
   },

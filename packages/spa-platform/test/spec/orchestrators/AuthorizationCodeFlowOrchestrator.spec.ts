@@ -1,7 +1,7 @@
 import { Token, TokenOrchestratorError, OAuth2Error } from '@okta/auth-foundation';
 import { Credential } from 'src/Credential';
 import { AuthorizationCodeFlow } from 'src/flows/AuthorizationCodeFlow';
-import { AuthorizationCodeFlowOrchestrator } from 'src/orchestrators';
+import { AuthorizationCodeFlowOrchestrator } from 'src/orchestrators/AuthorizationCodeFlowOrchestrator';
 import { oauthClient, makeTestToken } from '../../helpers/makeTestResource';
 
 
