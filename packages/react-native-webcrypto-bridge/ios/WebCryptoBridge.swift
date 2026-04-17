@@ -29,13 +29,35 @@ extension Data {
     }
 }
 
-// MARK: - Key Entry
+// MARK: - Key Storage Models
 
-/// Type-safe key storage entry, replacing the previous `[String: Any]` dictionary.
-struct KeyEntry {
-    let publicKey: SecKey
-    let privateKey: SecKey?
+/// Enum representing where and how a cryptographic key is stored.
+/// Differentiates between generated keys and imported public keys.
+enum CryptoKeyEntry {
+    /// Key stored in Secure Enclave (generated, non-extractable)
+    case keystore(publicKey: SecKey, privateKey: SecKey?)
+
+    /// Key stored in memory (imported from JWK, extractable)
+    case platform(key: SecKey, algorithmName: String)
+}
+
+/// Type-safe representation of a cryptographic key metadata.
+/// Encapsulates key information following the WebCrypto API model.
+struct CryptoKey {
+    /// The key algorithm (e.g., {"name": "RSASSA-PKCS1-v1_5", "modulusLength": 2048})
+    let algorithm: [String: Any]
+
+    /// Key type: "private", "public", or "secret"
+    let type: String
+
+    /// Whether the key can be exported
     let extractable: Bool
+
+    /// Permitted operations: "sign", "verify", "encrypt", "decrypt", etc.
+    let usages: [String]
+
+    /// Storage location and access method for the key
+    let entry: CryptoKeyEntry
 }
 
 // MARK: - WebCryptoBridge
@@ -43,8 +65,8 @@ struct KeyEntry {
 @objc(WebCryptoBridge)
 class WebCryptoBridge: NSObject {
 
-    // Key storage — typed struct instead of [String: Any]
-    private static var keyStore: [String: KeyEntry] = [:]
+    // Key storage — maps keyId to CryptoKey with full metadata
+    private static var keyStore: [String: CryptoKey] = [:]
     private static let keyStoreLock = NSLock()
 
     @objc
@@ -141,14 +163,28 @@ class WebCryptoBridge: NSObject {
     ) {
         guard let algorithmData = algorithmJson.data(using: .utf8),
               let algorithm = try? JSONSerialization.jsonObject(with: algorithmData) as? [String: Any],
-              algorithm["name"] as? String == "RSASSA-PKCS1-v1_5" else {
-            reject("unsupported_algorithm", "Only RSASSA-PKCS1-v1_5 is supported", nil)
+              let algorithmName = algorithm["name"] as? String else {
+            reject("invalid_algorithm", "Invalid algorithm JSON", nil)
+            return
+        }
+
+        guard let handler = AlgorithmRegistry.shared.getHandler(for: algorithmName) else {
+            reject("unsupported_algorithm", "Algorithm not supported: \(algorithmName)", nil)
+            return
+        }
+
+        // Handler generates the key specs for this algorithm
+        let keyGenSpec: KeyGenSpec
+        do {
+            keyGenSpec = try handler.generateKeySpec(algorithm)
+        } catch let error as NSError {
+            reject("invalid_key_parameters", error.localizedDescription, error)
             return
         }
 
         let attributes: [String: Any] = [
-            kSecAttrKeyType as String: kSecAttrKeyTypeRSA,
-            kSecAttrKeySizeInBits as String: 2048,
+            kSecAttrKeyType as String: keyGenSpec.keyType,
+            kSecAttrKeySizeInBits as String: keyGenSpec.keySize,
             kSecPrivateKeyAttrs as String: [
                 kSecAttrIsPermanent as String: false
             ],
@@ -172,10 +208,12 @@ class WebCryptoBridge: NSObject {
         let keyId = UUID().uuidString
 
         Self.keyStoreLock.lock()
-        Self.keyStore[keyId] = KeyEntry(
-            publicKey: publicKey,
-            privateKey: privateKey,
-            extractable: extractable
+        Self.keyStore[keyId] = CryptoKey(
+            algorithm: algorithm,
+            type: "private",
+            extractable: extractable,
+            usages: keyUsages,
+            entry: .keystore(publicKey: publicKey, privateKey: privateKey)
         )
         Self.keyStoreLock.unlock()
 
@@ -188,11 +226,10 @@ class WebCryptoBridge: NSObject {
         }
     }
 
-    @objc(exportKey:keyId:keyType:resolve:reject:)
+    @objc(exportKey:keyId:resolve:reject:)
     func exportKey(
         _ format: String,
         keyId: String,
-        keyType: String,
         resolve: @escaping RCTPromiseResolveBlock,
         reject: @escaping RCTPromiseRejectBlock
     ) {
@@ -202,23 +239,28 @@ class WebCryptoBridge: NSObject {
         }
 
         Self.keyStoreLock.lock()
-        let entry = Self.keyStore[keyId]
+        let cryptoKey = Self.keyStore[keyId]
         Self.keyStoreLock.unlock()
 
-        guard let entry = entry else {
+        guard let cryptoKey = cryptoKey else {
             reject("key_not_found", "Key not found", nil)
             return
         }
 
         let key: SecKey
-        if keyType == "public" {
-            key = entry.publicKey
-        } else {
-            guard let privateKey = entry.privateKey else {
-                reject("key_not_found", "Private key not available for this key", nil)
-                return
+        switch cryptoKey.entry {
+        case .keystore(let publicKey, let privateKey):
+            if cryptoKey.type == "public" {
+                key = publicKey
+            } else {
+                guard let pk = privateKey else {
+                    reject("key_not_found", "Private key not available for this key", nil)
+                    return
+                }
+                key = pk
             }
-            key = privateKey
+        case .platform(let platformKey, _):
+            key = platformKey
         }
 
         var error: Unmanaged<CFError>?
@@ -228,21 +270,16 @@ class WebCryptoBridge: NSObject {
             return
         }
 
-        var jwk: [String: Any] = [
-            "kty": "RSA",
-            "alg": "RS256"
-        ]
-
-        if keyType == "public" {
-            // SecKeyCopyExternalRepresentation returns PKCS#1 RSAPublicKey for RSA public keys:
-            // SEQUENCE { INTEGER modulus, INTEGER exponent }
-            guard let components = RSAPublicKeyComponents(derData: keyData) else {
-                reject("export_failed", "Failed to parse RSA public key components", nil)
-                return
-            }
-            jwk["n"] = components.modulus.base64URLEncodedString()
-            jwk["e"] = components.exponent.base64URLEncodedString()
+        // For RSA, SecKeyCopyExternalRepresentation returns PKCS#1 RSAPublicKey:
+        // SEQUENCE { INTEGER modulus, INTEGER exponent }
+        guard let components = RSAPublicKeyComponents(derData: keyData) else {
+            reject("export_failed", "Failed to parse RSA public key components", nil)
+            return
         }
+
+        // Use handler to build JWK
+        let handler = RSAHandler()
+        let jwk = handler.exportToJWK(publicKey: key, keyComponents: components)
 
         if let jsonData = try? JSONSerialization.data(withJSONObject: jwk),
            let jsonString = String(data: jsonData, encoding: .utf8) {
@@ -269,25 +306,26 @@ class WebCryptoBridge: NSObject {
 
         guard let jwkData = keyData.data(using: .utf8),
               let jwk = try? JSONSerialization.jsonObject(with: jwkData) as? [String: Any],
-              jwk["kty"] as? String == "RSA" else {
+              let kty = jwk["kty"] as? String else {
             reject("invalid_jwk", "Invalid JWK format", nil)
             return
         }
 
-        guard let nString = jwk["n"] as? String,
-              let eString = jwk["e"] as? String,
-              let modulusData = Data(base64Encoded: nString.base64URLDecoded),
-              let exponentData = Data(base64Encoded: eString.base64URLDecoded) else {
+        // Use handler to import from JWK
+        guard let handler = AlgorithmRegistry.shared.getHandlerByKeyType(kty) else {
+            reject("unsupported_key_type", "Key type not supported: \(kty)", nil)
+            return
+        }
+
+        guard let components = handler.importFromJWK(jwk) else {
             reject("invalid_jwk", "Invalid JWK components", nil)
             return
         }
 
         let keyId = UUID().uuidString
-
-        let components = RSAPublicKeyComponents(modulus: modulusData, exponent: exponentData)
         let publicKeyData = components.derData
 
-        // Key size is derived from the modulus, not the DER blob
+        // Key size is derived from the modulus
         let keySizeInBits = components.keySizeInBits
 
         var error: Unmanaged<CFError>?
@@ -304,14 +342,27 @@ class WebCryptoBridge: NSObject {
         }
 
         Self.keyStoreLock.lock()
-        Self.keyStore[keyId] = KeyEntry(
-            publicKey: publicKey,
-            privateKey: nil,
-            extractable: extractable
+        let algorithmDict = (try? JSONSerialization.jsonObject(with: algorithm.data(using: .utf8)!) as? [String: Any]) ?? [:]
+        Self.keyStore[keyId] = CryptoKey(
+            algorithm: algorithmDict,
+            type: "public",
+            extractable: extractable,
+            usages: keyUsages,
+            entry: .platform(key: publicKey, algorithmName: keyTypeToAlgorithmName(kty))
         )
         Self.keyStoreLock.unlock()
 
         resolve(keyId)
+    }
+
+    /// Maps JWK key type to algorithm name.
+    private func keyTypeToAlgorithmName(_ kty: String) -> String {
+        switch kty {
+        case "RSA": return "RSASSA-PKCS1-v1_5"
+        case "EC": return "ECDSA"
+        case "OKP": return "EdDSA"
+        default: return "unknown"
+        }
     }
 
     @objc(sign:keyId:data:resolve:reject:)
@@ -323,15 +374,16 @@ class WebCryptoBridge: NSObject {
         reject: @escaping RCTPromiseRejectBlock
     ) {
         Self.keyStoreLock.lock()
-        let entry = Self.keyStore[keyId]
+        let cryptoKey = Self.keyStore[keyId]
         Self.keyStoreLock.unlock()
 
-        guard let entry = entry else {
+        guard let cryptoKey = cryptoKey else {
             reject("key_not_found", "Key not found", nil)
             return
         }
 
-        guard let privateKey = entry.privateKey else {
+        guard case .keystore(_, let privateKey) = cryptoKey.entry,
+              let pk = privateKey else {
             reject("key_not_found", "Private key not available for this key", nil)
             return
         }
@@ -341,10 +393,14 @@ class WebCryptoBridge: NSObject {
             return
         }
 
+        // Use handler to get signature algorithm
+        let handler = RSAHandler()
+        let signatureAlgorithm = handler.getSignatureAlgorithm()
+
         var error: Unmanaged<CFError>?
         guard let signature = SecKeyCreateSignature(
-            privateKey,
-            .rsaSignatureMessagePKCS1v15SHA256,
+            pk,
+            signatureAlgorithm,
             inputData as CFData,
             &error
         ) as Data? else {
@@ -366,10 +422,10 @@ class WebCryptoBridge: NSObject {
         reject: @escaping RCTPromiseRejectBlock
     ) {
         Self.keyStoreLock.lock()
-        let entry = Self.keyStore[keyId]
+        let cryptoKey = Self.keyStore[keyId]
         Self.keyStoreLock.unlock()
 
-        guard let entry = entry else {
+        guard let cryptoKey = cryptoKey else {
             reject("key_not_found", "Public key not found", nil)
             return
         }
@@ -384,12 +440,22 @@ class WebCryptoBridge: NSObject {
             return
         }
 
-        let publicKey = entry.publicKey
+        let publicKey: SecKey
+        switch cryptoKey.entry {
+        case .keystore(let pubKey, _):
+            publicKey = pubKey
+        case .platform(let key, _):
+            publicKey = key
+        }
+
+        // Use handler to get signature algorithm
+        let handler = RSAHandler()
+        let signatureAlgorithm = handler.getSignatureAlgorithm()
 
         var error: Unmanaged<CFError>?
         let verified = SecKeyVerifySignature(
             publicKey,
-            .rsaSignatureMessagePKCS1v15SHA256,
+            signatureAlgorithm,
             inputData as CFData,
             signatureData as CFData,
             &error

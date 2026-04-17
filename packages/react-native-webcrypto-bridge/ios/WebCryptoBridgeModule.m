@@ -15,7 +15,6 @@ RCT_EXTERN_METHOD(generateKey:(NSString *)algorithm
 
 RCT_EXTERN_METHOD(exportKey:(NSString *)format
                   keyId:(NSString *)keyId
-                  keyType:(NSString *)keyType
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 
