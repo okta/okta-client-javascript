@@ -22,7 +22,7 @@ export interface Spec extends TurboModule {
   /**
    * Export a key to JWK format (async)
    */
-  exportKey(format: string, keyId: string, keyType: string): Promise<string>;
+  exportKey(format: string, keyId: string): Promise<string>;
 
   /**
    * Import a key from JWK format (async)

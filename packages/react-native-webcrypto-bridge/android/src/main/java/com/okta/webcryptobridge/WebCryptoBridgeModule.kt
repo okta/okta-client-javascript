@@ -232,7 +232,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
                 return
             }
 
-            val usages = (0 until keyUsages.size()).map { keyUsages.getString(it) }.toSet()
+            val usages = (0 until keyUsages.size()).mapNotNull { keyUsages.getString(it) }.toSet()
             val allowedUsages = setOf("sign", "verify")
             val invalid = usages - allowedUsages
             if (invalid.isNotEmpty()) {
@@ -383,7 +383,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
             val keyId = UUID.randomUUID().toString()
 
             // Parse key usages from ReadableArray
-            val usages = (0 until keyUsages.size()).map { keyUsages.getString(it) }
+            val usages = (0 until keyUsages.size()).mapNotNull { keyUsages.getString(it) }
 
             // Create CryptoKey metadata
             val algorithm = JSONObject(algorithmJson)

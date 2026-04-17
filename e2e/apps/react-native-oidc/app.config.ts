@@ -25,6 +25,18 @@ export default ({ config }: ConfigContext) => ({
     "bundleIdentifier": "com.anonymous.reporeactnativeoidc"
   },
   scheme: "com.oktapreview.jperreault-test",
+  intentFilters: [
+    {
+      action: "VIEW",
+      autoVerify: true,
+      data: [
+        {
+          scheme: "com.oktapreview.jperreault-test"
+        }
+      ],
+      category: ["BROWSABLE", "DEFAULT"]
+    }
+  ],
   "plugins": [
     "expo-font",
     "expo-router",
