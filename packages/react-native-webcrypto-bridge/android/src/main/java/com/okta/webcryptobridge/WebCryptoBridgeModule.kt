@@ -77,10 +77,9 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
 
     companion object {
         const val NAME = "WebCryptoBridge"
-
-        private val cryptoKeys = mutableMapOf<String, CryptoKey>()
     }
 
+    private val cryptoKeys = mutableMapOf<String, CryptoKey>()
     private val secureRandom = SecureRandom()
 
     override fun getName(): String = NAME
@@ -123,30 +122,6 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
             is NativeCryptoKey.Platform -> entry.key
         }
     }
-
-    // MARK: - Base64 helpers
-
-    /**
-     * Strips the leading zero byte from a [BigInteger] byte representation.
-     * [BigInteger.toByteArray] prepends a zero byte to positive values whose high bit is set;
-     * JWK fields (`n`, `e`) must not include it.
-     */
-    private fun toUnsignedByteArray(value: BigInteger): ByteArray {
-        val bytes = value.toByteArray()
-        return if (bytes[0].toInt() == 0 && bytes.size > 1) {
-            bytes.copyOfRange(1, bytes.size)
-        } else {
-            bytes
-        }
-    }
-
-    /** Encodes [data] as a Base64URL string (RFC 4648 §5) with no padding. */
-    private fun base64URLEncode(data: ByteArray): String =
-        Base64.encodeToString(data, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-
-    /** Decodes a Base64URL string (RFC 4648 §5) to a [ByteArray]. */
-    private fun base64URLDecode(input: String): ByteArray =
-        Base64.decode(input, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
 
     // MARK: - Synchronous Methods
 
@@ -260,10 +235,10 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
 
             // Rest of key generation remains the same
             val keyPairGenerator = KeyPairGenerator.getInstance(
-                KeyProperties.KEY_ALGORITHM_RSA,
+                keyGenSpec.keyAlgorithm,
                 "AndroidKeyStore"
             )
-            keyPairGenerator.initialize(keyGenSpec)
+            keyPairGenerator.initialize(keyGenSpec.keyGenParameterSpec)
             keyPairGenerator.generateKeyPair()
 
             // Create CryptoKey metadata

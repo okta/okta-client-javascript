@@ -2,8 +2,9 @@ package com.okta.webcryptobridge.algorithms
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
-import android.util.Base64
 import com.okta.webcryptobridge.CryptoAlgorithmHandler
+import com.okta.webcryptobridge.CryptoUtils
+import com.okta.webcryptobridge.KeyGenSpec
 import org.json.JSONObject
 import java.math.BigInteger
 import java.security.PublicKey
@@ -35,17 +36,22 @@ class RSAHandler : CryptoAlgorithmHandler {
         alias: String,
         params: JSONObject,
         purposes: Int
-    ): KeyGenParameterSpec {
+    ): KeyGenSpec {
         val modulusLength = params.getInt("modulusLength")
         if (modulusLength != 2048) {
             throw IllegalArgumentException("RSA: only 2048-bit keys are supported")
         }
 
-        return KeyGenParameterSpec.Builder(alias, purposes)
+        val keyGenParameterSpec = KeyGenParameterSpec.Builder(alias, purposes)
             .setKeySize(2048)
             .setDigests(KeyProperties.DIGEST_SHA256)
             .setSignaturePaddings(KeyProperties.SIGNATURE_PADDING_RSA_PKCS1)
             .build()
+
+        return KeyGenSpec(
+            keyGenParameterSpec = keyGenParameterSpec,
+            keyAlgorithm = KeyProperties.KEY_ALGORITHM_RSA
+        )
     }
 
     /**
@@ -62,8 +68,8 @@ class RSAHandler : CryptoAlgorithmHandler {
         val jwk = JSONObject()
         jwk.put("kty", "RSA")
         jwk.put("alg", "RS256")
-        jwk.put("n", base64URLEncode(toUnsignedByteArray(rsaPublicKey.modulus)))
-        jwk.put("e", base64URLEncode(toUnsignedByteArray(rsaPublicKey.publicExponent)))
+        jwk.put("n", CryptoUtils.base64URLEncode(CryptoUtils.toUnsignedByteArray(rsaPublicKey.modulus)))
+        jwk.put("e", CryptoUtils.base64URLEncode(CryptoUtils.toUnsignedByteArray(rsaPublicKey.publicExponent)))
         return jwk
     }
 
@@ -81,8 +87,8 @@ class RSAHandler : CryptoAlgorithmHandler {
         val nString = jwk.getString("n")
         val eString = jwk.getString("e")
 
-        val modulusBytes = base64URLDecode(nString)
-        val exponentBytes = base64URLDecode(eString)
+        val modulusBytes = CryptoUtils.base64URLDecode(nString)
+        val exponentBytes = CryptoUtils.base64URLDecode(eString)
 
         val modulus = BigInteger(1, modulusBytes)
         val exponent = BigInteger(1, exponentBytes)
@@ -98,40 +104,4 @@ class RSAHandler : CryptoAlgorithmHandler {
      * @return `"SHA256withRSA"` for signing with RSASSA-PKCS1-v1_5 and SHA-256
      */
     override fun getSignatureAlgorithm(): String = "SHA256withRSA"
-
-    /**
-     * Strips the leading zero byte from a BigInteger byte representation.
-     *
-     * BigInteger.toByteArray() prepends a zero byte to positive values whose high bit is set.
-     * JWK fields (`n`, `e`) must not include this padding byte per RFC 7517.
-     *
-     * @param value the BigInteger to convert
-     * @return byte array without leading zero (if present and unnecessary)
-     */
-    private fun toUnsignedByteArray(value: BigInteger): ByteArray {
-        val bytes = value.toByteArray()
-        return if (bytes[0].toInt() == 0 && bytes.size > 1) {
-            bytes.copyOfRange(1, bytes.size)
-        } else {
-            bytes
-        }
-    }
-
-    /**
-     * Encodes data as Base64URL per RFC 4648 §5 with no padding.
-     *
-     * @param data the bytes to encode
-     * @return Base64URL-encoded string (no padding)
-     */
-    private fun base64URLEncode(data: ByteArray): String =
-        Base64.encodeToString(data, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
-
-    /**
-     * Decodes a Base64URL string per RFC 4648 §5.
-     *
-     * @param input Base64URL-encoded string
-     * @return decoded bytes
-     */
-    private fun base64URLDecode(input: String): ByteArray =
-        Base64.decode(input, Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
 }

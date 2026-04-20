@@ -5,6 +5,16 @@ import org.json.JSONObject
 import java.security.PublicKey
 
 /**
+ * Specification for key generation including the KeyGenParameterSpec and key algorithm type.
+ */
+data class KeyGenSpec(
+    /// The KeyGenParameterSpec for AndroidKeyStore configuration
+    val keyGenParameterSpec: KeyGenParameterSpec,
+    /// The key algorithm string (e.g., "RSA", "EC") for KeyPairGenerator.getInstance()
+    val keyAlgorithm: String
+)
+
+/**
  * Interface for algorithm-specific cryptographic operations.
  *
  * Implementations of this interface encapsulate all algorithm-specific logic for key generation,
@@ -14,19 +24,19 @@ import java.security.PublicKey
  */
 interface CryptoAlgorithmHandler {
     /**
-     * Generates a KeyGenParameterSpec for this algorithm.
+     * Generates a key generation specification for this algorithm.
      *
-     * This spec is used to configure the Android KeyPairGenerator for key generation in the
-     * Android Keystore. The handler is responsible for validating algorithm parameters and
-     * throwing IllegalArgumentException if the parameters are invalid (e.g., unsupported key size).
+     * Returns both the KeyGenParameterSpec (for AndroidKeyStore configuration) and the key algorithm
+     * type. The handler is responsible for validating algorithm parameters and throwing
+     * IllegalArgumentException if the parameters are invalid (e.g., unsupported key size).
      *
      * @param alias the keystore alias for the key being generated
      * @param params JSON object containing algorithm-specific parameters (e.g., `modulusLength` for RSA)
      * @param purposes bit flags indicating key usage (e.g., KeyProperties.PURPOSE_SIGN)
-     * @return a configured KeyGenParameterSpec for this algorithm
+     * @return a KeyGenSpec containing both the KeyGenParameterSpec and key algorithm type
      * @throws IllegalArgumentException if algorithm parameters are invalid
      */
-    fun generateKeySpec(alias: String, params: JSONObject, purposes: Int): KeyGenParameterSpec
+    fun generateKeySpec(alias: String, params: JSONObject, purposes: Int): KeyGenSpec
 
     /**
      * Exports a public key to JWK (JSON Web Key) format.
