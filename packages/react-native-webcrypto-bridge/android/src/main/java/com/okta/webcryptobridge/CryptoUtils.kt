@@ -17,7 +17,11 @@ object CryptoUtils {
      */
     fun toUnsignedByteArray(value: BigInteger): ByteArray {
         val bytes = value.toByteArray()
-        return if (bytes[0].toInt() == 0 && bytes.size > 1) {
+        // Skip the leading 0x00 byte if it exists and isn't the only byte.
+        // BigInteger.toByteArray() adds a leading zero when the value's high bit
+        // would be set (to preserve sign for signed representation), but for JWK
+        // we need the minimal unsigned representation.
+        return if (bytes.isNotEmpty() && bytes[0] == 0.toByte() && bytes.size > 1) {
             bytes.copyOfRange(1, bytes.size)
         } else {
             bytes

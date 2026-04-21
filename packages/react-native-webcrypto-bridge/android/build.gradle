@@ -1,5 +1,5 @@
 buildscript {
-    ext.kotlin_version = '1.9.24'
+    ext.kotlin_version = '2.1.0'
 
     repositories {
         google()
@@ -7,35 +7,31 @@ buildscript {
     }
 
     dependencies {
+        classpath 'com.android.tools.build:gradle:8.1.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'com.facebook.react'
-
-def safeExtGet(prop, fallback) {
-    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
-}
 
 android {
     namespace "com.okta.webcryptobridge"
-    compileSdkVersion safeExtGet('compileSdkVersion', 35)
-    
+    compileSdkVersion 35
+
     defaultConfig {
-        minSdkVersion safeExtGet('minSdkVersion', 23)
-        targetSdkVersion safeExtGet('targetSdkVersion', 35)
+        minSdkVersion 24
+        targetSdkVersion 35
         versionCode 1
         versionName "1.0"
     }
-    
+
     buildTypes {
         release {
             minifyEnabled false
         }
     }
-    
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
@@ -43,6 +39,10 @@ android {
 
     kotlinOptions {
         jvmTarget = '17'
+    }
+
+    testOptions {
+        unitTests.includeAndroidResources = true
     }
 }
 
@@ -53,6 +53,19 @@ repositories {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
-    implementation 'com.facebook.react:react-native:0.81+'
     implementation "androidx.biometric:biometric:1.1.0"
+    implementation 'com.facebook.react:react-android:0.81.0'
+
+    // Testing dependencies
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'com.google.truth:truth:1.1.2'
+    testImplementation 'io.mockk:mockk:1.13.5'
+    testImplementation 'org.json:json:20231013'
+}
+
+// Filter tests to only run webcryptobridge tests
+tasks.withType(Test) {
+    filter {
+        includeTestsMatching 'com.okta.webcryptobridge.*'
+    }
 }
