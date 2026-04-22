@@ -27,9 +27,13 @@ import org.robolectric.annotation.Config
 /**
  * Base class for WebCryptoBridgeModule integration tests.
  * Provides Robolectric setup and utilities for testing module methods with captured promises.
+ *
+ * SDK 34 (Android 14) is used for testing. This is the highest SDK supported by Robolectric 4.12.1
+ * and provides better compatibility with the project's target SDK 35. To test against SDK 35,
+ * Robolectric would need to be upgraded to a version that supports it.
  */
 @org.junit.runner.RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
+@Config(sdk = [34])
 abstract class WebCryptoBridgeModuleTest {
 
     protected lateinit var module: WebCryptoBridgeModule
@@ -42,22 +46,32 @@ abstract class WebCryptoBridgeModuleTest {
         context = mockk(relaxed = true)
         every { context.currentActivity } returns null
 
-        // Mock KeyPairGenerator.getInstance to avoid Robolectric Keystore limitations
-        mockkStatic(KeyPairGenerator::class)
-        every { KeyPairGenerator.getInstance(any(), "AndroidKeyStore") } answers {
-            createMockKeyPairGenerator()
+        // Mock security-related classes to avoid AndroidKeyStore limitations in tests
+        try {
+            mockkStatic(KeyPairGenerator::class)
+            every { KeyPairGenerator.getInstance(any<String>(), any<String>()) } answers {
+                createMockKeyPairGenerator()
+            }
+        } catch (e: Exception) {
+            // Suppress exceptions during mock setup - AndroidKeyStore may not be available
         }
 
-        // Mock Signature.getInstance to avoid Robolectric Keystore limitations
-        mockkStatic(Signature::class)
-        every { Signature.getInstance(any()) } answers {
-            createMockSignature()
+        try {
+            mockkStatic(Signature::class)
+            every { Signature.getInstance(any<String>()) } answers {
+                createMockSignature()
+            }
+        } catch (e: Exception) {
+            // Suppress exceptions during mock setup
         }
 
-        // Mock Cipher.getInstance to avoid Robolectric Keystore limitations
-        mockkStatic(Cipher::class)
-        every { Cipher.getInstance(any()) } answers {
-            createMockCipher()
+        try {
+            mockkStatic(Cipher::class)
+            every { Cipher.getInstance(any<String>()) } answers {
+                createMockCipher()
+            }
+        } catch (e: Exception) {
+            // Suppress exceptions during mock setup
         }
 
         module = WebCryptoBridgeModule(context)
@@ -66,9 +80,9 @@ abstract class WebCryptoBridgeModuleTest {
     @After
     fun tearDown() {
         promises.clear()
-        unmockkStatic(KeyPairGenerator::class)
-        unmockkStatic(Signature::class)
-        unmockkStatic(Cipher::class)
+        try { unmockkStatic(KeyPairGenerator::class) } catch (e: Exception) { }
+        try { unmockkStatic(Signature::class) } catch (e: Exception) { }
+        try { unmockkStatic(Cipher::class) } catch (e: Exception) { }
     }
 
     private fun createMockKeyPairGenerator(): KeyPairGenerator {

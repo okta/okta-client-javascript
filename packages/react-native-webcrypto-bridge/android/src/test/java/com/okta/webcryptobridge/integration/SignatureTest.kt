@@ -5,7 +5,6 @@ import com.google.common.truth.Truth.assertThat
 import org.json.JSONObject
 import org.junit.Test
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 /**
  * Integration tests for WebCryptoBridgeModule signature operations.
@@ -16,7 +15,6 @@ import org.robolectric.annotation.Config
  * and full Android Keystore support beyond Robolectric's capabilities.
  */
 @org.junit.runner.RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
 class SignatureTest : WebCryptoBridgeModuleTest() {
 
     @Test

@@ -5,14 +5,12 @@ import com.google.common.truth.Truth.assertThat
 import org.json.JSONObject
 import org.junit.Test
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 /**
  * Integration tests for WebCryptoBridgeModule.generateKey() method.
  * Tests key generation flow with Android Keystore via Robolectric.
  */
 @org.junit.runner.RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33])
 class KeyGenerationTest : WebCryptoBridgeModuleTest() {
 
     @Test
