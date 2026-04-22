@@ -4,6 +4,8 @@ import io.mockk.mockk
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class CryptoAlgorithmRegistryTest {
 
@@ -97,6 +99,101 @@ class CryptoAlgorithmRegistryTest {
 
         val retrieved = registry.getHandler("RSASSA-PKCS1-v1_5")
         assertSame("New handler should overwrite old one", newHandler, retrieved)
+    }
+
+    @Test
+    fun testConcurrentHandlerLookups() {
+        val executor = Executors.newFixedThreadPool(10)
+        val iterations = 100
+
+        val futures = (0..iterations).map {
+            executor.submit {
+                val handler = registry.getHandler("RSASSA-PKCS1-v1_5")
+                assertNotNull("Handler should not be null under concurrent access", handler)
+            }
+        }
+
+        // Wait for all tasks to complete
+        futures.forEach { it.get() }
+        executor.shutdown()
+        assertTrue("All tasks should complete", executor.awaitTermination(10, TimeUnit.SECONDS))
+    }
+
+    @Test
+    fun testConcurrentKeyTypeLookups() {
+        val executor = Executors.newFixedThreadPool(10)
+        val iterations = 100
+
+        val futures = (0..iterations).map {
+            executor.submit {
+                val handler = registry.getHandlerByKeyType("RSA")
+                assertNotNull("Handler should not be null under concurrent access", handler)
+            }
+        }
+
+        // Wait for all tasks to complete
+        futures.forEach { it.get() }
+        executor.shutdown()
+        assertTrue("All tasks should complete", executor.awaitTermination(10, TimeUnit.SECONDS))
+    }
+
+    @Test
+    fun testConcurrentRegistration() {
+        val executor = Executors.newFixedThreadPool(10)
+        val iterations = 50
+
+        val futures = (0..iterations).map { i ->
+            executor.submit {
+                val customHandler = mockk<CryptoAlgorithmHandler>()
+                val algorithmName = "CUSTOM-ALGORITHM-$i"
+                registry.register(algorithmName, customHandler)
+
+                // Verify the handler was registered
+                val retrieved = registry.getHandler(algorithmName)
+                assertSame("Registered handler should be retrievable", customHandler, retrieved)
+            }
+        }
+
+        // Wait for all tasks to complete
+        futures.forEach { it.get() }
+        executor.shutdown()
+        assertTrue("All tasks should complete", executor.awaitTermination(10, TimeUnit.SECONDS))
+    }
+
+    @Test
+    fun testMixedConcurrentOperations() {
+        val executor = Executors.newFixedThreadPool(10)
+        val iterations = 100
+
+        val futures = (0..iterations).map { i ->
+            if (i % 3 == 0) {
+                // Some threads do handler lookups
+                executor.submit {
+                    val handler = registry.getHandler("RSASSA-PKCS1-v1_5")
+                    assertNotNull("Handler lookup should succeed", handler)
+                }
+            } else if (i % 3 == 1) {
+                // Some threads do key type lookups
+                executor.submit {
+                    val handler = registry.getHandlerByKeyType("RSA")
+                    assertNotNull("Key type lookup should succeed", handler)
+                }
+            } else {
+                // Some threads do custom registrations and lookups
+                executor.submit {
+                    val customHandler = mockk<CryptoAlgorithmHandler>()
+                    val algorithmName = "MIXED-CONCURRENT-$i"
+                    registry.register(algorithmName, customHandler)
+                    val retrieved = registry.getHandler(algorithmName)
+                    assertSame("Mixed operation registration should succeed", customHandler, retrieved)
+                }
+            }
+        }
+
+        // Wait for all tasks to complete
+        futures.forEach { it.get() }
+        executor.shutdown()
+        assertTrue("All tasks should complete", executor.awaitTermination(10, TimeUnit.SECONDS))
     }
 }
 
