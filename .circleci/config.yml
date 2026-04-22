@@ -1,17 +1,24 @@
 version: 2.1
 
+orbs:
+  platform-helpers: okta/platform-helpers@1
+  general-platform-helpers: okta/general-platform-helpers@1.9
+  macos: circleci/macos@2
+  platform-helpers: okta/platform-helpers@2.0.0
+  android: circleci/android@3.1.0
+
 executors:
   android:
-    docker:
-      - image: cimg/android:2024.12
+    name: android/android_docker
+    tag: 2025.09.1
     environment:
       GRADLE_OPTS: -Xmx2g
     resource_class: large
 
   macos:
     macos:
-      xcode: "16.1"
-    resource_class: macos.medium
+      xcode: "16.2.0"
+    resource_class: m4pro.medium
 
 jobs:
   test-android:
