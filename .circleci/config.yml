@@ -3,7 +3,7 @@ version: 2.1
 executors:
   android:
     docker:
-      - image: cimg/android:latest
+      - image: cimg/android:2024.12
     environment:
       GRADLE_OPTS: -Xmx2g
     resource_class: large
