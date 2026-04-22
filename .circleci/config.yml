@@ -1,0 +1,82 @@
+version: 2.1
+
+executors:
+  android:
+    docker:
+      - image: cimg/android:latest
+    environment:
+      GRADLE_OPTS: -Xmx2g
+    resource_class: large
+
+  macos:
+    macos:
+      xcode: latest
+    environment:
+      LANG: en_US.UTF-8
+      LC_ALL: en_US.UTF-8
+    resource_class: macos.m1
+
+jobs:
+  test-android:
+    executor: android
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - gradle-{{ checksum "packages/react-native-webcrypto-bridge/android/build.gradle" }}
+            - gradle-
+
+      - run:
+          name: Run Android Unit and Integration Tests
+          command: |
+            cd packages/react-native-webcrypto-bridge/android
+            ./gradlew test --info
+
+      - save_cache:
+          key: gradle-{{ checksum "packages/react-native-webcrypto-bridge/android/build.gradle" }}
+          paths:
+            - ~/.gradle
+            - .gradle
+
+      - store_test_results:
+          path: packages/react-native-webcrypto-bridge/android/build/test-results
+
+      - store_artifacts:
+          path: packages/react-native-webcrypto-bridge/android/build/reports
+          destination: android-test-reports
+
+  test-ios:
+    executor: macos
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - swift-spm-{{ checksum "packages/react-native-webcrypto-bridge/ios/Package.swift" }}
+            - swift-spm-
+
+      - run:
+          name: Run iOS Unit and Integration Tests
+          command: |
+            cd packages/react-native-webcrypto-bridge/ios
+            swift test --verbose
+
+      - save_cache:
+          key: swift-spm-{{ checksum "packages/react-native-webcrypto-bridge/ios/Package.swift" }}
+          paths:
+            - packages/react-native-webcrypto-bridge/ios/.build
+
+      - store_test_results:
+          path: packages/react-native-webcrypto-bridge/ios/.build/test-results
+
+      - store_artifacts:
+          path: packages/react-native-webcrypto-bridge/ios/.build
+          destination: ios-build-artifacts
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - test-android
+      - test-ios
