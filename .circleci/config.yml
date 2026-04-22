@@ -6,22 +6,13 @@ orbs:
   macos: circleci/macos@2
   android: circleci/android@3.1.0
 
-executors:
-  android:
-    name: android/android_docker
-    tag: 2025.09.1
-    environment:
-      GRADLE_OPTS: -Xmx2g
-    resource_class: large
-
-  macos:
-    macos:
-      xcode: "16.2.0"
-    resource_class: m4pro.medium
+executors: {}
 
 jobs:
   test-android:
-    executor: android
+    executor:
+      name: android/android_docker
+      tag: 2025.09.1
     steps:
       - checkout
 
@@ -50,7 +41,7 @@ jobs:
           destination: android-test-reports
 
   test-ios:
-    executor: macos
+    executor: macos/default
     steps:
       - checkout
 
