@@ -37,7 +37,7 @@ jobs:
           name: Run Android Unit and Integration Tests
           command: |
             cd packages/react-native-webcrypto-bridge/android
-            ./gradlew test --info
+            ./gradlew testDebugUnitTest --info
 
       - save_cache:
           key: gradle-{{ checksum "packages/react-native-webcrypto-bridge/android/build.gradle" }}
