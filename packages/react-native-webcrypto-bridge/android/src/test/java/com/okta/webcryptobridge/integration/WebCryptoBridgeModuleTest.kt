@@ -54,6 +54,7 @@ abstract class WebCryptoBridgeModuleTest {
             }
         } catch (e: Exception) {
             // Suppress exceptions during mock setup - AndroidKeyStore may not be available
+            e.printStackTrace()  // Log for debugging SDK-specific issues
         }
 
         try {
@@ -63,6 +64,7 @@ abstract class WebCryptoBridgeModuleTest {
             }
         } catch (e: Exception) {
             // Suppress exceptions during mock setup
+            e.printStackTrace()  // Log for debugging SDK-specific issues
         }
 
         try {
@@ -72,6 +74,7 @@ abstract class WebCryptoBridgeModuleTest {
             }
         } catch (e: Exception) {
             // Suppress exceptions during mock setup
+            e.printStackTrace()  // Log for debugging SDK-specific issues
         }
 
         module = WebCryptoBridgeModule(context)
