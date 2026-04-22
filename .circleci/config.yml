@@ -11,10 +11,7 @@ executors:
   macos:
     macos:
       xcode: "16.1"
-    environment:
-      LANG: en_US.UTF-8
-      LC_ALL: en_US.UTF-8
-    resource_class: macos.m1
+    resource_class: macos.medium
 
 jobs:
   test-android:
