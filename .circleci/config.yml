@@ -7,21 +7,24 @@ orbs:
   android: circleci/android@3.1.0
 
 executors:
-  android:
-    docker:
-      - image: cimg/android:2024.12
-    environment:
-      GRADLE_OPTS: -Xmx2g
-    resource_class: large
+  # android:
+  #   docker:
+  #     - image: cimg/android:2024.12
+  #   environment:
+  #     GRADLE_OPTS: -Xmx2g
+  #   resource_class: large
 
   macos:
     macos:
       xcode: "16.2.0"
-    resource_class: macos.medium
+    resource_class: m4pro.medium
 
 jobs:
   test-android:
-    executor: android
+    executor:
+      name: android/android_machine
+      resource_class: large
+      tag: default
     steps:
       - checkout
 
