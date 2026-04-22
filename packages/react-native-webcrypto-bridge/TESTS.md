@@ -141,33 +141,100 @@ Located in `ios/`:
 
 3. **AlgorithmRegistryTests.swift** - Tests for the algorithm registry
    - `testGetHandler_returnsRegisteredHandler` - Retrieves RSA handler
-   - `testGetHandlerByKeyType_*` - Tests JWK key type mapping
+   - `testGetHandler_returnsNilForUnregisteredAlgorithm` - Returns nil for unknown algorithm
+   - `testGetHandlerByKeyType_*` - Tests JWK key type mapping (4 tests)
+   - `testGetAlgorithmName_*` - Tests algorithm name mapping by key type (4 tests: RSA, EC, OKP, unknown)
+   - `testRegister_customHandler_returnsRegisteredHandler` - Register new algorithms dynamically
+   - `testRegister_overwrites_existingHandler` - Overwrite existing handler
    - `testThreadSafety_concurrentAccess` - Tests thread-safe access with NSLock
    - `testSingleton_returnsSharedInstance` - Validates singleton pattern
+   - `testConcurrentRegistration_succeeds` - 50 concurrent registrations
+   - `testMixedConcurrentOperations_succeeds` - 100 concurrent mixed operations
+
+### Integration Tests
+
+Located in `ios/Tests/RNWebCryptoBridgeTests/Integration/`:
+
+Integration tests verify end-to-end crypto workflows using mock infrastructure without React Native dependencies. Tests coordinate between AlgorithmRegistry and algorithm handlers (RSAHandler) to validate key generation, JWK export/import, and signature operations.
+
+1. **KeyGenerationIntegrationTests.swift** - Key generation workflow validation (14 tests)
+   - `testGenerateKeySpec_validRSA2048_succeeds` - Generate valid RSA 2048 key spec
+   - `testGenerateKeySpec_unsupportedAlgorithm_rejects` - Reject unsupported algorithms
+   - `testGenerateKeySpec_invalidModulusLength_throws` - Reject 1024-bit keys
+   - `testGenerateKeySpec_missing4096Bit_throws` - Reject 4096-bit keys
+   - `testGenerateKeySpec_emptyParams_usesDefault` - Default to 2048-bit
+   - `testKeyUsages_valid_sign_verify` - Store and retrieve key usages
+   - `testKeyUsages_invalid_extractable` - Validate usage constraints
+   - `testMultipleKeys_createDistinctIds` - Generate unique key IDs
+   - `testHandlerRegistry_dispatchByAlgorithm` - Route to correct handler by algorithm name
+   - `testHandlerRegistry_dispatchByKeyType` - Route to correct handler by key type
+   - `testAlgorithmMapping_RSA_to_RSASSA` - RSA key type maps to RSASSA-PKCS1-v1_5
+   - `testAlgorithmMapping_EC_to_ECDSA` - EC key type maps to ECDSA
+   - `testAlgorithmMapping_OKP_to_EdDSA` - OKP key type maps to EdDSA
+   - `testAlgorithmMapping_unknown_returnsNil` - Unknown key type returns nil
+
+2. **JWKIntegrationTests.swift** - JWK export/import validation (9 tests)
+   - `testExportKey_publicKey_producesValidJWK` - Export generates RFC 7517 structure
+   - `testExportKey_unknownKeyId_fails` - Handle missing keys gracefully
+   - `testImportKey_validJWK_succeeds` - Import external JWK data
+   - `testImportKey_missingModulus_fails` - Reject incomplete JWK
+   - `testImportKey_missingExponent_fails` - Reject incomplete JWK
+   - `testRoundTrip_exportThenImport` - Export/import round-trip consistency
+   - `testJWK_multipleRoundTrips` - Stability across multiple cycles
+   - `testJWK_structure_validation` - JWK contains kty, alg, n, e fields
+   - `testKeyStorage_storeAndRetrieveJWK` - Mock key store operations
+
+3. **SignatureIntegrationTests.swift** - Signature operation validation (12 tests)
+   - `testSignatureAlgorithm_RSA_returnsPKCS1v15SHA256` - Correct algorithm selection
+   - `testSign_noKeyId_fails` - Handle missing keys
+   - `testSign_validKey_requiresHandler` - Key validation and handler dispatch
+   - `testVerify_requiresPublicKey` - Public key usage validation
+   - `testKeyUsages_sign_and_verify` - Private key has both usages
+   - `testKeyUsages_verify_only` - Public key verify-only
+   - `testErrorHandling_invalidAlgorithm` - Reject unknown algorithms
+   - `testErrorHandling_keyTypeMismatch` - Prevent signing with public key
+   - `testSignatureWorkflow_keyDispatch` - Full signing workflow dispatch
+   - `testVerificationWorkflow_keyDispatch` - Full verification workflow dispatch
+   - `testMultipleKeys_differentOperations` - Distinguish key types
+   - `testSignatureAlgorithmSelection_consistency` - Consistent algorithm selection via different lookup paths
 
 ### Running iOS Tests
+
+iOS tests use Swift Package Manager (SPM) for building and testing:
 
 ```bash
 cd packages/react-native-webcrypto-bridge/ios
 
-# Open Xcode project/workspace
-open -a Xcode .
-
-# Or run via command line
-xcodebuild test -scheme RNWebCryptoBridge
-
-# Run specific test class
-xcodebuild test -scheme RNWebCryptoBridge -only-testing:RNWebCryptoBridgeTests/RSAHandlerTests
+# Run all tests
+swift test
 
 # Run with verbose output
-xcodebuild test -scheme RNWebCryptoBridge -verbose
+swift test --verbose
+
+# Run specific test class
+swift test RSAHandlerTests
+
+# Generate Xcode project locally (optional, for development)
+swift package generate-xcodeproj
+open RNWebCryptoBridge.xcodeproj
 ```
+
+**CI/CD Integration:**
+- Tests can be run directly with `swift test` in any CI environment
+- No Xcode project required (text-based `Package.swift` configuration)
+- Output compatible with standard test reporting tools
 
 ### Test Coverage
 
-- **RSAKeyUtils**: DER encoding/decoding, PKCS#1 structure validation
-- **RSAHandler**: Key generation specs, JWK export/import (RFC 7517), signature algorithm selection
-- **AlgorithmRegistry**: Handler registration, lookup methods, thread safety with NSLock
+**Unit Tests:**
+- **RSAKeyUtils**: DER encoding/decoding (7 tests), PKCS#1 structure validation
+- **RSAHandler**: Key generation specs (12 tests), JWK export/import (RFC 7517), signature algorithm selection, round-trip consistency
+- **AlgorithmRegistry**: Handler registration (16 tests), algorithm name mapping, handler lookup, singleton pattern, thread safety, concurrent access stress testing
+
+**Integration Tests (35 tests):**
+- **KeyGeneration**: Registry dispatch by algorithm and key type (14 tests), handler routing, algorithm mapping validation
+- **JWK**: Export/import round-trip consistency (9 tests), RFC 7517 structure validation, mock key store operations
+- **Signature**: Key generation → dispatch → algorithm selection consistency (12 tests), error handling for key type mismatches
 
 ## Test Design
 
@@ -175,10 +242,17 @@ xcodebuild test -scheme RNWebCryptoBridge -verbose
 
 Both test suites follow a consistent design pattern:
 
+**Unit Tests:**
 - **Unit-focused**: Each test validates a single behavior
 - **Handler registry pattern**: Tests verify the registry's ability to dispatch to algorithm-specific implementations
 - **Algorithm-agnostic**: Tests for the registry and bridge avoid hardcoding RSA logic
 - **JWK compliance**: Export/import tests validate RFC 7517 (JSON Web Key) and RFC 4648 (Base64URL) compliance
+
+**Integration Tests (iOS):**
+- **Workflow validation**: Test end-to-end operations (generate → export → import → verify) without React dependencies
+- **Mock infrastructure**: AsyncTestResult container, MockKeyStore, and helper methods enable component testing in isolation
+- **Registry dispatch**: Verify correct handler routing by algorithm name and key type
+- **Component coordination**: Validate AlgorithmRegistry and RSAHandler working together
 
 ### Key Testing Insights
 
@@ -188,6 +262,8 @@ Both test suites follow a consistent design pattern:
 4. **Thread Safety** (iOS): AlgorithmRegistry uses NSLock to protect concurrent access
 5. **Parameter Validation**: Both implementations validate algorithm parameters (e.g., 2048-bit RSA only)
 6. **Robolectric Integration** (Android): Android Keystore operations can be tested on JVM via shadows
+7. **Integration Test Infrastructure** (iOS): MockKeyStore and AsyncTestResult enable testing component coordination without React Native dependencies
+8. **Handler Dispatch Paths** (iOS integration): Tests validate both algorithm name and key type lookup paths produce consistent results
 
 ## Adding Tests for New Algorithms
 

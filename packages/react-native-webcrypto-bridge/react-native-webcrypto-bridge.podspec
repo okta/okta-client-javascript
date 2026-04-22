@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => "13.4" }
   s.source       = { :git => "https://github.com/okta/okta-client-javascript.git", :tag => "#{s.version}" }
 
-  s.source_files = "ios/**/*.{h,m,mm,swift}"
+  s.source_files = "ios/Sources/**/*.{h,m,mm,swift}"
   s.swift_version = "5.0"
 
   # New Architecture support

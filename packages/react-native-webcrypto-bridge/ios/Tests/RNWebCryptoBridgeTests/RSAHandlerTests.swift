@@ -55,9 +55,8 @@ class RSAHandlerTests: XCTestCase {
         let testExponent = Data("65537".utf8)
         let keyComponents = RSAPublicKeyComponents(modulus: testModulus, exponent: testExponent)
 
-        // Export to JWK (publicKey parameter is unused in this implementation)
-        let dummyPublicKey = SecKey() // Placeholder
-        let jwk = handler.exportToJWK(publicKey: dummyPublicKey, keyComponents: keyComponents)
+        // Export to JWK (publicKey parameter is unused)
+        let jwk = handler.exportToJWK(publicKey: nil, keyComponents: keyComponents)
 
         XCTAssertEqual(jwk["kty"] as? String, "RSA")
         XCTAssertEqual(jwk["alg"] as? String, "RS256")
@@ -70,8 +69,7 @@ class RSAHandlerTests: XCTestCase {
         let testExponent = Data([0x01, 0x00, 0x01])
         let keyComponents = RSAPublicKeyComponents(modulus: testModulus, exponent: testExponent)
 
-        let dummyPublicKey = SecKey()
-        let jwk = handler.exportToJWK(publicKey: dummyPublicKey, keyComponents: keyComponents)
+        let jwk = handler.exportToJWK(publicKey: nil, keyComponents: keyComponents)
 
         // Verify modulus encoding
         if let encodedN = jwk["n"] as? String {
@@ -97,8 +95,7 @@ class RSAHandlerTests: XCTestCase {
         let originalComponents = RSAPublicKeyComponents(modulus: originalModulus, exponent: originalExponent)
 
         // Export to JWK
-        let dummyPublicKey = SecKey()
-        let jwk = handler.exportToJWK(publicKey: dummyPublicKey, keyComponents: originalComponents)
+        let jwk = handler.exportToJWK(publicKey: nil, keyComponents: originalComponents)
 
         // Import back
         let importedComponents = handler.importFromJWK(jwk)
@@ -149,8 +146,7 @@ class RSAHandlerTests: XCTestCase {
                 exponent: testCase.exponent
             )
 
-            let dummyPublicKey = SecKey()
-            let jwk = handler.exportToJWK(publicKey: dummyPublicKey, keyComponents: originalComponents)
+            let jwk = handler.exportToJWK(publicKey: nil, keyComponents: originalComponents)
 
             let reimportedComponents = handler.importFromJWK(jwk)
 

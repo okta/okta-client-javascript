@@ -38,7 +38,7 @@ class RSAHandler: CryptoAlgorithmHandler {
     /// @param publicKey The SecKey object (unused, components contain the key data)
     /// @param keyComponents RSAPublicKeyComponents with modulus and exponent
     /// @return Dictionary representation of RSA JWK
-    func exportToJWK(publicKey: SecKey, keyComponents: RSAPublicKeyComponents) -> [String: Any] {
+    func exportToJWK(publicKey: SecKey?, keyComponents: RSAPublicKeyComponents) -> [String: Any] {
         var jwk: [String: Any] = [:]
         jwk["kty"] = "RSA"
         jwk["alg"] = "RS256"

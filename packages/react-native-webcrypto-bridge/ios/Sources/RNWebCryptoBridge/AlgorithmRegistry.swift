@@ -46,6 +46,27 @@ class AlgorithmRegistry {
 
     /// Maps JWK key type to algorithm name.
     /// @param kty The JWK key type ("RSA", "EC", "OKP")
+    /// @return Algorithm name if recognized, nil otherwise
+    func getAlgorithmName(for kty: String) -> String? {
+        lock.lock()
+        defer { lock.unlock() }
+        return keyTypeToAlgorithm(kty)
+    }
+
+    /// Registers a custom algorithm handler.
+    /// Can be used to register new handlers or override existing ones.
+    /// Thread-safe access with NSLock.
+    ///
+    /// @param handler The CryptoAlgorithmHandler implementation
+    /// @param algorithmName The algorithm name to register (e.g., "RSASSA-PKCS1-v1_5")
+    func register(_ handler: CryptoAlgorithmHandler, for algorithmName: String) {
+        lock.lock()
+        defer { lock.unlock() }
+        handlers[algorithmName] = handler
+    }
+
+    /// Maps JWK key type to algorithm name.
+    /// @param kty The JWK key type ("RSA", "EC", "OKP")
     /// @return Algorithm name or nil if not recognized
     private func keyTypeToAlgorithm(_ kty: String) -> String? {
         switch kty {

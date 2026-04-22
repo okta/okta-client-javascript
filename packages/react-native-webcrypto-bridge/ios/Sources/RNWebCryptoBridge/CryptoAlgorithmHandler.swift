@@ -27,10 +27,10 @@ protocol CryptoAlgorithmHandler {
     /// Exports a public key to JWK (JSON Web Key) format.
     /// Handles algorithm-specific JWK fields (e.g., "n", "e" for RSA; "x", "y" for EC).
     ///
-    /// @param publicKey The SecKey to export
+    /// @param publicKey The SecKey to export (can be nil, key components contain the data)
     /// @param keyComponents RSAPublicKeyComponents containing modulus and exponent
     /// @return Dictionary with JWK representation including "kty", algorithm identifier, and key components
-    func exportToJWK(publicKey: SecKey, keyComponents: RSAPublicKeyComponents) -> [String: Any]
+    func exportToJWK(publicKey: SecKey?, keyComponents: RSAPublicKeyComponents) -> [String: Any]
 
     /// Imports a public key from JWK (JSON Web Key) format.
     /// Validates JWK structure and extracts algorithm-specific components.
