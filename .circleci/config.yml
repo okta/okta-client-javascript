@@ -10,7 +10,7 @@ executors:
 
   macos:
     macos:
-      xcode: latest
+      xcode: "16.1"
     environment:
       LANG: en_US.UTF-8
       LC_ALL: en_US.UTF-8
