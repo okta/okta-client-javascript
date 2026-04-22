@@ -61,6 +61,10 @@ dependencies {
     testImplementation 'com.google.truth:truth:1.1.2'
     testImplementation 'io.mockk:mockk:1.13.5'
     testImplementation 'org.json:json:20231013'
+
+    // Integration test dependencies (Robolectric runs Android on JVM)
+    testImplementation 'org.robolectric:robolectric:4.12.1'
+    testImplementation 'androidx.test:core:1.5.0'
 }
 
 // Filter tests to only run webcryptobridge tests
