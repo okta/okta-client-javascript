@@ -15,6 +15,11 @@ npm config set @okta:registry ${REGISTRY}
 PUBLISHED_PACKAGES=""
 PROMOTABLE_VERSIONS=""
 
+if ! yarn build; then
+  echo "build failed! Exiting..."
+  exit ${TEST_FAILURE}
+fi
+
 echo "Publishing packages..."
 for pkg in ./packages/*
 do
@@ -23,12 +28,6 @@ do
     pkg_name=$(jq -r '.name' package.json | cut -c7-)
     create_log_group "Publishing $pkg_name"
     echo "Publishing $pkg_name..."
-
-    # Build
-    if ! yarn build; then
-      echo "build failed! Exiting..."
-      exit ${TEST_FAILURE}
-    fi
 
     # record the artifact version before the SHA is appended
     artifact_version="$(ci-pkginfo -t pkgname)@$(ci-pkginfo -t pkgsemver)"
