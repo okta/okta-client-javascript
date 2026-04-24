@@ -1,3 +1,5 @@
+/* global btoa */
+
 // Mock the native module for Jest tests.
 // All binary data is transported as standard Base64 strings, matching
 // the NativeWebCryptoBridge.Spec interface.

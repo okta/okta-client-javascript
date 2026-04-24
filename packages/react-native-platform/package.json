@@ -36,9 +36,6 @@
     "build:watch": "rollup -c --watch & tsc --watch",
     "build:esm": "rollup -c",
     "build:types": "tsc",
-    "test": "yarn test:unit",
-    "test:unit": "jest",
-    "test:watch": "jest --watchAll",
     "prepack": "yarn build"
   },
   "dependencies": {

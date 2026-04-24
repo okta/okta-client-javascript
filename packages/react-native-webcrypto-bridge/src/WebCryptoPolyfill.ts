@@ -108,17 +108,20 @@ const importKey: SubtleCrypto['importKey'] = async (
 };
 
 // TODO: DPoP — wire to native implementation when ready
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const exportKey: SubtleCrypto['exportKey'] = async (_format, _key) => {
   throw new DOMException('exportKey is not yet implemented', 'NotSupportedError');
 };
 
 // TODO: DPoP — wire to native implementation when ready
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const sign: SubtleCrypto['sign'] = async (_algorithm, _key, _data) => {
   throw new DOMException('sign is not yet implemented', 'NotSupportedError');
 };
 
 // TODO: DPoP — wire to native implementation when ready
 const generateKey: SubtleCrypto['generateKey'] = async (
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _algorithm, _extractable, _keyUsages
 ) => {
   throw new DOMException('generateKey is not yet implemented', 'NotSupportedError');
