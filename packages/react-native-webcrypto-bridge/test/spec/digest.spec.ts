@@ -25,13 +25,35 @@ describe('subtle.digest', () => {
     const data = new Uint8Array([1, 2, 3]);
     await expect(
       global.crypto.subtle.digest('SHA-512', data)
-    ).rejects.toThrow(/Unsupported algorithm/);
+    ).rejects.toThrow(DOMException);
+  });
+
+  it('should throw NotSupportedError for unsupported algorithms', async () => {
+    const data = new Uint8Array([1, 2, 3]);
+    try {
+      await global.crypto.subtle.digest('SHA-512', data);
+      fail('Expected DOMException to be thrown');
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('NotSupportedError');
+      } else {
+        throw error;
+      }
+    }
   });
 
   it('should reject SHA-1', async () => {
     const data = new Uint8Array([1, 2, 3]);
-    await expect(
-      global.crypto.subtle.digest('SHA-1', data)
-    ).rejects.toThrow(/Unsupported algorithm/);
+    try {
+      await global.crypto.subtle.digest('SHA-1', data);
+      fail('Expected DOMException to be thrown');
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('NotSupportedError');
+      } else {
+        throw error;
+      }
+    }
   });
 });
+

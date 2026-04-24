@@ -1,26 +1,28 @@
+import { createJsWithBabelPreset } from 'ts-jest';
+import pkg from './package.json' with { type: 'json' };
+
+
+const jsWithBabelPreset = createJsWithBabelPreset({
+  tsconfig: '<rootDir>/test/tsconfig.json',
+  babelConfig: true,
+});
+
 const config = {
+  displayName: '@okta/react-native-webcrypto-bridge',
   preset: 'react-native',
-  modulePathIgnorePatterns: [
-    '<rootDir>/dist/',
-    '<rootDir>/lib/',
-  ],
-  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
-  testMatch: [
-    '<rootDir>/test/spec/**/*.spec.ts',
-    '<rootDir>/test/spec/**/*.spec.tsx',
-  ],
-  transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
+  globals: {
+    __PKG_NAME__: pkg.name,
+    __PKG_VERSION__: pkg.version,
   },
-  transformIgnorePatterns: [
-    'node_modules/(?!(react-native|@react-native|@okta)/)',
-  ],
+  transform: jsWithBabelPreset.transform,
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   setupFiles: ['<rootDir>/test/jest.setup.js'],
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx}',
-    '!src/**/__tests__/**',
-    '!src/**/types.ts',
+    'src/**/*.ts'
   ],
+  moduleNameMapper: {
+    '^src/(.*)$': '<rootDir>/src/$1'
+  }
 };
 
 export default config;

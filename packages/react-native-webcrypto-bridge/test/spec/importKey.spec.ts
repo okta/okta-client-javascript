@@ -30,26 +30,40 @@ describe('subtle.importKey', () => {
   });
 
   it('should reject unsupported format', async () => {
-    await expect(
-      global.crypto.subtle.importKey(
+    try {
+      await global.crypto.subtle.importKey(
         'raw' as any,
         new Uint8Array([1, 2, 3]),
         { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } },
         false,
         ['verify']
-      )
-    ).rejects.toThrow(/Unsupported format/);
+      );
+      fail('Expected DOMException to be thrown');
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('NotSupportedError');
+      } else {
+        throw error;
+      }
+    }
   });
 
   it('should reject SPKI format', async () => {
-    await expect(
-      global.crypto.subtle.importKey(
+    try {
+      await global.crypto.subtle.importKey(
         'spki' as any,
         new Uint8Array([1, 2, 3]),
         { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } },
         false,
         ['verify']
-      )
-    ).rejects.toThrow(/Unsupported format/);
+      );
+      fail('Expected DOMException to be thrown');
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('NotSupportedError');
+      } else {
+        throw error;
+      }
+    }
   });
 });

@@ -4,4 +4,3 @@
 
 
 export { installWebCryptoPolyfill } from './WebCryptoPolyfill.ts';
-export * from './lib.ts';

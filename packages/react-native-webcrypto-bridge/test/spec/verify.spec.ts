@@ -62,28 +62,42 @@ describe('subtle.verify', () => {
     const signature = new Uint8Array(256).buffer;
     const data = new TextEncoder().encode('test data');
 
-    await expect(
-      global.crypto.subtle.verify(
+    try {
+      await global.crypto.subtle.verify(
         { name: 'RSASSA-PKCS1-v1_5' },
         orphanKey,
         signature,
         data
-      )
-    ).rejects.toThrow(/Unable to locate key/);
+      );
+      fail('Expected DOMException to be thrown');
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('InvalidAccessError');
+      } else {
+        throw error;
+      }
+    }
   });
 
   it('should reject unsupported algorithm', async () => {
     const signature = new Uint8Array(256).buffer;
     const data = new TextEncoder().encode('test data');
 
-    await expect(
-      global.crypto.subtle.verify(
+    try {
+      await global.crypto.subtle.verify(
         { name: 'RSA-PSS' },
         testKey,
         signature,
         data
-      )
-    ).rejects.toThrow(/Unsupported algorithm/);
+      );
+      fail('Expected DOMException to be thrown');
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('NotSupportedError');
+      } else {
+        throw error;
+      }
+    }
   });
 
   it('should reject if key usages do not include verify', async () => {
@@ -105,14 +119,21 @@ describe('subtle.verify', () => {
     const signature = new Uint8Array(256).buffer;
     const data = new TextEncoder().encode('test data');
 
-    await expect(
-      global.crypto.subtle.verify(
+    try {
+      await global.crypto.subtle.verify(
         { name: 'RSASSA-PKCS1-v1_5' },
         signOnlyKey,
         signature,
         data
-      )
-    ).rejects.toThrow(/does not support verify/);
+      );
+      fail('Expected DOMException to be thrown');
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('InvalidAccessError');
+      } else {
+        throw error;
+      }
+    }
   });
 });
 
@@ -121,25 +142,46 @@ describe('stubbed DPoP methods', () => {
     installWebCryptoPolyfill();
   });
 
-  it('exportKey should throw not implemented', async () => {
-    await expect(
-      global.crypto.subtle.exportKey('jwk', {} as CryptoKey)
-    ).rejects.toThrow(/not yet implemented/);
+  it('exportKey should throw NotSupportedError', async () => {
+    try {
+      await global.crypto.subtle.exportKey('jwk', {} as CryptoKey);
+      fail('Expected DOMException to be thrown');
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('NotSupportedError');
+      } else {
+        throw error;
+      }
+    }
   });
 
-  it('sign should throw not implemented', async () => {
-    await expect(
-      global.crypto.subtle.sign('RSASSA-PKCS1-v1_5', {} as CryptoKey, new ArrayBuffer(0))
-    ).rejects.toThrow(/not yet implemented/);
+  it('sign should throw NotSupportedError', async () => {
+    try {
+      await global.crypto.subtle.sign('RSASSA-PKCS1-v1_5', {} as CryptoKey, new ArrayBuffer(0));
+      fail('Expected DOMException to be thrown');
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('NotSupportedError');
+      } else {
+        throw error;
+      }
+    }
   });
 
-  it('generateKey should throw not implemented', async () => {
-    await expect(
-      global.crypto.subtle.generateKey(
+  it('generateKey should throw NotSupportedError', async () => {
+    try {
+      await global.crypto.subtle.generateKey(
         { name: 'RSASSA-PKCS1-v1_5' } as any,
         false,
         ['sign', 'verify']
-      )
-    ).rejects.toThrow(/not yet implemented/);
+      );
+      fail('Expected DOMException to be thrown');
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('NotSupportedError');
+      } else {
+        throw error;
+      }
+    }
   });
 });

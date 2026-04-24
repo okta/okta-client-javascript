@@ -1,4 +1,5 @@
 import { installWebCryptoPolyfill } from '../../src/index';
+import NativeWebCryptoBridge from '../../src/NativeWebCryptoBridge';
 
 describe('getRandomValues', () => {
   beforeAll(() => {
@@ -24,19 +25,26 @@ describe('getRandomValues', () => {
     expect(result.length).toBe(1);
   });
 
-  it('should throw if native bridge returns wrong length', () => {
-    // Access the mock directly to override it for this test
-    const { TurboModuleRegistry } = require('react-native');
-    const nativeMock = TurboModuleRegistry.getEnforcing('WebCryptoBridge');
-    const originalFn = nativeMock.getRandomValues;
+  it('should throw OperationError if native bridge returns wrong length', () => {
+    expect.assertions(1);
 
-    // Mock returns Base64 for 1 byte when we request more
-    nativeMock.getRandomValues = jest.fn(() => btoa('x')); // 1 byte
+    // Spy on the actual imported NativeWebCryptoBridge
+    const mockFn = jest.fn(() => btoa('x')); // 1 byte when we ask for 32
+    const originalFn = NativeWebCryptoBridge.getRandomValues;
+    NativeWebCryptoBridge.getRandomValues = mockFn;
 
     const array = new Uint8Array(32);
-    expect(() => global.crypto.getRandomValues(array)).toThrow(/expected 32 bytes/);
-
-    // Restore
-    nativeMock.getRandomValues = originalFn;
+    try {
+      global.crypto.getRandomValues(array);
+    } catch (error) {
+      if (error instanceof DOMException) {
+        expect(error.name).toBe('OperationError');
+      } else {
+        throw error;
+      }
+    } finally {
+      // Restore
+      NativeWebCryptoBridge.getRandomValues = originalFn;
+    }
   });
 });

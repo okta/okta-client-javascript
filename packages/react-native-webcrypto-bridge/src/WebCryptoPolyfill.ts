@@ -8,7 +8,7 @@
  */
 
 import NativeWebCryptoBridge from './NativeWebCryptoBridge.ts';
-import { WebCryptoBridgeError } from './lib.ts';
+
 
 /**
  * @internal
@@ -30,7 +30,7 @@ function toArrayBuffer(source: BufferSource): ArrayBuffer {
     // Node.js Buffers which might share a larger memory pool.
     return typedArray.buffer.slice(typedArray.byteOffset, typedArray.byteOffset + typedArray.byteLength);
   } else {
-    throw new WebCryptoBridgeError('Unsupported BufferSource type.');
+    throw new TypeError('Unsupported BufferSource type');
   }
 }
 
@@ -62,7 +62,7 @@ function base64ToArrayBuffer(base64: string): ArrayBuffer {
 
 const digest: SubtleCrypto['digest'] = async (algorithm, data) => {
   if (algorithm !== 'SHA-256') {
-    throw new WebCryptoBridgeError(`Unsupported algorithm: ${algorithm}`);
+    throw new DOMException(`Unsupported algorithm: ${algorithm}`, 'NotSupportedError');
   }
 
   const base64Data = arrayBufferToBase64(toArrayBuffer(data));
@@ -78,7 +78,7 @@ const importKey: SubtleCrypto['importKey'] = async (
   keyUsages
 ) => {
   if (format !== 'jwk') {
-    throw new WebCryptoBridgeError(`Unsupported format: ${format}`);
+    throw new DOMException(`Unsupported format: ${format}`, 'NotSupportedError');
   }
 
   const keyDataJson = JSON.stringify(keyData);
@@ -109,36 +109,34 @@ const importKey: SubtleCrypto['importKey'] = async (
 
 // TODO: DPoP — wire to native implementation when ready
 const exportKey: SubtleCrypto['exportKey'] = async (_format, _key) => {
-  throw new WebCryptoBridgeError('exportKey is not yet implemented');
+  throw new DOMException('exportKey is not yet implemented', 'NotSupportedError');
 };
 
 // TODO: DPoP — wire to native implementation when ready
 const sign: SubtleCrypto['sign'] = async (_algorithm, _key, _data) => {
-  throw new WebCryptoBridgeError('sign is not yet implemented');
+  throw new DOMException('sign is not yet implemented', 'NotSupportedError');
 };
 
 // TODO: DPoP — wire to native implementation when ready
 const generateKey: SubtleCrypto['generateKey'] = async (
   _algorithm, _extractable, _keyUsages
 ) => {
-  throw new WebCryptoBridgeError('generateKey is not yet implemented');
+  throw new DOMException('generateKey is not yet implemented', 'NotSupportedError');
 };
 
 const verify: SubtleCrypto['verify'] = async (algorithm, key, signature, data) => {
   const keyId = cryptoKeyMap.get(key);
   if (!keyId) {
-    throw new WebCryptoBridgeError('Unable to locate key');
+    throw new DOMException('Unable to locate key', 'InvalidAccessError');
   }
 
   const alg = typeof algorithm === 'string' ? algorithm : algorithm.name;
   if (alg !== 'RSASSA-PKCS1-v1_5') {
-    throw new WebCryptoBridgeError('Unsupported algorithm');
+    throw new DOMException('Unsupported algorithm', 'NotSupportedError');
   }
 
   if (!key.usages.includes('verify')) {
-    throw new WebCryptoBridgeError('Key does not support verify operation', {
-      context: { usages: key.usages }
-    });
+    throw new DOMException('Key does not support verify operation', 'InvalidAccessError');
   }
 
   const algorithmJson = JSON.stringify(key.algorithm);
@@ -187,8 +185,9 @@ const cryptoPolyfill: WebCryptoPolyfill = {
     // Decode the Base64 string from the native bridge
     const binary = atob(base64Result);
     if (binary.length !== requestedLength) {
-      throw new WebCryptoBridgeError(
-        `getRandomValues: expected ${requestedLength} bytes, received ${binary.length}`
+      throw new DOMException(
+        `getRandomValues: expected ${requestedLength} bytes, received ${binary.length}`,
+        'OperationError'
       );
     }
 

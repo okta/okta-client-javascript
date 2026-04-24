@@ -44,10 +44,10 @@
   },
   "peerDependencies": {
     "react": "*",
-    "react-native": "*",
-    "@okta/auth-foundation": "*"
+    "react-native": "*"
   },
   "devDependencies": {
+    "@react-native/babel-preset": "^0.81.6",
     "@repo/eslint-config": "*",
     "@repo/rollup-config": "*",
     "@repo/typescript-config": "*",
