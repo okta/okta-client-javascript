@@ -25,9 +25,9 @@ class AlgorithmRegistry {
     /// @param algorithmName The algorithm name to look up (e.g., "RSASSA-PKCS1-v1_5")
     /// @return CryptoAlgorithmHandler if registered, nil otherwise
     func getHandler(for algorithmName: String) -> CryptoAlgorithmHandler? {
-        lock.lock()
-        defer { lock.unlock() }
-        return handlers[algorithmName]
+        return lock.withLock {
+            handlers[algorithmName]
+        }
     }
 
     /// Retrieves the handler for a JWK key type.
@@ -37,20 +37,19 @@ class AlgorithmRegistry {
     /// @param kty The JWK key type field (e.g., "RSA", "EC", "OKP")
     /// @return CryptoAlgorithmHandler if key type is mapped, nil otherwise
     func getHandlerByKeyType(_ kty: String) -> CryptoAlgorithmHandler? {
-        lock.lock()
-        defer { lock.unlock() }
-
-        let algorithmName = keyTypeToAlgorithm(kty)
-        return algorithmName.flatMap { handlers[$0] }
+        return lock.withLock {
+            let algorithmName = keyTypeToAlgorithm(kty)
+            return algorithmName.flatMap { handlers[$0] }
+        }
     }
 
     /// Maps JWK key type to algorithm name.
     /// @param kty The JWK key type ("RSA", "EC", "OKP")
     /// @return Algorithm name if recognized, nil otherwise
     func getAlgorithmName(for kty: String) -> String? {
-        lock.lock()
-        defer { lock.unlock() }
-        return keyTypeToAlgorithm(kty)
+        return lock.withLock {
+            keyTypeToAlgorithm(kty)
+        }
     }
 
     /// Registers a custom algorithm handler.
@@ -60,9 +59,9 @@ class AlgorithmRegistry {
     /// @param handler The CryptoAlgorithmHandler implementation
     /// @param algorithmName The algorithm name to register (e.g., "RSASSA-PKCS1-v1_5")
     func register(_ handler: CryptoAlgorithmHandler, for algorithmName: String) {
-        lock.lock()
-        defer { lock.unlock() }
-        handlers[algorithmName] = handler
+        lock.withLock {
+            handlers[algorithmName] = handler
+        }
     }
 
     /// Maps JWK key type to algorithm name.

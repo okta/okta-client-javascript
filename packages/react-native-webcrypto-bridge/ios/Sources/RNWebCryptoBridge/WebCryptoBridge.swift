@@ -3,32 +3,6 @@ import Security
 import CommonCrypto
 import React
 
-
-extension String {
-    public var base64URLDecoded: String { convertToBase64URLDecoded() }
-
-    private func convertToBase64URLDecoded() -> String {
-        var result = replacingOccurrences(of: "-", with: "+")
-            .replacingOccurrences(of: "_", with: "/")
-
-        while result.count % 4 != 0 {
-            result.append(contentsOf: "=")
-        }
-
-        return result
-    }
-}
-
-extension Data {
-    public func base64URLEncodedString() -> String {
-        var base64 = self.base64EncodedString()
-        base64 = base64.replacingOccurrences(of: "+", with: "-")
-        base64 = base64.replacingOccurrences(of: "/", with: "_")
-        base64 = base64.replacingOccurrences(of: "=", with: "")
-        return base64
-    }
-}
-
 // MARK: - Key Storage Models
 
 /// Enum representing where and how a cryptographic key is stored.
@@ -207,15 +181,15 @@ class WebCryptoBridge: NSObject {
 
         let keyId = UUID().uuidString
 
-        Self.keyStoreLock.lock()
-        Self.keyStore[keyId] = CryptoKey(
-            algorithm: algorithm,
-            type: "private",
-            extractable: extractable,
-            usages: keyUsages,
-            entry: .keystore(publicKey: publicKey, privateKey: privateKey)
-        )
-        Self.keyStoreLock.unlock()
+        Self.keyStoreLock.withLock {
+            Self.keyStore[keyId] = CryptoKey(
+                algorithm: algorithm,
+                type: "private",
+                extractable: extractable,
+                usages: keyUsages,
+                entry: .keystore(publicKey: publicKey, privateKey: privateKey)
+            )
+        }
 
         let result = ["id": keyId]
         if let jsonData = try? JSONSerialization.data(withJSONObject: result),
@@ -238,9 +212,9 @@ class WebCryptoBridge: NSObject {
             return
         }
 
-        Self.keyStoreLock.lock()
-        let cryptoKey = Self.keyStore[keyId]
-        Self.keyStoreLock.unlock()
+        let cryptoKey = Self.keyStoreLock.withLock {
+            Self.keyStore[keyId]
+        }
 
         guard let cryptoKey = cryptoKey else {
             reject("key_not_found", "Key not found", nil)
@@ -341,16 +315,16 @@ class WebCryptoBridge: NSObject {
             return
         }
 
-        Self.keyStoreLock.lock()
-        let algorithmDict = (try? JSONSerialization.jsonObject(with: algorithm.data(using: .utf8)!) as? [String: Any]) ?? [:]
-        Self.keyStore[keyId] = CryptoKey(
-            algorithm: algorithmDict,
-            type: "public",
-            extractable: extractable,
-            usages: keyUsages,
-            entry: .platform(key: publicKey, algorithmName: keyTypeToAlgorithmName(kty))
-        )
-        Self.keyStoreLock.unlock()
+        Self.keyStoreLock.withLock {
+            let algorithmDict = (try? JSONSerialization.jsonObject(with: algorithm.data(using: .utf8)!) as? [String: Any]) ?? [:]
+            Self.keyStore[keyId] = CryptoKey(
+                algorithm: algorithmDict,
+                type: "public",
+                extractable: extractable,
+                usages: keyUsages,
+                entry: .platform(key: publicKey, algorithmName: keyTypeToAlgorithmName(kty))
+            )
+        }
 
         resolve(keyId)
     }
@@ -373,9 +347,9 @@ class WebCryptoBridge: NSObject {
         resolve: @escaping RCTPromiseResolveBlock,
         reject: @escaping RCTPromiseRejectBlock
     ) {
-        Self.keyStoreLock.lock()
-        let cryptoKey = Self.keyStore[keyId]
-        Self.keyStoreLock.unlock()
+        let cryptoKey = Self.keyStoreLock.withLock {
+            Self.keyStore[keyId]
+        }
 
         guard let cryptoKey = cryptoKey else {
             reject("key_not_found", "Key not found", nil)
@@ -421,9 +395,9 @@ class WebCryptoBridge: NSObject {
         resolve: @escaping RCTPromiseResolveBlock,
         reject: @escaping RCTPromiseRejectBlock
     ) {
-        Self.keyStoreLock.lock()
-        let cryptoKey = Self.keyStore[keyId]
-        Self.keyStoreLock.unlock()
+        let cryptoKey = Self.keyStoreLock.withLock {
+            Self.keyStore[keyId]
+        }
 
         guard let cryptoKey = cryptoKey else {
             reject("key_not_found", "Public key not found", nil)

@@ -9,7 +9,6 @@ Pod::Spec.new do |s|
   s.summary      = package["description"]
   s.homepage     = "https://github.com/okta/okta-client-javascript"
   s.license      = package["license"]
-  s.authors      = { "Okta" => "jared.perreault@okta.com" }
   s.platforms    = { :ios => "13.4" }
   s.source       = { :git => "https://github.com/okta/okta-client-javascript.git", :tag => "#{s.version}" }
 

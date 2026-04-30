@@ -7,7 +7,6 @@
   "types": "dist/types/index.d.ts",
   "react-native": "src/index.ts",
   "source": "src/index.ts",
-  "author": "jared.perreault@okta.com",
   "license": "Apache-2.0",
   "private": true,
   "engines": {
