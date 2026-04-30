@@ -1,0 +1,38 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+  repositories {
+    google()
+    mavenCentral()
+  }
+  dependencies {
+    classpath('com.android.tools.build:gradle')
+    classpath('com.facebook.react:react-native-gradle-plugin')
+    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+  }
+}
+
+allprojects {
+  repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+  }
+
+  // Configure all library modules to handle fbjni conflict
+  afterEvaluate { project ->
+    if (project.plugins.hasPlugin('android-library')) {
+      project.android {
+        packagingOptions {
+          pickFirst 'lib/arm64-v8a/libfbjni.so'
+          pickFirst 'lib/armeabi-v7a/libfbjni.so'
+          pickFirst 'lib/x86/libfbjni.so'
+          pickFirst 'lib/x86_64/libfbjni.so'
+        }
+      }
+    }
+  }
+}
+
+apply plugin: "expo-root-project"
+apply plugin: "com.facebook.react.rootproject"

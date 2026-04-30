@@ -1,5 +1,11 @@
 /**
+ * > [!Tip]
+ * > See {@link AuthFoundation!Platform | Platform} explanation first.
+ * 
+ * Provides browser-specific default implementations of
+ * {@link AuthFoundation!PlatformDependencies | PlatformDependencies}
  * @module Platform
+ * @see [SPA Platform: Platform](/api/spa-platform/#platform)
  */
 
 export * from './OAuth2Client.ts';

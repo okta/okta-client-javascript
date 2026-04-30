@@ -1,3 +1,9 @@
+/**
+ * @module
+ * @mergeModuleWith Orchestrators
+ */
+
+
 import type { HostOrchestrator as HO } from './index.ts';
 import {
   Token,
@@ -27,7 +33,12 @@ function toPrimitiveParams (
   return { ...authParams, issuer };
 }
 
-// TODO: doc this?
+/**
+ * An implementation of {@link TokenOrchestrator} which delegates all token retrieval to a centralized broker,
+ * rather than acquiring tokens itself
+ * 
+ * @overridePath orchestrators/HostOrchestrator/classes/SubApp.md
+ */
 export class SubAppOrchestrator<E extends HO.SubAppEvents = HO.SubAppEvents> extends TokenOrchestrator<E> {
   readonly id = shortID();
   protected readonly authParams: TokenOrchestrator.AuthorizeParams;
@@ -114,7 +125,7 @@ export class SubAppOrchestrator<E extends HO.SubAppEvents = HO.SubAppEvents> ext
   }
 
   /**
-   * Retrieves a valid {@link Platform.Token | Token} to be used within an application
+   * Retrieves a valid {@link AuthFoundation!Token | Token} to be used within an application
    */
   public async getToken (params: TokenOrchestrator.AuthorizeParams = {}): Promise<Token | null> {
     const authParams = {...this.authParams, ...ignoreUndefineds(params)};

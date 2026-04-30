@@ -18,17 +18,26 @@ import { Timestamp } from '../utils/TimeCoordinator.ts';
 import { type CredentialCoordinator, type CredentialCoordinatorEvents, CredentialCoordinatorImpl } from './CredentialCoordinator.ts';
 import { CredentialError, OAuth2Error } from '../errors/index.ts';
 
-
-type CredentialEvents = {
+/**
+ * @public
+ * @useDeclaredType
+ */
+export type CredentialEvents = {
+  'credential_added': { credential: Credential };
+  'credential_removed': { id: string };
   'tags_updated': { id: string, tags: string[] };
 } & CredentialCoordinatorEvents;
 
 /**
  * Wrapper around a {@link Token.Token | Token}, providing methods to interact with Tokens without the hassle of managing them
  * 
- * @public
+ * @see
+ * * [Guide: Managing User Credentials](/docs/guides/Credential.md)
  */
 export class Credential implements RequestAuthorizer, JSONSerializable {
+  /**
+   * Possible events mapped in {@link CredentialEvents}
+   */
   protected static readonly emitter: EventEmitter<CredentialEvents> = new EventEmitter();
 
   /** @internal */
@@ -122,32 +131,30 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
 
   /////// public static methods ///////
   /**
-   * Bind an event listener
-   * 
-   * @param event - event name
-   * @param callback - event handler
+   * Binds a listener for the specificed event.
+   * Alias for `Credential.emitter.on`
    * 
    * @group Events
    * 
    * @example
-   * Credential.on(Events.CREDENTIAL_REFRESHED, credential => {
+   * ```ts
+   * Credential.on('credential_refreshed', ({ credential }) => {
    *   // do something with credential
    * });
+   * ```
    */
   public static on (...args: Parameters<EventEmitter<CredentialEvents>['on']>) {
     Credential.emitter.on(...args);
   }
 
   /**
-   * Removes active event listeners
-   * 
-   * @param event - event name
-   * @param callback - the event handler previously bound via {@link on | Credential.on}
-   * 
+   * {@inheritDoc Core.EventEmitter.off}
    * @group Events
    * 
    * @example
-   * Credential.off(Events.CREDENTIAL_REFRESHED);
+   * ```ts
+   * Credential.off('credential_refreshed');
+   * ```
    */
   public static off (...args: Parameters<EventEmitter<CredentialEvents>['off']>) {
     Credential.emitter.off(...args);
@@ -167,7 +174,7 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   }
 
   /**
-   * Returns array of all Credential ids
+   * Returns array of all {@link Credential} ids
    * 
    * @group Static Accessors
    */
@@ -176,7 +183,7 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   }
 
   /**
-   * Returns number of Credential instances
+   * Returns number of {@link Credential} instances
    * 
    * @group Static Accessors
    */
@@ -187,8 +194,8 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   /**
    * Writes `token` to storage and returns a {@link Credential} instance
    * 
-   * @param token - Object representing the token to be managed by returned Credential instance
-   * @param tags - List of strings that can be used to ease Credential retrieval
+   * @param token - Object representing the token to be managed by returned {@link Credential} instance
+   * @param tags - List of strings that can be used to ease {@link Credential} retrieval
    * 
    * @example
    * const adminToken = await fetchAdminToken();
@@ -216,7 +223,7 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   }
 
   /**
-   * Returns all Credential instances where `matcher` function returns `true`
+   * Returns all {@link Credential} instances where `matcher` function returns `true`
    * 
    * @param matcher - Function which takes `meta` as first argument. Returns `true` if Credential should
    * be included, `false` otherwise
@@ -276,7 +283,7 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   }
 
   /**
-   * Compares 2 Credential instances to determine if they represent the same token
+   * Compares 2 {@link Credential} instances to determine if they represent the same token
    * 
    * @group Static Methods
    */

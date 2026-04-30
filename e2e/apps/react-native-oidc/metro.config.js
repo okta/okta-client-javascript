@@ -18,11 +18,21 @@ const monorepoRoot = path.resolve(projectRoot, '../../..');
 const config = getDefaultConfig(projectRoot);
 
 // 1. Watch all files within the monorepo
-config.watchFolders = [monorepoRoot];
+config.watchFolders = [...config.watchFolders, monorepoRoot];
 // 2. Let Metro know where to resolve packages and in what order
 config.resolver.nodeModulesPaths = [
+  ...config.resolver.nodeModulesPaths,
   path.resolve(projectRoot, 'node_modules'),
   path.resolve(monorepoRoot, 'node_modules'),
+];
+
+// Ensure workspace packages are resolved
+config.resolver.disableHierarchicalLookup = false;
+
+// Don't try to transform react-native internals
+config.resolver.blockList = [
+  // Block nested node_modules in workspace packages
+  /packages\/[^/]+\/node_modules\/.*/,
 ];
 
 module.exports = config;

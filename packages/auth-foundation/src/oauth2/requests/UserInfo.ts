@@ -11,7 +11,8 @@ import { validateURL } from '../../utils/index.ts';
 
 
 /**
- * @group OAuth2Request
+ * @inline
+ * @internal
  */
 export interface UserInfo {
   [key: string]: JsonPrimitive;

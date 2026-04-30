@@ -7,8 +7,12 @@ import { Token } from '../Token.ts';
 import { EventEmitter } from '../utils/EventEmitter.ts';
 import { CredentialError } from '../errors/index.ts';
 
-
+/** @inline */
 type TokenStorageEvent = { storage: TokenStorage, id: string };
+/**
+ * Map of events fired from {@link TokenStorage.emitter}
+ * @interface
+ */
 export type TokenStorageEvents = {
   'token_added': TokenStorageEvent & { token: Token };
   'token_removed': TokenStorageEvent;
@@ -26,14 +30,19 @@ export type TokenStorageEvents = {
  * can be stored in a more accessible location and used to query which tokens are available (without prompting biometrics)
  * 
  * @remarks
- * Default implementation provided based on {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage | localStorage}
+ * Default implementation provided is an in-memory solution and is **NOT** intended for production use. The [Platform Libraries](/docs/structure#tier-3) include
+ * {@link TokenStorage} implementations, which are production-ready, relevant to their specific platform.
  */
 export interface TokenStorage {
   readonly emitter: EventEmitter<TokenStorageEvents>;
   /**
    * In memory cached value of the {@link Credential.getDefault | default Credential}'s id
    */
-  readonly defaultTokenId: string | null;
+  readonly defaultTokenId: string | null | undefined;
+  /**
+   * Queries storage location for  stored id
+   */
+  loadDefaultTokenId (): Promise<string | null>;
   /**
    * Updates the stored {@link Credential.getDefault | default Credential} id
    */
@@ -101,6 +110,10 @@ export class DefaultTokenStorage implements TokenStorage {
 
   get defaultTokenId (): string | null {
     return this.#defaultId;
+  }
+
+  async loadDefaultTokenId (): Promise<string | null> {
+    return this.defaultTokenId;
   }
 
   async setDefaultTokenId (id: string | null): Promise<void> {

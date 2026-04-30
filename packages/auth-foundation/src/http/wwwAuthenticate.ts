@@ -4,7 +4,11 @@
  */
 
 /**
+ * Object representiation of a parsed `www-authenticate` header
  * @group WWWAuthenticate
+ * @see
+ * * {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/WWW-Authenticate | MDN}
+ * * {@link https://datatracker.ietf.org/doc/html/rfc7235#section-4.1 | RFC 7235 - WWW-Authenticate}
  */
 export interface WWWAuthenticateError {
   readonly error: string;
@@ -15,6 +19,7 @@ export interface WWWAuthenticateError {
 }
 
 /**
+ * Type predicate for {@link WWWAuthenticateError}
  * @group WWWAuthenticate
  */
 export function isWWWAuthenticateError (input: unknown): input is WWWAuthenticateError {
@@ -27,9 +32,12 @@ export function isWWWAuthenticateError (input: unknown): input is WWWAuthenticat
 }
 
 /**
- * parses a www-authenticate header and builds an object representation of the error condition
+ * Parses a `www-authenticate` header and returns an object representation of the error condition.
  * 
  * @group WWWAuthenticate
+ * @see
+ * * {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/WWW-Authenticate | MDN}
+ * * {@link https://datatracker.ietf.org/doc/html/rfc7235#section-4.1 | RFC 7235 - WWW-Authenticate}
  */
 export function parse (header: string | Headers | Response): WWWAuthenticateError | null {
   if (header instanceof Headers) {
@@ -69,7 +77,7 @@ export function parse (header: string | Headers | Response): WWWAuthenticateErro
 }
 
 /**
- * Returns string value of a `www-authenticate` header
+ * Returns string value of a `www-authenticate` header.
  *
  * @remarks
  * `HeadersInit` allows for a few different representations of headers with different access patterns (.get vs [key])
