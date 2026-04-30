@@ -1,0 +1,88 @@
+version: 2.1
+
+orbs:
+  general-platform-helpers: okta/general-platform-helpers@1.9.4
+  platform-helpers: okta/platform-helpers@2.0.0
+  macos: circleci/macos@2
+  android: circleci/android@3.1.0
+
+executors:
+  # android:
+  #   docker:
+  #     - image: cimg/android:2024.12
+  #   environment:
+  #     GRADLE_OPTS: -Xmx2g
+  #   resource_class: large
+
+  macos:
+    macos:
+      xcode: "16.3"
+    resource_class: m4pro.medium
+
+jobs:
+  test-android:
+    executor:
+      name: android/android_machine
+      resource_class: large
+      tag: default
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - gradle-{{ checksum "packages/react-native-webcrypto-bridge/android/build.gradle" }}
+            - gradle-
+
+      - run:
+          name: Run Android Unit and Integration Tests
+          command: |
+            cd packages/react-native-webcrypto-bridge/android
+            ./gradlew testDebugUnitTest --info
+
+      - save_cache:
+          key: gradle-{{ checksum "packages/react-native-webcrypto-bridge/android/build.gradle" }}
+          paths:
+            - ~/.gradle
+            - .gradle
+
+      - store_test_results:
+          path: packages/react-native-webcrypto-bridge/android/build/test-results
+
+      - store_artifacts:
+          path: packages/react-native-webcrypto-bridge/android/build/reports
+          destination: android-test-reports
+
+  test-ios:
+    executor: macos
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - swift-spm-{{ checksum "packages/react-native-webcrypto-bridge/ios/Package.swift" }}
+            - swift-spm-
+
+      - run:
+          name: Run iOS Unit and Integration Tests
+          command: |
+            cd packages/react-native-webcrypto-bridge/ios
+            swift test --verbose
+
+      - save_cache:
+          key: swift-spm-{{ checksum "packages/react-native-webcrypto-bridge/ios/Package.swift" }}
+          paths:
+            - packages/react-native-webcrypto-bridge/ios/.build
+
+      - store_test_results:
+          path: packages/react-native-webcrypto-bridge/ios/.build/test-results
+
+      - store_artifacts:
+          path: packages/react-native-webcrypto-bridge/ios/.build
+          destination: ios-build-artifacts
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - test-android
+      - test-ios

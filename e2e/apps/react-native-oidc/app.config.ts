@@ -17,5 +17,39 @@ export default ({ config }: ConfigContext) => ({
   ...config,
   extra: {
     env
-  }
+  },
+  "android": {
+    "package": "com.anonymous.reporeactnativeoidc"
+  },
+  "ios": {
+    "bundleIdentifier": "com.anonymous.reporeactnativeoidc"
+  },
+  scheme: "com.oktapreview.jperreault-test",
+  intentFilters: [
+    {
+      action: "VIEW",
+      autoVerify: true,
+      data: [
+        {
+          scheme: "com.oktapreview.jperreault-test"
+        }
+      ],
+      category: ["BROWSABLE", "DEFAULT"]
+    }
+  ],
+  "plugins": [
+    "expo-font",
+    "expo-router",
+    [
+      "expo-build-properties",
+      {
+        "ios": {
+          "newArchEnabled": true
+        },
+        "android": {
+          "newArchEnabled": true
+        }
+      }
+    ]
+  ]
 });
