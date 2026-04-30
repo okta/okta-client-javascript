@@ -1,6 +1,6 @@
 import { Image } from 'expo-image';
 import { useState, useCallback } from 'react';
-import { Button, StyleSheet, View, ActivityIndicator } from 'react-native';
+import { Button, StyleSheet, ActivityIndicator } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 
 import { HelloWave } from '@/components/HelloWave';

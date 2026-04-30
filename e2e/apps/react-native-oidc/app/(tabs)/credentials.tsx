@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
+import { useState, useCallback } from 'react';
+import { StyleSheet, TouchableOpacity, RefreshControl, ActivityIndicator } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import ParallaxScrollView from '@/components/ParallaxScrollView';

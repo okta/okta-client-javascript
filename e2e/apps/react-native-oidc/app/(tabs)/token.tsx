@@ -15,13 +15,7 @@ export default function TokenScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadToken();
-    }, [params.id])
-  );
-
-  const loadToken = async () => {
+  const loadToken = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -48,7 +42,13 @@ export default function TokenScreen() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadToken();
+    }, [loadToken])
+  );
 
   const handleRevoke = async () => {
     if (token) {
@@ -105,7 +105,7 @@ export default function TokenScreen() {
     );
   }
 
-  const tokenData = token.toJSON();
+
   const isExpired = token.isExpired;
   const expiresIn = Math.floor((new Date(token.expiresAt).getTime() - Date.now()) / 1000);
 
