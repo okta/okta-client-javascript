@@ -3,7 +3,7 @@ import { Button, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
-import { Credential, Token } from '@okta/auth-foundation';
+import { Credential, Token } from '@okta/react-native-platform';
 import { useAuth } from '@/hooks/useAuth';
 
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -53,6 +53,8 @@ export default function TokenScreen () {
       <ThemedView style={styles.stepContainer}>
         <ThemedText type="subtitle">Access Token</ThemedText>
         <ThemedText>{token.accessToken}</ThemedText>
+        <ThemedText type="subtitle">ID Token</ThemedText>
+        <ThemedText>{token?.idToken?.rawValue}</ThemedText>
         <ThemedText type="subtitle">Refresh Token</ThemedText>
         <ThemedText>{token?.refreshToken}</ThemedText>
       </ThemedView>

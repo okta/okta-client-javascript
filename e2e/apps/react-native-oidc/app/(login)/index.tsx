@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { StyleSheet, Button } from 'react-native';
 import { Image } from 'expo-image';
 import Constants from 'expo-constants';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,12 +12,42 @@ import { HelloWave } from '@/components/HelloWave';
 
 export default function LoginScreen () {
   const { signIn } = useAuth();
+  const [ authError, setAuthError ] = useState<Error | null>(null);
+
+  const signInFunc = useCallback(async () => {
+    try {
+      await signIn('/(login)/token');
+    }
+    catch (err) {
+      setAuthError(err as Error);
+    }
+  }, [signIn, setAuthError]);
 
   useEffect(() => {
     (async () => {
-      await signIn('/(login)/token');
+      await signInFunc();
     })();
-  }, [signIn]);
+  }, [signInFunc]);
+
+  let view  = (
+    <>
+      <ThemedText type="title">Loading...</ThemedText>
+      <HelloWave />
+    </>
+  );
+
+  if (authError) {
+    view = (
+      <>
+        <ThemedText type="title">Error</ThemedText>
+        <ThemedText type="default">{authError.message}</ThemedText>
+        <Button
+          title="Login"
+          onPress={() => { setAuthError(null); signInFunc(); }}
+        />
+      </>
+    );
+  }
 
   return (
     <ParallaxScrollView
@@ -29,8 +59,7 @@ export default function LoginScreen () {
         />
       }>
       <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Loading...</ThemedText>
-        <HelloWave />
+        {view}
       </ThemedView>
     </ParallaxScrollView>
   );
