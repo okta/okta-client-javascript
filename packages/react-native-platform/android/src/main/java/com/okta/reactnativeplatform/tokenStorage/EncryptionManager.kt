@@ -3,6 +3,8 @@ package com.okta.reactnativeplatform
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import java.security.KeyStore
+import java.security.SecureRandom
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
@@ -35,7 +37,7 @@ class EncryptionManager {
         private const val IV_LENGTH_BYTES = 12
     }
 
-    private val keyStore = javax.security.KeyStore.getInstance(KEYSTORE_PROVIDER).apply {
+    private val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply {
         load(null)
     }
 
