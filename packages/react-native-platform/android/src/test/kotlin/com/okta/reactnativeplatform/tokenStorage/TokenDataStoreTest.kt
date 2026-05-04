@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 import com.google.common.truth.Truth.assertThat
 import io.mockk.mockkConstructor
 import io.mockk.every
-import io.mockk.anyConstructed
+import io.mockk.any
 
 /**
  * Unit tests for TokenDataStore.
