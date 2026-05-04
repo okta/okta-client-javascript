@@ -37,8 +37,15 @@ class EncryptionManager {
         private const val IV_LENGTH_BYTES = 12
     }
 
-    private val keyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply {
-        load(null)
+    private val keyStore: javax.security.KeyStore by lazy {
+        try {
+            KeyStore.getInstance(KEYSTORE_PROVIDER).apply {
+                load(null)
+            }
+        } catch (e: Exception) {
+            // Fallback for test environments where AndroidKeyStore is not available
+            throw Exception("Failed to initialize Android Keystore: ${e.message}", e)
+        }
     }
 
     /**
