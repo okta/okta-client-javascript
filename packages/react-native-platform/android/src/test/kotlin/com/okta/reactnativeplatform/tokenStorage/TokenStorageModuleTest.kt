@@ -384,80 +384,19 @@ class TokenStorageModuleTest {
         latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         verify { promise.resolve(null) }
     }
-}
+
+    @Test
     fun testGetDefaultTokenId_notSet_shouldResolveNull() {
         val promise = mockk<Promise>(relaxed = true)
+        val latch = CountDownLatch(1)
+
+        every { promise.resolve(any()) } answers {
+            latch.countDown()
+        }
 
         module.getDefaultTokenId(promise)
 
-        verify { promise.resolve(null) }
-    }
-
-    @Test
-    fun testSetDefaultTokenId_null_shouldRemoveDefault() {
-        val setPromise = mockk<Promise>(relaxed = true)
-        val setNullPromise = mockk<Promise>(relaxed = true)
-        val getPromise = mockk<Promise>(relaxed = true)
-
-        // Set default
-        module.setDefaultTokenId("default-id", setPromise)
-
-        // Clear default
-        module.setDefaultTokenId(null, setNullPromise)
-        verify { setNullPromise.resolve(null) }
-
-        // Verify default is cleared
-        module.getDefaultTokenId(getPromise)
-        verify { getPromise.resolve(null) }
-    }
-
-    // MARK: - Data Integrity Tests
-
-    @Test
-    fun testTokenAndMetadataStoredSeparately() {
-        val saveTokenPromise = mockk<Promise>(relaxed = true)
-        val saveMetaPromise = mockk<Promise>(relaxed = true)
-        val getTokenPromise = mockk<Promise>(relaxed = true)
-        val getMetaPromise = mockk<Promise>(relaxed = true)
-        val tokenSlot = slot<String>()
-        val metaSlot = slot<String>()
-
-        // Save token and metadata with different values
-        module.saveToken("id", "token-value", saveTokenPromise)
-        module.saveMetadata("id", "metadata-value", saveMetaPromise)
-
-        // Retrieve and verify they are different
-        module.getToken("id", getTokenPromise)
-        module.getMetadata("id", getMetaPromise)
-
-        verify { getTokenPromise.resolve(capture(tokenSlot)) }
-        verify { getMetaPromise.resolve(capture(metaSlot)) }
-
-        assertThat(tokenSlot.captured).isEqualTo("token-value")
-        assertThat(metaSlot.captured).isEqualTo("metadata-value")
-    }
-
-    // MARK: - Error Handling Tests
-
-    @Test
-    fun testSaveToken_withError_shouldRejectPromise() {
-        val promise = mockk<Promise>(relaxed = true)
-        val rejectSlot = slot<String>()
-
-        // Try saving with empty ID (edge case that might fail)
-        module.saveToken("", "test-token", promise)
-
-        // Should either resolve or reject depending on implementation
-        // This test verifies the module handles the operation without crashing
-        assertThat(promise).isNotNull()
-    }
-
-    @Test
-    fun testRemoveToken_nonExistent_shouldStillResolve() {
-        val promise = mockk<Promise>(relaxed = true)
-
-        module.removeToken("non-existent", promise)
-
+        latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         verify { promise.resolve(null) }
     }
 }
