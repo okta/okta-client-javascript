@@ -97,7 +97,7 @@ jobs:
           name: Run React Native Platform Android Tests
           command: |
             cd packages/react-native-platform/android
-            ./gradlew testDebugUnitTest --stacktrace
+            ./gradlew testDebugUnitTest --info
 
       - save_cache:
           key: gradle-rn-platform-{{ checksum "packages/react-native-platform/android/build.gradle" }}
