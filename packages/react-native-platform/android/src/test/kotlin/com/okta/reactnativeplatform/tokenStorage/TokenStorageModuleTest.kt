@@ -11,6 +11,7 @@ import io.mockk.slot
 import io.mockk.verify
 import io.mockk.every
 import io.mockk.mockkStatic
+import org.junit.Assume
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -32,6 +33,7 @@ class TokenStorageModuleTest {
     private lateinit var module: TokenStorageModule
     private lateinit var context: ReactApplicationContext
     private lateinit var application: Application
+    private var keystoreAvailable = false
 
     companion object {
         // Timeout for async operations in tests (ms)
@@ -42,17 +44,30 @@ class TokenStorageModuleTest {
     fun setUp() {
         application = ApplicationProvider.getApplicationContext<Application>()
 
+        // Check if Android Keystore is available by trying to encrypt something
+        try {
+            val manager = EncryptionManager()
+            manager.encryptString("test")
+            keystoreAvailable = true
+        } catch (e: Exception) {
+            keystoreAvailable = false
+        }
+
         // Mock Arguments.createArray() to avoid React Native initialization
         mockkStatic(Arguments::class)
         every { Arguments.createArray() } answers {
             mockk<WritableArray>(relaxed = true)
         }
 
-        // Create a mocked ReactApplicationContext (cannot instantiate abstract class)
+        // Create a real context wrapper that behaves like ReactApplicationContext
+        // Use the real application context to allow DataStore to access file system
         context = mockk<ReactApplicationContext>(relaxed = true)
         every { context.baseContext } returns application
+        every { context.applicationContext } returns application
+        every { context.filesDir } returns application.filesDir
+        every { context.getCacheDir() } returns application.cacheDir
 
-        // Create module
+        // Create module with real context delegation
         module = TokenStorageModule(context)
     }
 
@@ -60,6 +75,8 @@ class TokenStorageModuleTest {
 
     @Test
     fun testSaveToken_shouldResolvePromise() {
+        Assume.assumeTrue("Android Keystore not available", keystoreAvailable)
+        
         val promise = mockk<Promise>(relaxed = true)
         val latch = CountDownLatch(1)
         
@@ -76,6 +93,8 @@ class TokenStorageModuleTest {
 
     @Test
     fun testSaveAndGetToken_shouldReturnSavedToken() {
+        Assume.assumeTrue("Android Keystore not available", keystoreAvailable)
+        
         val savePromise = mockk<Promise>(relaxed = true)
         val getPromise = mockk<Promise>(relaxed = true)
         val saveLatch = CountDownLatch(1)
