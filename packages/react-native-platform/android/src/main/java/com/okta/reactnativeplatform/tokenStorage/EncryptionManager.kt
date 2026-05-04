@@ -37,7 +37,7 @@ class EncryptionManager {
         private const val IV_LENGTH_BYTES = 12
     }
 
-    private val keyStore: javax.security.KeyStore by lazy {
+    private val keyStore: java.security.KeyStore by lazy {
         try {
             KeyStore.getInstance(KEYSTORE_PROVIDER).apply {
                 load(null)
