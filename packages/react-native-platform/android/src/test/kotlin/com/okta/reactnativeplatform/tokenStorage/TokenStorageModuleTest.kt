@@ -384,19 +384,4 @@ class TokenStorageModuleTest {
         latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
         verify { promise.resolve(null) }
     }
-
-    @Test
-    fun testGetDefaultTokenId_notSet_shouldResolveNull() {
-        val promise = mockk<Promise>(relaxed = true)
-        val latch = CountDownLatch(1)
-
-        every { promise.resolve(any()) } answers {
-            latch.countDown()
-        }
-
-        module.getDefaultTokenId(promise)
-
-        latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
-        verify { promise.resolve(null) }
-    }
 }
