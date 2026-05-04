@@ -1,120 +1,91 @@
 package com.okta.reactnativeplatform
 
-import android.content.Context
-import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import com.facebook.react.bridge.*
 import com.facebook.react.module.annotations.ReactModule
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 
 @ReactModule(name = TokenStorageModule.NAME)
 class TokenStorageModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext) {
 
     companion object {
-       const val NAME = "TokenStorageBridge"
-        private const val PREFS_TOKENS = "okta_tokens"
-        private const val PREFS_METADATA = "okta_metadata"
-        private const val DEFAULT_TOKEN_KEY = "okta-default-token"
+        const val NAME = "TokenStorageBridge"
     }
 
     override fun getName(): String = NAME
 
-    private val masterKey: MasterKey? by lazy {
-        try {
-            MasterKey.Builder(reactContext)
-                .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-                .build()
-        } catch (e: Exception) {
-            // KeyStore may not be available in test environments
-            null
-        }
-    }
+    // DataStore provider for encrypted token and metadata storage
+    private val dataStore = TokenDataStore(reactContext)
 
-    // Secure storage for tokens (lazy initialized)
-    private val securePrefs: SharedPreferences by lazy {
-        val mk = masterKey
-        if (mk != null) {
-            try {
-                EncryptedSharedPreferences.create(
-                    reactContext,
-                    PREFS_TOKENS,
-                    mk,
-                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-                )
-            } catch (e: Exception) {
-                // Fall back to unencrypted storage if encryption fails (e.g., in tests)
-                reactContext.getSharedPreferences(PREFS_TOKENS, Context.MODE_PRIVATE)
-            }
-        } else {
-            // Use unencrypted storage if KeyStore is unavailable
-            reactContext.getSharedPreferences(PREFS_TOKENS, Context.MODE_PRIVATE)
-        }
-    }
-
-    // Regular storage for metadata
-    private val metadataPrefs: SharedPreferences by lazy {
-        reactContext.getSharedPreferences(
-            PREFS_METADATA,
-            Context.MODE_PRIVATE
-        )
-    }
+    // CoroutineScope for async DataStore operations
+    // Uses IO dispatcher to avoid blocking main thread
+    // Scope persists for the lifetime of the app (React Native modules are singletons)
+    private val scope = CoroutineScope(Dispatchers.IO + Job())
 
     // MARK: - Token Operations (Secure Storage)
 
     @ReactMethod
     fun saveToken(id: String, tokenData: String, promise: Promise) {
-        try {
-            securePrefs.edit().putString(id, tokenData).apply()
-            promise.resolve(null)
-        } catch (e: Exception) {
-            promise.reject("token_save_error", "Failed to save token", e)
+        scope.launch {
+            try {
+                dataStore.saveToken(id, tokenData)
+                promise.resolve(null)
+            } catch (e: Exception) {
+                promise.reject("token_save_error", "Failed to save token", e)
+            }
         }
     }
 
     @ReactMethod
     fun getToken(id: String, promise: Promise) {
-        try {
-            val value = securePrefs.getString(id, null)
-            promise.resolve(value)
-        } catch (e: Exception) {
-            promise.resolve(null)
+        scope.launch {
+            try {
+                val token = dataStore.getToken(id)
+                promise.resolve(token)
+            } catch (e: Exception) {
+                promise.resolve(null)
+            }
         }
     }
 
     @ReactMethod
     fun removeToken(id: String, promise: Promise) {
-        try {
-            securePrefs.edit().remove(id).apply()
-            metadataPrefs.edit().remove(id).apply()
-            promise.resolve(null)
-        } catch (e: Exception) {
-            promise.reject("token_remove_error", "Failed to remove token", e)
+        scope.launch {
+            try {
+                dataStore.removeToken(id)
+                promise.resolve(null)
+            } catch (e: Exception) {
+                promise.reject("token_remove_error", "Failed to remove token", e)
+            }
         }
     }
 
     @ReactMethod
     fun getAllTokenIds(promise: Promise) {
-        try {
-            val keys = securePrefs.all.keys.toList()
-            val array = Arguments.createArray()
-            keys.forEach { array.pushString(it) }
-            promise.resolve(array)
-        } catch (e: Exception) {
-            promise.reject("token_list_error", "Failed to get token IDs", e)
+        scope.launch {
+            try {
+                val keys = dataStore.getAllTokenIds()
+                val array = Arguments.createArray()
+                keys.forEach { array.pushString(it) }
+                promise.resolve(array)
+            } catch (e: Exception) {
+                promise.reject("token_list_error", "Failed to get token IDs", e)
+            }
         }
     }
 
     @ReactMethod
     fun clearTokens(promise: Promise) {
-        try {
-            securePrefs.edit().clear().apply()
-            metadataPrefs.edit().clear().apply()
-            metadataPrefs.edit().remove(DEFAULT_TOKEN_KEY).apply()
-            promise.resolve(null)
-        } catch (e: Exception) {
-            promise.reject("token_clear_error", "Failed to clear tokens", e)
+        scope.launch {
+            try {
+                dataStore.clearAllTokens()
+                promise.resolve(null)
+            } catch (e: Exception) {
+                promise.reject("token_clear_error", "Failed to clear tokens", e)
+            }
         }
     }
 
@@ -122,31 +93,37 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun saveMetadata(id: String, metadataData: String, promise: Promise) {
-        try {
-            metadataPrefs.edit().putString(id, metadataData).apply()
-            promise.resolve(null)
-        } catch (e: Exception) {
-            promise.reject("metadata_save_error", "Failed to save metadata", e)
+        scope.launch {
+            try {
+                dataStore.saveMetadata(id, metadataData)
+                promise.resolve(null)
+            } catch (e: Exception) {
+                promise.reject("metadata_save_error", "Failed to save metadata", e)
+            }
         }
     }
 
     @ReactMethod
     fun getMetadata(id: String, promise: Promise) {
-        try {
-            val value = metadataPrefs.getString(id, null)
-            promise.resolve(value)
-        } catch (e: Exception) {
-            promise.resolve(null)
+        scope.launch {
+            try {
+                val metadata = dataStore.getMetadata(id)
+                promise.resolve(metadata)
+            } catch (e: Exception) {
+                promise.resolve(null)
+            }
         }
     }
 
     @ReactMethod
     fun removeMetadata(id: String, promise: Promise) {
-        try {
-            metadataPrefs.edit().remove(id).apply()
-            promise.resolve(null)
-        } catch (e: Exception) {
-            promise.reject("metadata_remove_error", "Failed to remove metadata", e)
+        scope.launch {
+            try {
+                dataStore.removeMetadata(id)
+                promise.resolve(null)
+            } catch (e: Exception) {
+                promise.reject("metadata_remove_error", "Failed to remove metadata", e)
+            }
         }
     }
 
@@ -154,25 +131,25 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun setDefaultTokenId(id: String?, promise: Promise) {
-        try {
-            if (id != null) {
-                metadataPrefs.edit().putString(DEFAULT_TOKEN_KEY, id).apply()
-            } else {
-                metadataPrefs.edit().remove(DEFAULT_TOKEN_KEY).apply()
+        scope.launch {
+            try {
+                dataStore.setDefaultTokenId(id)
+                promise.resolve(null)
+            } catch (e: Exception) {
+                promise.reject("default_token_error", "Failed to set default token ID", e)
             }
-            promise.resolve(null)
-        } catch (e: Exception) {
-            promise.reject("default_token_error", "Failed to set default token ID", e)
         }
     }
 
     @ReactMethod
     fun getDefaultTokenId(promise: Promise) {
-        try {
-            val value = metadataPrefs.getString(DEFAULT_TOKEN_KEY, null)
-            promise.resolve(value)
-        } catch (e: Exception) {
-            promise.resolve(null)
+        scope.launch {
+            try {
+                val id = dataStore.getDefaultTokenId()
+                promise.resolve(id)
+            } catch (e: Exception) {
+                promise.resolve(null)
+            }
         }
     }
 }
