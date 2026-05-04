@@ -12,7 +12,7 @@ import io.mockk.verify
 import io.mockk.every
 import io.mockk.mockkStatic
 import io.mockk.mockkConstructor
-import io.mockk.ofType
+import io.mockk.match
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -52,11 +52,11 @@ class TokenStorageModuleTest {
 
         // Mock EncryptionManager to avoid Android Keystore initialization in tests
         mockkConstructor(EncryptionManager::class)
-        every { EncryptionManager().encryptString(ofType<String>()) } answers {
+        every { EncryptionManager().encryptString(match { true }) } answers {
             // Simple mock: return a dummy encrypted value for testing
             "mock-encrypted-" + firstArg<String>()
         }
-        every { EncryptionManager().decryptString(ofType<String>()) } answers {
+        every { EncryptionManager().decryptString(match { true }) } answers {
             // Simple mock: extract the original value from our mock format
             val encrypted = firstArg<String>()
             if (encrypted.startsWith("mock-encrypted-")) {

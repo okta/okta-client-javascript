@@ -16,7 +16,7 @@ import org.robolectric.annotation.Config
 import com.google.common.truth.Truth.assertThat
 import io.mockk.mockkConstructor
 import io.mockk.every
-import io.mockk.ofType
+import io.mockk.match
 
 /**
  * Unit tests for TokenDataStore.
@@ -36,11 +36,11 @@ class TokenDataStoreTest {
 
         // Mock EncryptionManager to avoid Android Keystore initialization in tests
         mockkConstructor(EncryptionManager::class)
-        every { EncryptionManager().encryptString(ofType<String>()) } answers {
+        every { EncryptionManager().encryptString(match { true }) } answers {
             // Simple mock: return a dummy encrypted value for testing
             "mock-encrypted-" + firstArg<String>()
         }
-        every { EncryptionManager().decryptString(ofType<String>()) } answers {
+        every { EncryptionManager().decryptString(match { true }) } answers {
             // Simple mock: extract the original value from our mock format
             val encrypted = firstArg<String>()
             if (encrypted.startsWith("mock-encrypted-")) {
