@@ -7,6 +7,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import com.google.common.truth.Truth.assertThat
+import org.junit.Assert.assertThrows
 
 /**
  * Unit tests for EncryptionManager.
@@ -107,13 +108,13 @@ class EncryptionManagerTest {
     fun testDecryptString_withInvalidBase64_throwsException() {
         val invalidBase64 = "!!!not-valid-base64!!!"
         
-        assertThat {
+        assertThrows(Exception::class.java) {
             encryptionManager.decryptString(invalidBase64)
-        }.throws(Exception::class.java)
+        }
     }
 
     @Test
-    fun testDecryptString_withTampered Data_throwsException() {
+    fun testDecryptString_withTamperedData_throwsException() {
         val plaintext = "test-token-data"
         val encrypted = encryptionManager.encryptString(plaintext)
         
@@ -123,9 +124,9 @@ class EncryptionManagerTest {
         val tamperedEncrypted = Base64.encodeToString(encryptedBytes, Base64.NO_WRAP)
         
         // GCM should detect tampering and throw an exception
-        assertThat {
+        assertThrows(Exception::class.java) {
             encryptionManager.decryptString(tamperedEncrypted)
-        }.throws(Exception::class.java)
+        }
     }
 
     @Test
@@ -136,9 +137,9 @@ class EncryptionManagerTest {
         // Truncate encrypted data
         val truncated = encrypted.substring(0, encrypted.length / 2)
         
-        assertThat {
+        assertThrows(Exception::class.java) {
             encryptionManager.decryptString(truncated)
-        }.throws(Exception::class.java)
+        }
     }
 
     @Test
@@ -146,9 +147,9 @@ class EncryptionManagerTest {
         // Create data that's too short to contain IV (12 bytes)
         val shortData = Base64.encodeToString(ByteArray(5), Base64.NO_WRAP)
         
-        assertThat {
+        assertThrows(Exception::class.java) {
             encryptionManager.decryptString(shortData)
-        }.throws(Exception::class.java)
+        }
     }
 
     // MARK: - Empty/Edge Case Tests

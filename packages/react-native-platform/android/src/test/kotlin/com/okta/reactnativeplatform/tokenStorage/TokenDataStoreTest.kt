@@ -104,7 +104,7 @@ class TokenDataStoreTest {
         val ids = dataStore.getAllTokenIds()
         
         assertThat(ids).hasSize(3)
-        assertThat(ids).contains("token-1", "token-2", "token-3")
+        assertThat(ids).containsExactly("token-1", "token-2", "token-3")
     }
 
     @Test
