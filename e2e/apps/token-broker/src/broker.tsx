@@ -149,6 +149,12 @@ class TokenBroker extends HostOrchestrator.Host {
 
     return result;
   }
+
+  async invalidateToken (tokenId: string): Promise<Partial<HostOrchestrator.ErrorResponse>> {
+    const credential = await Credential.with(tokenId);
+    await credential?.remove();
+    return {};
+  }
 }
 
 export const broker = new TokenBroker('AdminSpaBroker', { allowedOrigins: ['http://app.localhost:8080'] });

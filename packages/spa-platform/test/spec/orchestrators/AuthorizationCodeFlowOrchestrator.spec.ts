@@ -1,7 +1,7 @@
 import { Token, TokenOrchestratorError, OAuth2Error } from '@okta/auth-foundation';
 import { Credential } from 'src/Credential';
 import { AuthorizationCodeFlow } from 'src/flows/AuthorizationCodeFlow';
-import { AuthorizationCodeFlowOrchestrator } from 'src/orchestrators';
+import { AuthorizationCodeFlowOrchestrator } from 'src/orchestrators/AuthorizationCodeFlowOrchestrator';
 import { oauthClient, makeTestToken } from '../../helpers/makeTestResource';
 
 
@@ -178,5 +178,22 @@ describe('AuthorizationCodeFlowOrchestrator', () => {
       await expect(orch.getToken({clientId: 'foobar'})).rejects.toThrow(TokenOrchestratorError);
       await expect(orch.getToken({issuer: 'http://localhost:3000'})).rejects.toThrow(TokenOrchestratorError);
     });
+  });
+
+  it('invalidateToken', async () => {
+    const cred = await Credential.store(makeTestToken());
+    const orch = new AuthorizationCodeFlowOrchestrator(flow);
+    const requestTokenSpy = jest.spyOn((orch as any), 'requestToken').mockResolvedValue(null);
+
+    expect(await orch.getToken()).toEqual(cred.token);
+    expect(requestTokenSpy).toHaveBeenCalledTimes(0);
+
+    await orch.invalidateToken('foo');      // has no effect, invalid id
+    expect(await orch.getToken()).toEqual(cred.token);
+    expect(requestTokenSpy).toHaveBeenCalledTimes(0);
+
+    await orch.invalidateToken(cred.id);    // subsequent `.getToken()` call will invoke `requestToken()`
+    expect(await orch.getToken()).toEqual(null);
+    expect(requestTokenSpy).toHaveBeenCalledTimes(1);
   });
 });

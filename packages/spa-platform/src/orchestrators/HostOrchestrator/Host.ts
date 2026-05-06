@@ -99,6 +99,9 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
       case 'PROFILE':
         response = await this.handleProfileRequest(request.data);
         break;
+      case 'INVALIDATE':
+        response = await this.handleInvalidateRequest(request.data);
+        break;
       default:
         response = { error: 'Unknown eventName provided' } satisfies HO.ErrorResponse;
     }
@@ -152,7 +155,8 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
       if (authorization) {
         const result: HO.AuthorizeResponse = {
           authorization,
-          tokenType: token.tokenType 
+          tokenType: token.tokenType,
+          tokenId: token.id,
         };
 
         if (token.tokenType === 'DPoP' && dpop) {
@@ -185,5 +189,12 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
     return { error: 'Unable to find idToken' };
   }
 
-  abstract findToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null | HO.ErrorResponse>; 
+  protected async handleInvalidateRequest (event: HO.InvalidateRequest): Promise<HO.InvalidateResponse> {
+    const { tokenId } = event;
+    return this.invalidateToken(tokenId);
+  }
+
+  abstract findToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null | HO.ErrorResponse>;
+
+  abstract invalidateToken (tokenId: string): Promise<HO.InvalidateResponse>;
 }

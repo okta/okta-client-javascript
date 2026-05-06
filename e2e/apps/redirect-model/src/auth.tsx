@@ -2,9 +2,8 @@ import {
   Credential,
   OAuth2Client,
   clearDPoPKeyPairs,
-  AuthorizationCodeFlow,
-  SessionLogoutFlow
 } from '@okta/spa-platform';
+import { AuthorizationCodeFlow, SessionLogoutFlow } from '@okta/spa-platform/flows';
 
 
 const USE_DPOP = __USE_DPOP__ === "true";

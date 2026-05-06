@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.2] - 2026-04-09
+
+### `@okta/spa-platform`
+
+#### Fixed
+- Fixes package exports to ensure `@okta/oauth2-flows` is truly an _optional_ dependency ([#28](https://github.com/okta/okta-client-javascript/pull/28))
+
 ## [0.7.1] - 2026-04-06
 
 ### `@okta/auth-foundation`
