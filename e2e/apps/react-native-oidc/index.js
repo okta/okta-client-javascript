@@ -8,3 +8,5 @@ console.log('Plat', Platform, Platform.TimeCoordinator)
 console.log("globalThis.crypto", globalThis.crypto);
 // global.crypto = global.crypto ?? globalThis.crypto;
 
+import { Credential } from '@okta/react-native-platform';
+Credential.coordinator.tokenStorage.emitter.on('token_added', (...args) => console.log(args))
