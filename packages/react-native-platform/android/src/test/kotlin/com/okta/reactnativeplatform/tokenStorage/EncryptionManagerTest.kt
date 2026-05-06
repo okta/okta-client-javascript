@@ -225,6 +225,47 @@ class EncryptionManagerTest {
         assertThat(decrypted).isEqualTo(plaintext)
     }
 
+    // MARK: - Hardware-Backed Keystore Fallback Tests
+
+    @Test
+    fun testKeyGeneration_succeedsWithFallback() {
+        Assume.assumeTrue("Android Keystore not available", keystoreAvailable)
+
+        // This test verifies that key generation succeeds.
+        // If hardware-backed keystore is available, the first attempt succeeds.
+        // If not available, the fallback to software-backed succeeds.
+        // Either way, encryption/decryption should work.
+        val plaintext = "test-token-for-key-generation"
+
+        val encrypted = encryptionManager.encryptString(plaintext)
+        val decrypted = encryptionManager.decryptString(encrypted)
+
+        // If we reach here, key generation succeeded with either hardware or software backing
+        assertThat(decrypted).isEqualTo(plaintext)
+    }
+
+    @Test
+    fun testEncryptDecrypt_withKeyStoreBackingVariation() {
+        Assume.assumeTrue("Android Keystore not available", keystoreAvailable)
+
+        // Test that encryption works consistently, regardless of whether the key
+        // was generated with hardware-backed or software-backed keystore.
+        // Both approaches should produce the same encryption/decryption behavior.
+        val plaintext = "consistent-encryption-test"
+
+        val encrypted1 = encryptionManager.encryptString(plaintext)
+        val decrypted1 = encryptionManager.decryptString(encrypted1)
+
+        val encrypted2 = encryptionManager.encryptString(plaintext)
+        val decrypted2 = encryptionManager.decryptString(encrypted2)
+
+        // Both encryptions should decrypt to the same plaintext
+        assertThat(decrypted1).isEqualTo(plaintext)
+        assertThat(decrypted2).isEqualTo(plaintext)
+        // Different IVs should produce different ciphertexts
+        assertThat(encrypted1).isNotEqualTo(encrypted2)
+    }
+
     // MARK: - Helper Functions
 
     private fun isValidBase64(str: String): Boolean {

@@ -131,27 +131,41 @@ class EncryptionManager {
 
     /**
      * Generates a new AES-256 key in Android Keystore.
-     * Uses hardware-backed keystore when available.
+     * Attempts hardware-backed keystore first, falls back to software-backed if unavailable.
      *
      * @return Newly generated AES-256 SecretKey
      */
     private fun generateMasterKey(): SecretKey {
         val keyGenerator = KeyGenerator.getInstance(ALGORITHM, KEYSTORE_PROVIDER)
         
-        val keySpec = KeyGenParameterSpec.Builder(
-            MASTER_KEY_ALIAS,
-            KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
-        ).apply {
-            setKeySize(KEY_SIZE)
-            setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
-            setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+        try {
+            // attempt hardware-backed keystore first
+            val keySpec = KeyGenParameterSpec.Builder(
+                MASTER_KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            ).apply {
+                setKeySize(KEY_SIZE)
+                setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                setIsStrongBoxBacked(true)
+            }.build()
+
+            keyGenerator.init(keySpec)
+            return keyGenerator.generateKey()
+        } catch (e: Exception) {
+            // fallback to software-backed keystore if hardware is not available
+            val keySpec = KeyGenParameterSpec.Builder(
+                MASTER_KEY_ALIAS,
+                KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+            ).apply {
+                setKeySize(KEY_SIZE)
+                setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_NONE)
+                setBlockModes(KeyProperties.BLOCK_MODE_GCM)
+                setIsStrongBoxBacked(false)
+            }.build()
             
-            // Request hardware-backed keystore if available
-            // Falls back to software keystore on devices without secure hardware
-            setIsStrongBoxBacked(false)
-        }.build()
-        
-        keyGenerator.init(keySpec)
-        return keyGenerator.generateKey()
+            keyGenerator.init(keySpec)
+            return keyGenerator.generateKey()
+        }
     }
 }
