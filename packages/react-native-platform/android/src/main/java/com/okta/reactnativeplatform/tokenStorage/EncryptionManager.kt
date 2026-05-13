@@ -1,5 +1,6 @@
 package com.okta.reactnativeplatform
 
+import android.annotation.SuppressLint
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
@@ -135,6 +136,7 @@ class EncryptionManager {
      *
      * @return Newly generated AES-256 SecretKey
      */
+    @SuppressLint("NewApi")
     private fun generateMasterKey(): SecretKey {
         val keyGenerator = KeyGenerator.getInstance(ALGORITHM, KEYSTORE_PROVIDER)
         

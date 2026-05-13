@@ -1,12 +1,9 @@
 import Foundation
 import Security
-
-// Type aliases for Promise-like callbacks (compatible with React Native)
-typealias PromiseResolveBlock = (Any?) -> Void
-typealias PromiseRejectBlock = (String, String, Error?) -> Void
+import React
 
 @objc(TokenStorageBridge)
-class TokenStorageBridge: NSObject {
+class TokenStorageBridge: NSObject, RCTBridgeModule {
 
     override init() {
             super.init()
@@ -47,7 +44,7 @@ class TokenStorageBridge: NSObject {
     // MARK: - Token Operations (Secure Storage - Keychain with strict access)
 
     @objc(saveToken:tokenData:resolve:reject:)
-    func saveToken(_ id: String, tokenData: String, resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
+    func saveToken(_ id: String, tokenData: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             // More restrictive: requires device unlock
             try KeychainHelper.save(
@@ -56,35 +53,35 @@ class TokenStorageBridge: NSObject {
                 value: tokenData,
                 accessibility: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
             )
-            resolve(nil)
+            resolve(nil as Any?)
         } catch {
             reject("token_save_error", "Failed to save token", error)
         }
     }
 
     @objc(getToken:resolve:reject:)
-    func getToken(_ id: String, resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
+    func getToken(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             let value = try KeychainHelper.load(service: Self.SERVICE_TOKENS, key: id)
             resolve(value)
         } catch {
-            resolve(nil)
+            resolve(nil as Any?)
         }
     }
 
     @objc(removeToken:resolve:reject:)
-    func removeToken(_ id: String, resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
+    func removeToken(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             try KeychainHelper.delete(service: Self.SERVICE_TOKENS, key: id)
             try KeychainHelper.delete(service: Self.SERVICE_METADATA, key: id)
-            resolve(nil)
+            resolve(nil as Any?)
         } catch {
             reject("token_remove_error", "Failed to remove token", error)
         }
     }
 
     @objc(getAllTokenIds:reject:)
-    func getAllTokenIds(_ resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
+    func getAllTokenIds(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             let keys = try KeychainHelper.allKeys(service: Self.SERVICE_TOKENS)
             resolve(keys)
@@ -94,12 +91,12 @@ class TokenStorageBridge: NSObject {
     }
 
     @objc(clearTokens:reject:)
-    func clearTokens(_ resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
+    func clearTokens(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             try KeychainHelper.clearAll(service: Self.SERVICE_TOKENS)
             try KeychainHelper.clearAll(service: Self.SERVICE_METADATA)
             try KeychainHelper.clearAll(service: Self.SERVICE_DEFAULT)
-            resolve(nil)
+            resolve(nil as Any?)
         } catch {
             reject("token_clear_error", "Failed to clear tokens", error)
         }
@@ -108,7 +105,7 @@ class TokenStorageBridge: NSObject {
     // MARK: - Metadata Operations (Keychain with relaxed access)
 
     @objc(saveMetadata:metadataData:resolve:reject:)
-    func saveMetadata(_ id: String, metadataData: String, resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
+    func saveMetadata(_ id: String, metadataData: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             // Less restrictive: accessible after first unlock (survives reboots)
             try KeychainHelper.save(
@@ -117,27 +114,27 @@ class TokenStorageBridge: NSObject {
                 value: metadataData,
                 accessibility: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
             )
-            resolve(nil)
+            resolve(nil as Any?)
         } catch {
             reject("metadata_save_error", "Failed to save metadata", error)
         }
     }
 
     @objc(getMetadata:resolve:reject:)
-    func getMetadata(_ id: String, resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
+    func getMetadata(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             let value = try KeychainHelper.load(service: Self.SERVICE_METADATA, key: id)
             resolve(value)
         } catch {
-            resolve(nil)
+            resolve(nil as Any?)
         }
     }
 
     @objc(removeMetadata:resolve:reject:)
-    func removeMetadata(_ id: String, resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
+    func removeMetadata(_ id: String, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             try KeychainHelper.delete(service: Self.SERVICE_METADATA, key: id)
-            resolve(nil)
+            resolve(nil as Any?)
         } catch {
             reject("metadata_remove_error", "Failed to remove metadata", error)
         }
@@ -146,7 +143,7 @@ class TokenStorageBridge: NSObject {
     // MARK: - Default Token ID (Keychain with relaxed access)
 
     @objc(setDefaultTokenId:resolve:reject:)
-    func setDefaultTokenId(_ id: String?, resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
+    func setDefaultTokenId(_ id: String?, resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             if let id = id {
                 try KeychainHelper.save(
@@ -158,19 +155,19 @@ class TokenStorageBridge: NSObject {
             } else {
                 try KeychainHelper.delete(service: Self.SERVICE_DEFAULT, key: "default")
             }
-            resolve(nil)
+            resolve(nil as Any?)
         } catch {
             reject("default_token_error", "Failed to set default token ID", error)
         }
     }
 
     @objc(getDefaultTokenId:reject:)
-    func getDefaultTokenId(_ resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
+    func getDefaultTokenId(_ resolve: @escaping RCTPromiseResolveBlock, reject: @escaping RCTPromiseRejectBlock) {
         do {
             let value = try KeychainHelper.load(service: Self.SERVICE_DEFAULT, key: "default")
             resolve(value)
         } catch {
-            resolve(nil)
+            resolve(nil as Any?)
         }
     }
 }

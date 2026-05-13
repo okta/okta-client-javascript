@@ -8,7 +8,8 @@ import com.facebook.react.uimanager.ViewManager
 class OktaReactNativePlatformPackage : ReactPackage {
     override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
         return listOf(
-            TokenStorageModule(reactContext)
+            TokenStorageModule(reactContext),
+            BrowserSessionModule(reactContext)
         )
     }
 

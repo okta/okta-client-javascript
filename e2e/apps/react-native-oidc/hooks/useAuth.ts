@@ -8,7 +8,8 @@ import {
   AuthorizationCodeFlow,
   SessionLogoutFlow,
   AuthTransaction,
-  Credential
+  Credential,
+  openAuthSession
 } from '@okta/react-native-platform';
 import { client } from '@/auth';
 
@@ -16,10 +17,8 @@ import { client } from '@/auth';
 async function performSignIn () {
   try {
     console.log('here 1')
-    // Platform-specific redirect URI - iOS uses single slash, Android uses double slash
-    const redirectUri = Platform.OS === 'ios'
-      ? 'com.oktapreview.jperreault-test:/callback'
-      : 'com.oktapreview.jperreault-test://callback';
+    // Platform-specific redirect URI - both iOS and Android use double slashes
+    const redirectUri = 'com.oktapreview.jperreault-test://callback';
 
     // TODO: move to env
     const flow = new AuthorizationCodeFlow(client, {
@@ -32,7 +31,8 @@ async function performSignIn () {
     // @ts-ignore
     const transaction = new AuthTransaction(flow.context);
     await transaction.save();
-    const result = await openAuthSessionAsync(uri.href, redirectUri);
+    // const result = await openAuthSessionAsync(uri.href, redirectUri);
+    const result = await openAuthSession(uri.href, redirectUri);
     console.log('result: ', result)
     // @ts-ignore
     const { token, context } = await flow.resume(result.url);

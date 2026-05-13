@@ -33,4 +33,8 @@ installWebCryptoPolyfill();
 // Override TokenStorage to use React Native Storage Bridge
 import { ReactNativeTokenStorage } from './Credential/TokenStorage.ts';
 import { Credential } from '@okta/auth-foundation/core';
+
+// Export Browser Session API
+export { openAuthSession } from './BrowserSession/index.ts';
+export type { BrowserSessionResult, BrowserSessionErrorCode } from './BrowserSession/types.ts';
 Credential.coordinator.tokenStorage = new ReactNativeTokenStorage();

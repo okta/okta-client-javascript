@@ -1,6 +1,7 @@
 {
   "name": "@okta/react-native-webcrypto-bridge",
   "version": "0.7.0",
+  "author": "developer@okta.com",
   "description": "WebCrypto API polyfill for React Native with native iOS and Android bridge",
   "type": "module",
   "main": "dist/esm/index.js",
