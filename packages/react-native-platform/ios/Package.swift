@@ -8,6 +8,10 @@ let package = Package(
     ],
     products: [
         .library(
+            name: "RNBrowserSessionBridge",
+            targets: ["RNBrowserSessionBridge"]
+        ),
+        .library(
             name: "RNTokenStorageBridge",
             targets: ["RNTokenStorageBridge"]
         )
@@ -15,15 +19,16 @@ let package = Package(
     dependencies: [],
     targets: [
         .target(
+            name: "RNBrowserSessionBridge",
+            dependencies: []
+        ),
+        .target(
             name: "RNTokenStorageBridge",
-            path: "Sources/RNTokenStorageBridge",
-            exclude: ["TokenStorageBridge.m", "TokenStorageBridge.h"],
-            publicHeadersPath: "."
+            dependencies: []
         ),
         .testTarget(
             name: "RNTokenStorageBridgeTests",
-            dependencies: ["RNTokenStorageBridge"],
-            path: "Tests/RNTokenStorageBridgeTests"
+            dependencies: ["RNTokenStorageBridge"]
         )
     ]
 )

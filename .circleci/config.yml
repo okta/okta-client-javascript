@@ -34,10 +34,16 @@ jobs:
             - gradle-
 
       - run:
-          name: Run Android Unit and Integration Tests
+          name: Setup Node and install dependencies
           command: |
-            cd packages/react-native-webcrypto-bridge/android
-            ./gradlew testDebugUnitTest --info
+            npm i -g yarn@1.22.22
+            yarn install --frozen-lockfile
+
+      - run:
+          name: Run React Native Platform Android Tests
+          command: |
+            cd packages/react-native-platform/android
+            ./gradlew testDebugUnitTest -PnewArchEnabled=true --info
 
       - save_cache:
           key: gradle-{{ checksum "packages/react-native-webcrypto-bridge/android/build.gradle" }}
@@ -94,10 +100,16 @@ jobs:
             - gradle-rn-platform-
 
       - run:
+          name: Setup Node and install dependencies
+          command: |
+            npm i -g yarn@1.22.22
+            yarn install --frozen-lockfile
+
+      - run:
           name: Run React Native Platform Android Tests
           command: |
             cd packages/react-native-platform/android
-            ./gradlew testDebugUnitTest --info
+            ./gradlew testDebugUnitTest -PnewArchEnabled=true --info
 
       - save_cache:
           key: gradle-rn-platform-{{ checksum "packages/react-native-platform/android/build.gradle" }}

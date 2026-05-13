@@ -1,95 +1,182 @@
 import Foundation
+import AuthenticationServices
+import React
 
 #if os(iOS)
-import WebKit
 import UIKit
 #endif
 
-// Type aliases for Promise-like callbacks (compatible with React Native)
-typealias PromiseResolveBlock = (Any?) -> Void
-typealias PromiseRejectBlock = (String, String, Error?) -> Void
-
 #if os(iOS)
+
+// Result types matching expo-web-browser
+@objc(BrowserSessionResult)
+class BrowserSessionResult: NSObject {
+  @objc var type: String
+  @objc var url: String?
+  
+  init(type: String, url: String? = nil) {
+    self.type = type
+    self.url = url
+  }
+  
+  func toDictionary() -> [String: Any] {
+    var dict: [String: Any] = ["type": type]
+    if let url = url {
+      dict["url"] = url
+    }
+    return dict
+  }
+}
+
+// Main React Native module
+@available(iOS 12.0, *)
 @objc(BrowserSessionBridge)
 class BrowserSessionBridge: NSObject {
-
-    override init() {
-        super.init()
-        print("✅ BrowserSessionBridge initialized!")
+  
+  @objc
+  static func moduleName() -> String! {
+    return "BrowserSessionBridge"
+  }
+  
+  @objc
+  static func requiresMainQueueSetup() -> Bool {
+    return true
+  }
+  
+  private var authSession: ASWebAuthenticationSession?
+  
+  @objc(openAuthSession:redirectScheme:options:resolve:reject:)
+  func openAuthSession(
+    _ url: String,
+    redirectScheme: String,
+    options: NSDictionary,
+    resolve: @escaping RCTPromiseResolveBlock,
+    reject: @escaping RCTPromiseRejectBlock
+  ) {
+    guard let urlObj = URL(string: url) else {
+      reject("invalid_url", "Invalid URL provided", nil)
+      return
     }
-
-    @objc
-    static func requiresMainQueueSetup() -> Bool {
-        return true  // WebView operations must happen on main thread
-    }
-
-    @objc
-    static func moduleName() -> String! {
-        return "BrowserSessionBridge"
-    }
-
-    @objc
-    func constantsToExport() -> [String: Any]! {
-        return [
-            "isAvailable": true
-        ]
-    }
-
-    // MARK: - Browser Session Operations
-
-    @objc(launchBrowserSession:resolve:reject:)
-    func launchBrowserSession(_ url: String, resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
-        do {
-            guard let urlObj = URL(string: url) else {
-                reject("invalid_url", "Invalid URL provided", nil)
-                return
-            }
-
-            DispatchQueue.main.async {
-                let webViewController = UIViewController()
-                let webView = WKWebView(frame: webViewController.view.bounds)
-                webView.load(URLRequest(url: urlObj))
-
-                webViewController.view.addSubview(webView)
-
-                // Get the key window and present the view controller
-                if let keyWindow = UIApplication.shared.connectedScenes
-                    .compactMap({ $0 as? UIWindowScene })
-                    .first?.windows
-                    .first(where: { $0.isKeyWindow }) {
-                    keyWindow.rootViewController?.present(webViewController, animated: true) {
-                        resolve(nil)
-                    }
-                } else {
-                    reject("no_window", "Could not find key window", nil)
-                }
-            }
+    
+    // Extract ephemeralSession option with default value of false
+    let ephemeralSession = (options["ephemeralSession"] as? NSNumber)?.boolValue ?? false
+    
+    DispatchQueue.main.async { [weak self] in
+      guard let self = self else {
+        reject("no_window", "BrowserSessionBridge is not available", nil)
+        return
+      }
+      
+      // Track if promise was already resolved to avoid double-resolve issues
+      var completed = false
+      
+      // Use ASWebAuthenticationSession for OAuth
+      let authSession = ASWebAuthenticationSession(
+        url: urlObj,
+        callbackURLScheme: redirectScheme
+      ) { [weak self] callbackURL, error in
+        // Prevent double-resolution
+        guard !completed else { return }
+        completed = true
+        
+        defer {
+          // Clean up the reference to allow deallocation
+          self?.authSession = nil
         }
-    }
-
-    @objc(closeBrowserSession:reject:)
-    func closeBrowserSession(_ resolve: @escaping PromiseResolveBlock, reject: @escaping PromiseRejectBlock) {
-        DispatchQueue.main.async {
-            if let presentedViewController = UIApplication.shared.connectedScenes
-                .compactMap({ $0 as? UIWindowScene })
-                .first?.windows
-                .first(where: { $0.isKeyWindow })?.rootViewController?.presentedViewController {
-                presentedViewController.dismiss(animated: true) {
-                    resolve(nil)
-                }
-            } else {
-                resolve(nil)  // Already closed
-            }
+        
+        // Session completed or was cancelled
+        if let error = error {
+          // Check if it's a cancellation or a real error
+          if let authError = error as? ASWebAuthenticationSessionError,
+             authError.code == .canceledLogin {
+            resolve(BrowserSessionResult(type: "cancel").toDictionary())
+          } else {
+            reject("browser_session_error", error.localizedDescription, error)
+          }
+          return
         }
+        
+        if let callbackURL = callbackURL {
+          // OAuth flow completed, return the redirect URL
+          resolve(BrowserSessionResult(type: "success", url: callbackURL.absoluteString).toDictionary())
+        } else {
+          // Shouldn't happen, but handle it
+          resolve(BrowserSessionResult(type: "cancel").toDictionary())
+        }
+      }
+      
+      // Set presentation context provider for iOS 13+
+      if #available(iOS 13.0, *) {
+        authSession.presentationContextProvider = self
+        authSession.prefersEphemeralWebBrowserSession = ephemeralSession
+      }
+      
+      // Cancel any existing session before starting a new one
+      if let existingSession = self.authSession {
+        existingSession.cancel()
+      }
+      
+      // Keep a reference to prevent deallocation
+      self.authSession = authSession
+      
+      // Start the authentication session
+      if authSession.start() {
+        print("[BrowserSession] OAuth session started successfully")
+      } else {
+        guard !completed else { return }
+        completed = true
+        reject("browser_session_error", "Failed to start authentication session", nil)
+        self.authSession = nil
+      }
     }
+  }
 }
+
+// MARK: - ASWebAuthenticationPresentationContextProviding
+@available(iOS 13.0, *)
+extension BrowserSessionBridge: ASWebAuthenticationPresentationContextProviding {
+  @objc
+  func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+    // Return the key window as the anchor for presentation
+    if let window = UIApplication.shared.connectedScenes
+      .compactMap({ $0 as? UIWindowScene })
+      .first?.windows
+      .first(where: { $0.isKeyWindow }) {
+      return window
+    }
+    
+    // Fallback to any available window
+    if let window = UIApplication.shared.connectedScenes
+      .compactMap({ $0 as? UIWindowScene })
+      .first?.windows
+      .first {
+      return window
+    }
+    
+    // Last resort - create a new window
+    return UIWindow()
+  }
+}
+
 #else
-// Stub for non-iOS platforms (for SPM testing on macOS)
+
+// Stub for non-iOS platforms
 @objc(BrowserSessionBridge)
 class BrowserSessionBridge: NSObject {
-    @objc static func requiresMainQueueSetup() -> Bool { return false }
-    @objc static func moduleName() -> String! { return "BrowserSessionBridge" }
-    @objc func constantsToExport() -> [String: Any]! { return ["isAvailable": false] }
+  @objc static func moduleName() -> String! { return "BrowserSessionBridge" }
+  @objc static func requiresMainQueueSetup() -> Bool { return false }
+  
+  @objc(openAuthSession:redirectScheme:options:resolve:reject:)
+  func openAuthSession(
+    _ url: String,
+    redirectScheme: String,
+    options: NSDictionary,
+    resolve: @escaping RCTPromiseResolveBlock,
+    reject: @escaping RCTPromiseRejectBlock
+  ) {
+    reject("platform_not_supported", "BrowserSessionBridge is only available on iOS", nil)
+  }
 }
+
 #endif
 
