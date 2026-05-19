@@ -6,7 +6,6 @@ import android.security.keystore.KeyProperties
 import android.util.Base64
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
-import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.module.annotations.ReactModule
@@ -73,14 +72,14 @@ data class CryptoKey(
  */
 @ReactModule(name = WebCryptoBridgeModule.NAME)
 class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext) {
+    NativeWebCryptoBridgeSpec(reactContext) {
+
+    private val cryptoKeys = mutableMapOf<String, CryptoKey>()
+    private val secureRandom = SecureRandom()
 
     companion object {
         const val NAME = "WebCryptoBridge"
     }
-
-    private val cryptoKeys = mutableMapOf<String, CryptoKey>()
-    private val secureRandom = SecureRandom()
 
     override fun getName(): String = NAME
 
@@ -132,7 +131,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
      * @return standard Base64-encoded random bytes
      */
     @ReactMethod(isBlockingSynchronousMethod = true)
-    fun getRandomValues(length: Double): String {
+    override fun getRandomValues(length: Double): String {
         val len = length.toInt()
         val bytes = ByteArray(len)
         secureRandom.nextBytes(bytes)
@@ -145,7 +144,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
      * @return a UUID v4 string (e.g., `"550e8400-e29b-41d4-a716-446655440000"`)
      */
     @ReactMethod(isBlockingSynchronousMethod = true)
-    fun randomUUID(): String {
+    override fun randomUUID(): String {
         return UUID.randomUUID().toString()
     }
 
@@ -159,7 +158,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
      * @param promise resolves with the standard Base64-encoded digest, or rejects on error
      */
     @ReactMethod
-    fun digest(
+    override fun digest(
         algorithm: String,
         data: String,
         promise: Promise
@@ -190,7 +189,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
      * @param promise resolves with a JSON string `{"id": "ks:{uuid}"}`, or rejects on error
      */
     @ReactMethod
-    fun generateKey(
+    override fun generateKey(
         algorithmJson: String,
         extractable: Boolean,
         keyUsages: ReadableArray,
@@ -275,7 +274,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
      * @param promise resolves with a JSON string containing algorithm-specific JWK fields, or rejects on error
      */
     @ReactMethod
-    fun exportKey(
+    override fun exportKey(
         format: String,
         keyId: String,
         promise: Promise
@@ -328,7 +327,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
      * @param promise resolves with the key identifier string, or rejects on error
      */
     @ReactMethod
-    fun importKey(
+    override fun importKey(
         format: String,
         keyDataJson: String,
         algorithmJson: String,
@@ -392,7 +391,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
      * @param promise resolves with the standard Base64-encoded signature, or rejects on error
      */
     @ReactMethod
-    fun sign(
+    override fun sign(
         algorithmJson: String,
         keyId: String,
         data: String,
@@ -462,7 +461,7 @@ class WebCryptoBridgeModule(reactContext: ReactApplicationContext) :
      * @param promise resolves with `true` if the signature is valid, `false` otherwise, or rejects on error
      */
     @ReactMethod
-    fun verify(
+    override fun verify(
         algorithmJson: String,
         keyId: String,
         signatureBase64: String,

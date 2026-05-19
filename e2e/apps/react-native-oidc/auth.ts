@@ -24,3 +24,5 @@ export const client = new OAuth2Client({
     return response;
   }
 });
+
+console.log(client, client.configuration);

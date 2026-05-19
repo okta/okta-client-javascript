@@ -12,6 +12,14 @@ buildscript {
     }
 }
 
+def isNewArchitectureEnabled() {
+    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+}
+
+if (isNewArchitectureEnabled()) {
+    apply plugin: 'com.facebook.react'
+}
+
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
@@ -45,6 +53,12 @@ android {
         unitTests.includeAndroidResources = true
     }
 
+    sourceSets {
+        main {
+            java.srcDirs += 'build/generated/source/codegen/java'
+        }
+    }
+
 }
 
 repositories {
@@ -72,5 +86,43 @@ tasks.withType(Test) {
         includeTestsMatching 'com.okta.reactnativeplatform.TokenStorageModuleTest'
     }
 }
+
+// // Task to generate codegen artifacts
+// task generateCodegen {
+//     doLast {
+//         def codegenDir = file('build/generated/source/codegen')
+//         def schemaFile = file('build/generated/source/codegen/schema.json')
+//         def jniDir = file('build/generated/source/codegen/jni')
+        
+//         // Ensure directories exist
+//         codegenDir.mkdirs()
+        
+//         // Find node_modules path (walk up from android directory)
+//         def nodeModules = file('../../e2e/apps/react-native-oidc/node_modules')
+//         def combineCliPath = "${nodeModules}/@react-native/codegen/lib/cli/combine/combine-js-to-schema-cli.js"
+//         def generateCliPath = "${nodeModules}/@react-native/codegen/lib/cli/generators/generate-all.js"
+        
+//         // Generate schema
+//         exec {
+//             commandLine 'node', combineCliPath, '--platform', 'android', schemaFile.absolutePath, 'src/specs'
+//             workingDir rootDir
+//         }
+        
+//         // Generate C++ artifacts
+//         exec {
+//             commandLine 'node', generateCliPath, schemaFile.absolutePath, 'RNOktaPlatformSpecs', codegenDir.absolutePath, 'NativeBrowserSessionBridge'
+//             workingDir rootDir
+//         }
+        
+//         println "✓ Codegen artifacts generated"
+//     }
+// }
+
+// // Run codegen before compilation
+// tasks.whenTaskAdded { task ->
+//     if (task.name == 'compileDebugKotlin' || task.name == 'compileReleaseKotlin') {
+//         task.dependsOn generateCodegen
+//     }
+// }
 
 

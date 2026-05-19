@@ -12,7 +12,7 @@ import com.facebook.react.module.annotations.ReactModule
  */
 @ReactModule(name = BrowserSessionModule.NAME)
 class BrowserSessionModule(reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext) {
+    NativeBrowserSessionBridgeSpec(reactContext) {
 
     companion object {
         const val NAME = "BrowserSessionBridge"
@@ -21,7 +21,7 @@ class BrowserSessionModule(reactContext: ReactApplicationContext) :
     override fun getName(): String = NAME
 
     @ReactMethod
-    fun openAuthSession(
+    override fun openAuthSession(
         url: String,
         redirectScheme: String,
         promise: Promise
@@ -35,10 +35,12 @@ class BrowserSessionModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun openBrowser(
+    override fun openBrowser(
         url: String,
         promise: Promise
     ) {
+        println("in openBrowser")
+
         try {
             val uri = Uri.parse(url)
             if (uri.scheme == null || uri.host == null) {

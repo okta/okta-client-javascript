@@ -34,6 +34,8 @@ async function openAuthSessionAndroid (
   url: string,
   redirectUri: string
 ): Promise<BrowserSessionResult> {
+  console.log('[openAuthSession] called')
+
   let resolver: (value: BrowserSessionResult) => void;
   const deepLinkPromise = new Promise<BrowserSessionResult> ((resolve) => {
     resolver = resolve;

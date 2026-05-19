@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
-import { useRouter, type Router } from 'expo-router';
+import { useRouter, type Router, usePathname } from 'expo-router';
 import { Platform } from 'react-native';
-import { openAuthSessionAsync } from 'expo-web-browser';
+import { openAuthSessionAsync as expoImpl } from 'expo-web-browser';
 // import { AuthorizationCodeFlow, SessionLogoutFlow, AuthTransaction } from '@okta/oauth2-flows';
 // import { Credential } from '@okta/auth-foundation/core';
 import {
@@ -25,14 +25,16 @@ async function performSignIn () {
       redirectUri
     });
 
-    console.log('here 1')
+    console.log('here 2', redirectUri)
     const uri = await flow.start();
 
     // @ts-ignore
     const transaction = new AuthTransaction(flow.context);
     await transaction.save();
+    console.log('here 2.5 - transaction saved')
     // const result = await openAuthSessionAsync(uri.href, redirectUri);
-    const result = await openAuthSession(uri.href, redirectUri);
+    // const result = await openAuthSession(uri.href, redirectUri);
+    const result = await expoImpl(uri.href, redirectUri);
     console.log('result: ', result)
     // @ts-ignore
     const { token, context } = await flow.resume(result.url);
@@ -57,9 +59,11 @@ async function performSignOut () {
 
 export function useAuth () {
   const router = useRouter();
+  const pathname = usePathname();
 
   const signIn = useCallback(async () => {
     const id = await performSignIn();
+    console.log('pathname: ', pathname);
     return id;
   }, [router]);
 

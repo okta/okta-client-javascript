@@ -1,5 +1,6 @@
 package com.okta.reactnativeplatform
 
+import android.util.Log
 import com.facebook.react.bridge.*
 import com.facebook.react.module.annotations.ReactModule
 import kotlinx.coroutines.CoroutineScope
@@ -9,16 +10,26 @@ import kotlinx.coroutines.launch
 
 @ReactModule(name = TokenStorageModule.NAME)
 class TokenStorageModule(reactContext: ReactApplicationContext) :
-    ReactContextBaseJavaModule(reactContext) {
+    NativeTokenStorageBridgeSpec(reactContext) {
 
     companion object {
         const val NAME = "TokenStorageBridge"
     }
 
+    init {
+        Log.i("TokenStorageModule", "TokenStorageModule initializing")
+    }
+
     override fun getName(): String = NAME
 
     // DataStore provider for encrypted token and metadata storage
-    private val dataStore = TokenDataStore(reactContext)
+    private val dataStore = try {
+        Log.i("TokenStorageModule", "Creating TokenDataStore")
+        TokenDataStore(reactContext)
+    } catch (e: Exception) {
+        Log.e("TokenStorageModule", "Failed to create TokenDataStore", e)
+        throw e
+    }
 
     // CoroutineScope for async DataStore operations
     // Uses IO dispatcher to avoid blocking main thread
@@ -28,19 +39,24 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
     // MARK: - Token Operations (Secure Storage)
 
     @ReactMethod
-    fun saveToken(id: String, tokenData: String, promise: Promise) {
+    override fun saveToken(id: String, tokenData: String, promise: Promise) {
+        Log.i("TokenStorageModule", "saveToken called with id: $id")
         scope.launch {
             try {
                 dataStore.saveToken(id, tokenData)
+                Log.i("TokenStorageModule", "Token saved successfully")
                 promise.resolve(null)
             } catch (e: Exception) {
-                promise.reject("token_save_error", "Failed to save token", e)
+                Log.e("TokenStorageModule", "Failed to save token: ${e.message}", e)
+                Log.e("TokenStorageModule", "Exception cause: ${e.cause}")
+                Log.e("TokenStorageModule", "Full stacktrace: ${e.stackTraceToString()}")
+                promise.reject("token_save_error", "Failed to save token: ${e.message}", e)
             }
         }
     }
 
     @ReactMethod
-    fun getToken(id: String, promise: Promise) {
+    override fun getToken(id: String, promise: Promise) {
         scope.launch {
             try {
                 val token = dataStore.getToken(id)
@@ -52,7 +68,7 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun removeToken(id: String, promise: Promise) {
+    override fun removeToken(id: String, promise: Promise) {
         scope.launch {
             try {
                 dataStore.removeToken(id)
@@ -64,7 +80,7 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getAllTokenIds(promise: Promise) {
+    override fun getAllTokenIds(promise: Promise) {
         scope.launch {
             try {
                 val keys = dataStore.getAllTokenIds()
@@ -78,7 +94,7 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun clearTokens(promise: Promise) {
+    override fun clearTokens(promise: Promise) {
         scope.launch {
             try {
                 dataStore.clearAllTokens()
@@ -92,7 +108,7 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
     // MARK: - Metadata Operations (Regular Storage)
 
     @ReactMethod
-    fun saveMetadata(id: String, metadataData: String, promise: Promise) {
+    override fun saveMetadata(id: String, metadataData: String, promise: Promise) {
         scope.launch {
             try {
                 dataStore.saveMetadata(id, metadataData)
@@ -104,7 +120,7 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getMetadata(id: String, promise: Promise) {
+    override fun getMetadata(id: String, promise: Promise) {
         scope.launch {
             try {
                 val metadata = dataStore.getMetadata(id)
@@ -116,7 +132,7 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun removeMetadata(id: String, promise: Promise) {
+    override fun removeMetadata(id: String, promise: Promise) {
         scope.launch {
             try {
                 dataStore.removeMetadata(id)
@@ -130,7 +146,7 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
     // MARK: - Default Token ID
 
     @ReactMethod
-    fun setDefaultTokenId(id: String?, promise: Promise) {
+    override fun setDefaultTokenId(id: String?, promise: Promise) {
         scope.launch {
             try {
                 dataStore.setDefaultTokenId(id)
@@ -142,7 +158,7 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
     }
 
     @ReactMethod
-    fun getDefaultTokenId(promise: Promise) {
+    override fun getDefaultTokenId(promise: Promise) {
         scope.launch {
             try {
                 val id = dataStore.getDefaultTokenId()

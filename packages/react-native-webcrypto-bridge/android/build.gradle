@@ -12,6 +12,14 @@ buildscript {
     }
 }
 
+def isNewArchitectureEnabled() {
+    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+}
+
+if (isNewArchitectureEnabled()) {
+    apply plugin: 'com.facebook.react'
+}
+
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
@@ -43,6 +51,12 @@ android {
 
     testOptions {
         unitTests.includeAndroidResources = true
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += 'build/generated/source/codegen/java'
+        }
     }
 }
 

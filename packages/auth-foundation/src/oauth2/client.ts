@@ -149,6 +149,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
    * Retrieves the Authorization Server's OpenID configuration
    */
   public async openIdConfiguration (options: OAuth2Client.GetJsonOptions = {}): Promise<OpenIdConfiguration> {
+    console.log('making openid config request')
     const url = this.configuration.discoveryURL;
 
     const openIdConfig = await this.getJson(url, options);

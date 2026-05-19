@@ -22,6 +22,7 @@
     "./cpp",
     "*.md",
     "package.json",
+    "react-native.config.js",
     "react-native-platform.podspec"
   ],
   "exports": {
