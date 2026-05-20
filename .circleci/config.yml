@@ -96,16 +96,12 @@ jobs:
       - run:
           name: Setup Node and install dependencies
           command: |
-            node --version
-            nvm install 22.13.1
-            nvm use 22.13.1
             npm install -g yarn@1.22.22
             yarn install --frozen-lockfile --network-timeout 100000 --ignore-scripts
 
       - run:
           name: Run React Native Platform Android Tests
           command: |
-            nvm use 22.13.1
             cd packages/react-native-platform/android
             ./gradlew testDebugUnitTest -PnewArchEnabled=true --info
 

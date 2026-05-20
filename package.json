@@ -40,9 +40,6 @@
       "**/@expo/**",
       "**/@expo/**/**",
       "**/@react-navigation/**",
-      "**/react",
-      "**/react-native",
-      "**/react-native/**",
       "@repo/react-native-oidc/@okta/*"
     ]
   },
