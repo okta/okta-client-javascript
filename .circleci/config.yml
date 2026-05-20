@@ -96,7 +96,7 @@ jobs:
       - run:
           name: Setup Node and install dependencies
           command: |
-            npm install -g yarn@1.22.22
+            npm install -g yarn@4.0.2
             yarn install --frozen-lockfile --network-timeout 100000 --ignore-scripts
 
       - run:
