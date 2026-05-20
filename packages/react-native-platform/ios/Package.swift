@@ -17,7 +17,7 @@ let package = Package(
         .target(
             name: "RNTokenStorageBridge",
             path: "Sources/RNTokenStorageBridge",
-            exclude: ["TokenStorageBridge.m", "TokenStorageBridge.h", "TokenStorageBridge.swift"],
+            exclude: ["TokenStorageBridge.swift"],
             publicHeadersPath: "."
         ),
         .testTarget(
