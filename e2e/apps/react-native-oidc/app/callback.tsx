@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useRouter, usePathname, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, StyleSheet } from 'react-native';
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';

@@ -116,7 +116,7 @@ describe('AuthorizationCodeFlow', () => {
         jest.spyOn(AuthTransaction, 'load').mockResolvedValue(context);
       });
 
-      it('can process an auth code redirect', async () => {
+      it('can process an auth code redirect via string', async () => {
         const redirectUri = new URL(flowParams.redirectUri);
         redirectUri.searchParams.set('code', code);
         redirectUri.searchParams.set('state', state);
@@ -136,7 +136,45 @@ describe('AuthorizationCodeFlow', () => {
         expect(spies.removeTransaction).toHaveBeenLastCalledWith(state);
       });
 
-      it('parses oauth error returned in redirect url', async () => {
+      it('can process an auth code redirect via URL', async () => {
+        const redirectUri = new URL(flowParams.redirectUri);
+        redirectUri.searchParams.set('code', code);
+        redirectUri.searchParams.set('state', state);
+
+        expect(flow.inProgress).toEqual(false);
+        await flow.resume(redirectUri);
+        // cannot assert .inProgress true, jest executes too fast
+        // events are triggered when .inProgress is set, so if they fire
+        // the value was toggled during execution
+
+        expect(flow.inProgress).toEqual(false);
+        expect(spies.start).toHaveBeenCalledTimes(1);
+        expect(spies.stop).toHaveBeenCalledTimes(1);
+        expect(spies.exchange).toHaveBeenCalledTimes(1);
+        expect(spies.exchange).toHaveBeenLastCalledWith(code, context);
+        expect(spies.removeTransaction).toHaveBeenCalledTimes(1);
+        expect(spies.removeTransaction).toHaveBeenLastCalledWith(state);
+      });
+
+      it('can process an auth code redirect via URLSearchParams', async () => {
+        const params = new URLSearchParams({ code, state });
+
+        expect(flow.inProgress).toEqual(false);
+        await flow.resume(params);
+        // cannot assert .inProgress true, jest executes too fast
+        // events are triggered when .inProgress is set, so if they fire
+        // the value was toggled during execution
+
+        expect(flow.inProgress).toEqual(false);
+        expect(spies.start).toHaveBeenCalledTimes(1);
+        expect(spies.stop).toHaveBeenCalledTimes(1);
+        expect(spies.exchange).toHaveBeenCalledTimes(1);
+        expect(spies.exchange).toHaveBeenLastCalledWith(code, context);
+        expect(spies.removeTransaction).toHaveBeenCalledTimes(1);
+        expect(spies.removeTransaction).toHaveBeenLastCalledWith(state);
+      });
+
+      it('parses oauth error returned in redirect url via string', async () => {
         const oauthError = {
           error: 'someoautherror',
           errorDescription: 'someoautherrordesc',
@@ -151,6 +189,56 @@ describe('AuthorizationCodeFlow', () => {
 
         expect(flow.inProgress).toEqual(false);
         await expect(flow.resume(redirectUri.href)).rejects.toThrow(expectedError);
+
+        expect(flow.inProgress).toEqual(false);
+        expect(spies.start).toHaveBeenCalledTimes(1);
+        expect(spies.stop).toHaveBeenCalledTimes(1);
+        expect(spies.error).toHaveBeenCalledTimes(1);
+        expect(spies.error).toHaveBeenLastCalledWith({ error: expectedError });
+        expect(spies.exchange).not.toHaveBeenCalled();
+        expect(spies.removeTransaction).not.toHaveBeenCalled();
+      });
+
+      it('parses oauth error returned in redirect url via URL', async () => {
+        const oauthError = {
+          error: 'someoautherror',
+          errorDescription: 'someoautherrordesc',
+          errorUri: 'someoautherroruri',
+        };
+        const expectedError = new OAuth2Error('someoautherror');
+
+        const redirectUri = new URL(flowParams.redirectUri);
+        redirectUri.searchParams.set('error', oauthError.error);
+        redirectUri.searchParams.set('error_description', oauthError.errorDescription);
+        redirectUri.searchParams.set('error_uri', oauthError.errorUri);
+
+        expect(flow.inProgress).toEqual(false);
+        await expect(flow.resume(redirectUri)).rejects.toThrow(expectedError);
+
+        expect(flow.inProgress).toEqual(false);
+        expect(spies.start).toHaveBeenCalledTimes(1);
+        expect(spies.stop).toHaveBeenCalledTimes(1);
+        expect(spies.error).toHaveBeenCalledTimes(1);
+        expect(spies.error).toHaveBeenLastCalledWith({ error: expectedError });
+        expect(spies.exchange).not.toHaveBeenCalled();
+        expect(spies.removeTransaction).not.toHaveBeenCalled();
+      });
+
+      it('parses oauth error returned in redirect url via URLSearchParams', async () => {
+        const oauthError = {
+          error: 'someoautherror',
+          errorDescription: 'someoautherrordesc',
+          errorUri: 'someoautherroruri',
+        };
+        const expectedError = new OAuth2Error('someoautherror');
+
+        const params = new URLSearchParams();
+        params.set('error', oauthError.error);
+        params.set('error_description', oauthError.errorDescription);
+        params.set('error_uri', oauthError.errorUri);
+
+        expect(flow.inProgress).toEqual(false);
+        await expect(flow.resume(params)).rejects.toThrow(expectedError);
 
         expect(flow.inProgress).toEqual(false);
         expect(spies.start).toHaveBeenCalledTimes(1);
