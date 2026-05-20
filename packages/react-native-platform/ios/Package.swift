@@ -17,13 +17,14 @@ let package = Package(
         .target(
             name: "RNTokenStorageBridge",
             path: "Sources/RNTokenStorageBridge",
-            exclude: ["TokenStorageBridge.swift"],
+            exclude: ["TokenStorageBridge.swift", "TokenStorageBridge.m", "TokenStorageBridge.h"],
             publicHeadersPath: "."
         ),
         .testTarget(
             name: "RNTokenStorageBridgeTests",
             dependencies: ["RNTokenStorageBridge"],
-            path: "Tests/RNTokenStorageBridgeTests"
+            path: "Tests/RNTokenStorageBridgeTests",
+            exclude: ["TokenStorageBridgeTests.swift"]
         )
     ]
 )
