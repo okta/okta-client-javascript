@@ -93,11 +93,22 @@ jobs:
             - gradle-rn-platform-{{ checksum "packages/react-native-platform/android/build.gradle" }}
             - gradle-rn-platform-
 
+      - restore_cache:
+          keys:
+            - yarn-cache-{{ checksum "yarn.lock" }}
+            - yarn-cache-
+
       - run:
-          name: Install Node dependencies for codegen
+          name: Install dependencies
           command: |
             npm install -g yarn@1.22.22
-            yarn install --frozen-lockfile --ignore-scripts
+            yarn install --frozen-lockfile --ignore-scripts --network-timeout 100000
+
+      - save_cache:
+          key: yarn-cache-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/.cache/yarn
+            - node_modules
 
       - run:
           name: Run React Native Platform Android Tests
