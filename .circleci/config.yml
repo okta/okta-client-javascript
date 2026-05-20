@@ -96,8 +96,9 @@ jobs:
       - run:
           name: Setup Node and install dependencies
           command: |
-            npm install -g yarn@4.0.2
-            yarn install --frozen-lockfile --network-timeout 100000 --ignore-scripts
+            corepack enable
+            corepack prepare yarn@stable --activate
+            yarn install --frozen-lockfile
 
       - run:
           name: Run React Native Platform Android Tests
