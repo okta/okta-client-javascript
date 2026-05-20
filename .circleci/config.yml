@@ -20,28 +20,6 @@ executors:
     resource_class: m4pro.medium
 
 jobs:
-  setup-dependencies:
-    executor: macos
-    steps:
-      - checkout
-
-      - restore_cache:
-          keys:
-            - node-deps-{{ checksum "yarn.lock" }}
-            - node-deps-
-
-      - run:
-          name: Install dependencies
-          command: |
-            npm install -g yarn@1.22.22
-            yarn install --frozen-lockfile
-
-      - save_cache:
-          key: node-deps-{{ checksum "yarn.lock" }}
-          paths:
-            - node_modules
-            - ~/.cache/yarn
-
   test-rn-webcrypto-android:
     executor:
       name: android/android_machine
@@ -112,17 +90,22 @@ jobs:
 
       - restore_cache:
           keys:
-            - node-deps-{{ checksum "yarn.lock" }}
-            - node-deps-
-
-      - restore_cache:
-          keys:
             - gradle-rn-platform-{{ checksum "packages/react-native-platform/android/build.gradle" }}
             - gradle-rn-platform-
 
       - run:
+          name: Setup Node and install dependencies
+          command: |
+            node --version
+            nvm install 22.13.1
+            nvm use 22.13.1
+            npm install -g yarn@1.22.22
+            yarn install --frozen-lockfile --network-timeout 100000 --ignore-scripts
+
+      - run:
           name: Run React Native Platform Android Tests
           command: |
+            nvm use 22.13.1
             cd packages/react-native-platform/android
             ./gradlew testDebugUnitTest -PnewArchEnabled=true --info
 
@@ -171,10 +154,7 @@ workflows:
   version: 2
   build_and_test:
     jobs:
-      - setup-dependencies
       - test-rn-webcrypto-android
       - test-rn-webcrypto-ios
-      - test-rn-platform-android:
-          requires:
-            - setup-dependencies
+      - test-rn-platform-android
       - test-rn-platform-ios
