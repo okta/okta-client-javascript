@@ -1,0 +1,11 @@
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+includeBuild('../../../node_modules/@react-native/gradle-plugin')
+
+rootProject.name = 'okta-react-native-webcrypto-bridge'
