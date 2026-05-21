@@ -13,13 +13,13 @@ buildscript {
     }
 }
 
-def isNewArchitectureEnabled() {
-    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
-}
+// def isNewArchitectureEnabled() {
+//     return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+// }
 
-if (isNewArchitectureEnabled()) {
-    apply plugin: 'com.facebook.react'
-}
+// if (isNewArchitectureEnabled()) {
+//     apply plugin: 'com.facebook.react'
+// }
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
