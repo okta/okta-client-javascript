@@ -26,6 +26,12 @@ export default ({ config }: ConfigContext) => ({
     "bundleIdentifier": "com.anonymous.reporeactnativeoidc"
   },
   scheme: "com.oktapreview.jperreault-test",
+  autolinking: {
+    searchPaths: [
+      "../../node_modules",
+      "../../packages"
+    ]
+  },
   intentFilters: [
     {
       action: "VIEW",

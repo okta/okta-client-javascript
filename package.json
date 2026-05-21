@@ -2,7 +2,7 @@
   "name": "@okta/okta-client-js",
   "version": "0.7.0",
   "private": true,
-  "packageManager": "yarn@4.12.0",
+  "packageManager": "yarn@1.22.19",
   "engines": {
     "node": ">=18"
   },
@@ -32,15 +32,7 @@
     ],
     "nohoist": [
       "@repo/okta-client-js-docs/**",
-      "**/typedoc",
-      "**/expo",
-      "**/expo/**",
-      "**/expo-*",
-      "**/expo-*/**",
-      "**/@expo/**",
-      "**/@expo/**/**",
-      "**/@react-navigation/**",
-      "@repo/react-native-oidc/@okta/*"
+      "**/typedoc"
     ]
   },
   "devEngines": {
@@ -51,7 +43,7 @@
     },
     "packageManager": {
       "name": "yarn",
-      "version": "4.12.0",
+      "version": ">=1.19.0",
       "onFail": "warn"
     }
   }

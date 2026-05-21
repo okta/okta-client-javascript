@@ -24,12 +24,6 @@ if (isNewArchitectureEnabled()) {
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
 
-// Configure React to import from RN package root
-react {
-    jsRootDir = "../../"
-    nodeModulesDir = "../../node_modules"
-}
-
 android {
     namespace "com.okta.reactnativeplatform"
     compileSdkVersion 35
