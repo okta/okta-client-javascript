@@ -3,7 +3,7 @@ buildscript {
 
     // Dynamically read react-native version from root package.json
     ext.reactNativeVersion = new groovy.json.JsonSlurper().parse(
-        new File(rootDir, '../../package.json')
+        new File(rootDir, '../package.json')
     ).devDependencies['react-native'].replaceAll('[~^]', '')
 
     repositories {
