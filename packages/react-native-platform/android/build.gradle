@@ -1,6 +1,11 @@
 buildscript {
     ext.kotlin_version = '2.1.0'
 
+    // Dynamically read react-native version from root package.json
+    ext.reactNativeVersion = new groovy.json.JsonSlurper().parse(
+        new File(rootDir, '../../package.json')
+    ).devDependencies['react-native'].replaceAll('[~^]', '')
+
     repositories {
         google()
         mavenCentral()
@@ -9,7 +14,7 @@ buildscript {
     dependencies {
         classpath 'com.android.tools.build:gradle:8.1.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        // classpath 'com.facebook.react:react-native-gradle-plugin'
+        classpath "com.facebook.react:react-native-gradle-plugin:$reactNativeVersion"
     }
 }
 
