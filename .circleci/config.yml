@@ -96,8 +96,7 @@ jobs:
       - run:
           name: Setup Node and install dependencies
           command: |
-            corepack enable
-            corepack prepare yarn@stable --activate
+            npm i -g yarn@1.22.22
             yarn install --frozen-lockfile
 
       - run:
