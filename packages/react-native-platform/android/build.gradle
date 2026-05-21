@@ -1,15 +1,11 @@
 buildscript {
     ext.kotlin_version = '2.1.0'
+}
 
-    repositories {
-        google()
-        mavenCentral()
-    }
-
-    dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.0'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-    }
+plugins {
+    id 'com.android.library' version '8.1.0'
+    id 'org.jetbrains.kotlin.android' version '2.1.0'
+    id 'com.facebook.react' apply false
 }
 
 def isNewArchitectureEnabled() {
@@ -19,9 +15,6 @@ def isNewArchitectureEnabled() {
 if (isNewArchitectureEnabled()) {
     apply plugin: 'com.facebook.react'
 }
-
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
 
 android {
     namespace "com.okta.reactnativeplatform"
