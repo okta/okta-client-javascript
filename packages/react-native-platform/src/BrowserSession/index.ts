@@ -22,7 +22,7 @@ async function openAuthSessionIOS (
   // Extract the scheme from redirectUri if it contains ://
   // e.g., 'com.example://callback' -> 'com.example'
   let redirectScheme = redirectUri;
-  const schemeMatch = redirectUri.match(/^([^:\/]+)/);
+  const schemeMatch = redirectUri.match(/^([^:/]+)/);
   if (schemeMatch) {
     redirectScheme = schemeMatch[1];
   }
@@ -34,7 +34,7 @@ async function openAuthSessionAndroid (
   url: string,
   redirectUri: string
 ): Promise<BrowserSessionResult> {
-  console.log('[openAuthSession] called')
+  console.log('[openAuthSession] called');
 
   let resolver: (value: BrowserSessionResult) => void;
   const deepLinkPromise = new Promise<BrowserSessionResult> ((resolve) => {

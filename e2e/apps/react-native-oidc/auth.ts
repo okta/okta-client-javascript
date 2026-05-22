@@ -1,7 +1,5 @@
-import { fetch as expoFetch } from 'expo/fetch';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { openAuthSessionAsync as expoImpl } from 'expo-web-browser';
 import { OAuth2Client } from '@okta/auth-foundation/core';
 import {
   AuthorizationCodeFlow,
@@ -63,14 +61,11 @@ export async function performSignIn () {
     const transaction = new AuthTransaction(flow.context);
     await transaction.save();
     console.log('here 2.5 - transaction saved')
-    // const result = await openAuthSessionAsync(uri.href, redirectUri);
-    // const result = await openAuthSession(uri.href, redirectUri);
-    const result = await expoImpl(uri.href, flow.redirectUri);
+    const result = await openAuthSession(uri.href, flow.redirectUri);
     console.log('result: ', result)
 
     if (result.type === 'success') {
-      // TODO: remove this platform check once callback component is tested on ios
-      if (Platform.OS === 'ios') {
+      if (['ios', 'macos'].includes(Platform.OS)) {
         return await handleAuthFlowCallback(result.url);
       }
     }

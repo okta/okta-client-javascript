@@ -1,9 +1,11 @@
 import type { TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
 
-export interface BrowserSessionResult {
-  type: 'success' | 'cancel' | 'dismiss';
-  url?: string;
+export type BrowserSessionResult =  {
+  type: 'success';
+  url: string;
+} | {
+  type: 'cancel' | 'dismiss';
 }
 
 export interface BrowserOpenResult {

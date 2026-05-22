@@ -21,7 +21,7 @@ export default function CallbackScreen() {
 
   useEffect(() => {
     handleExchange();
-  }, [router]);
+  }, [router, handleExchange]);
 
   return (
     <ThemedView style={styles.container}>
