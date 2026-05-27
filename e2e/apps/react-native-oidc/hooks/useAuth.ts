@@ -26,11 +26,8 @@ async function performSignIn () {
       redirectUri
     });
 
-    // TODO: improve this pattern, too awkward
-    // .save was migrated away from AuthCodeFlow
+    console.log('here 1')
     const uri = await flow.start();
-    console.log('here 2')
-    console.log('authorize url', uri);
 
     // @ts-ignore
     const transaction = new AuthTransaction(flow.context);
@@ -41,7 +38,8 @@ async function performSignIn () {
     const { token, context } = await flow.resume(result.url);
     console.log('token', token);
     console.log('context', context);
-    Credential.store(token);
+    const credential = await Credential.store(token);
+    return credential.id;
   }
   catch (err) {
     console.log('here 3');
@@ -50,28 +48,19 @@ async function performSignIn () {
   }
 }
 
-// TODO: cannot use oidc logout as openid is not a request scope currently
 async function performSignOut () {
   const isOIDC = client.configuration.scopes.includes('openid');
 
-  if (isOIDC) {
-    // TODO:
-    throw new Error('Not implemented');
-  }
-  else {
-    // TODO: /revoke fails due to same URLSearchParams issue
-    await (await Credential.getDefault())?.revoke();
-    // await (await Credential.getDefault())?.remove();
-  }
+  // TODO: implement oidc logout
+  await (await Credential.getDefault())?.revoke();
 }
 
 export function useAuth () {
   const router = useRouter();
 
-  const signIn = useCallback(async (redirectTo: Parameters<Router['navigate']>[0]) => {
-    Credential.clear();
-    await performSignIn();
-    router.navigate(redirectTo);
+  const signIn = useCallback(async () => {
+    const id = await performSignIn();
+    return id;
   }, [router]);
 
   const signOut = useCallback(async (redirectTo: Parameters<Router['navigate']>[0]) => {

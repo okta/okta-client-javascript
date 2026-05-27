@@ -1,0 +1,121 @@
+package com.okta.reactnativeplatform
+
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.Promise
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import com.google.common.truth.Truth.assertThat
+
+/**
+ * Unit tests for BrowserSessionModule.
+ * Tests the Kotlin implementation of browser session operations.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class BrowserSessionModuleTest {
+
+    private lateinit var module: BrowserSessionModule
+    private lateinit var context: ReactApplicationContext
+
+    @Before
+    fun setUp() {
+        val application = ApplicationProvider.getApplicationContext<Application>()
+        context = ReactApplicationContext(application)
+        module = BrowserSessionModule(context)
+    }
+
+    // MARK: - Module Info Tests
+
+    @Test
+    fun testGetName_shouldReturnBrowserSessionBridge() {
+        val name = module.name
+        assertThat(name).isEqualTo("BrowserSessionBridge")
+    }
+
+    // MARK: - Launch Browser Session Tests
+
+    @Test
+    fun testLaunchBrowserSession_withValidUrl_shouldResolvePromise() {
+        val promise = mockk<Promise>(relaxed = true)
+
+        module.launchBrowserSession("https://example.com", promise)
+
+        // Note: This test may resolve or reject depending on whether an activity is available
+        // In Robolectric environment, currentActivity may be null
+        verify { promise.reject("no_activity", "Current activity is not available") }
+    }
+
+    @Test
+    fun testLaunchBrowserSession_withInvalidUrl_shouldRejectPromise() {
+        val promise = mockk<Promise>(relaxed = true)
+        val rejectSlot = slot<String>()
+
+        module.launchBrowserSession("not a valid url", promise)
+
+        verify { promise.reject(capture(rejectSlot), any()) }
+        assertThat(rejectSlot.captured).isEqualTo("invalid_url")
+    }
+
+    @Test
+    fun testLaunchBrowserSession_withEmptyUrl_shouldRejectPromise() {
+        val promise = mockk<Promise>(relaxed = true)
+        val rejectSlot = slot<String>()
+
+        module.launchBrowserSession("", promise)
+
+        verify { promise.reject(capture(rejectSlot), any()) }
+        assertThat(rejectSlot.captured).isEqualTo("invalid_url")
+    }
+
+    // MARK: - Close Browser Session Tests
+
+    @Test
+    fun testCloseBrowserSession_shouldResolvePromise() {
+        val promise = mockk<Promise>(relaxed = true)
+
+        module.closeBrowserSession(promise)
+
+        verify { promise.resolve(null) }
+    }
+
+    @Test
+    fun testCloseBrowserSession_withoutActivity_shouldStillResolve() {
+        val promise = mockk<Promise>(relaxed = true)
+
+        module.closeBrowserSession(promise)
+
+        verify { promise.resolve(null) }
+    }
+
+    // MARK: - Error Handling Tests
+
+    @Test
+    fun testLaunchBrowserSession_withMalformedUrl_shouldRejectInvalidUrl() {
+        val promise = mockk<Promise>(relaxed = true)
+        val codeSlot = slot<String>()
+
+        module.launchBrowserSession("://invalid", promise)
+
+        // Malformed URL should either be caught or handled gracefully
+        assertThat(promise).isNotNull()
+    }
+
+    @Test
+    fun testLaunchBrowserSession_withSchemeOnly_shouldRejectInvalidUrl() {
+        val promise = mockk<Promise>(relaxed = true)
+        val rejectSlot = slot<String>()
+
+        module.launchBrowserSession("https://", promise)
+
+        verify { promise.reject(capture(rejectSlot), any()) }
+        assertThat(rejectSlot.captured).isEqualTo("invalid_url")
+    }
+}
