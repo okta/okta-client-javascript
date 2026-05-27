@@ -33,7 +33,11 @@ export interface TokenStorage {
   /**
    * In memory cached value of the {@link Credential.getDefault | default Credential}'s id
    */
-  readonly defaultTokenId: string | null;
+  readonly defaultTokenId: string | null | undefined;
+  /**
+   * Queries storage location for  stored id
+   */
+  loadDefaultTokenId (): Promise<string | null>;
   /**
    * Updates the stored {@link Credential.getDefault | default Credential} id
    */
@@ -101,6 +105,10 @@ export class DefaultTokenStorage implements TokenStorage {
 
   get defaultTokenId (): string | null {
     return this.#defaultId;
+  }
+
+  async loadDefaultTokenId (): Promise<string | null> {
+    return this.defaultTokenId;
   }
 
   async setDefaultTokenId (id: string | null): Promise<void> {

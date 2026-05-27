@@ -18,6 +18,7 @@ export default ({ config }: ConfigContext) => ({
   extra: {
     env
   },
+  newArchEnabled: true,
   "android": {
     "package": "com.anonymous.reporeactnativeoidc"
   },

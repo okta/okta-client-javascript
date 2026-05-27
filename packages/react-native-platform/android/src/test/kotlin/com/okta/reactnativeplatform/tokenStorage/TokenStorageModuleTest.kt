@@ -1,0 +1,406 @@
+package com.okta.reactnativeplatform
+
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.Promise
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.WritableArray
+import io.mockk.mockk
+import io.mockk.slot
+import io.mockk.verify
+import io.mockk.every
+import io.mockk.mockkStatic
+import org.junit.Assume
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import com.google.common.truth.Truth.assertThat
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+
+/**
+ * Unit tests for TokenStorageModule.
+ * Tests the React Native module that delegates to TokenDataStore.
+ * Uses async testing patterns to handle CoroutineScope-based async operations.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
+class TokenStorageModuleTest {
+
+    private lateinit var module: TokenStorageModule
+    private lateinit var context: ReactApplicationContext
+    private lateinit var application: Application
+    private var keystoreAvailable = false
+
+    companion object {
+        // Timeout for async operations in tests (ms)
+        private const val OPERATION_TIMEOUT_MS = 5000L
+    }
+
+    @Before
+    fun setUp() {
+        application = ApplicationProvider.getApplicationContext<Application>()
+
+        // Check if Android Keystore is available by trying to encrypt something
+        try {
+            val manager = EncryptionManager()
+            manager.encryptString("test")
+            keystoreAvailable = true
+        } catch (e: Exception) {
+            keystoreAvailable = false
+        }
+
+        // Mock Arguments.createArray() to avoid React Native initialization
+        mockkStatic(Arguments::class)
+        every { Arguments.createArray() } answers {
+            mockk<WritableArray>(relaxed = true)
+        }
+
+        // Create a real context wrapper that behaves like ReactApplicationContext
+        // Use the real application context to allow DataStore to access file system
+        context = mockk<ReactApplicationContext>(relaxed = true)
+        every { context.baseContext } returns application
+        every { context.applicationContext } returns application
+        every { context.filesDir } returns application.filesDir
+        every { context.getCacheDir() } returns application.cacheDir
+
+        // Create module with real context delegation
+        module = TokenStorageModule(context)
+    }
+
+    // MARK: - Token Operations Tests
+
+    @Test
+    fun testSaveToken_shouldResolvePromise() {
+        Assume.assumeTrue("Android Keystore not available", keystoreAvailable)
+        
+        val promise = mockk<Promise>(relaxed = true)
+        val latch = CountDownLatch(1)
+        
+        every { promise.resolve(any()) } answers {
+            latch.countDown()
+        }
+
+        module.saveToken("test-id", "test-token", promise)
+
+        // Wait for async operation to complete
+        latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { promise.resolve(null) }
+    }
+
+    @Test
+    fun testSaveAndGetToken_shouldReturnSavedToken() {
+        Assume.assumeTrue("Android Keystore not available", keystoreAvailable)
+        
+        val savePromise = mockk<Promise>(relaxed = true)
+        val getPromise = mockk<Promise>(relaxed = true)
+        val saveLatch = CountDownLatch(1)
+        val getLatch = CountDownLatch(1)
+
+        every { savePromise.resolve(any()) } answers {
+            saveLatch.countDown()
+        }
+        every { getPromise.resolve(any()) } answers {
+            getLatch.countDown()
+        }
+
+        // Save token
+        module.saveToken("test-id", "test-token", savePromise)
+        saveLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { savePromise.resolve(null) }
+
+        // Get token
+        module.getToken("test-id", getPromise)
+        getLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { getPromise.resolve("test-token") }
+    }
+
+    @Test
+    fun testGetToken_nonExistent_shouldResolveNull() {
+        val promise = mockk<Promise>(relaxed = true)
+        val latch = CountDownLatch(1)
+
+        every { promise.resolve(any()) } answers {
+            latch.countDown()
+        }
+
+        module.getToken("non-existent", promise)
+
+        latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { promise.resolve(null) }
+    }
+
+    @Test
+    fun testRemoveToken_shouldRemoveTokenAndMetadata() {
+        val savePromise = mockk<Promise>(relaxed = true)
+        val saveMetaPromise = mockk<Promise>(relaxed = true)
+        val removePromise = mockk<Promise>(relaxed = true)
+        val getPromise = mockk<Promise>(relaxed = true)
+        val saveLatch = CountDownLatch(2)
+        val removeLatch = CountDownLatch(1)
+        val getLatch = CountDownLatch(1)
+
+        every { savePromise.resolve(any()) } answers { saveLatch.countDown() }
+        every { saveMetaPromise.resolve(any()) } answers { saveLatch.countDown() }
+        every { removePromise.resolve(any()) } answers { removeLatch.countDown() }
+        every { getPromise.resolve(any()) } answers { getLatch.countDown() }
+
+        // Save token and metadata
+        module.saveToken("test-id", "test-token", savePromise)
+        module.saveMetadata("test-id", "test-metadata", saveMetaPromise)
+        saveLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+
+        // Remove token
+        module.removeToken("test-id", removePromise)
+        removeLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { removePromise.resolve(null) }
+
+        // Verify token is removed
+        module.getToken("test-id", getPromise)
+        getLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { getPromise.resolve(null) }
+    }
+
+    @Test
+    fun testGetAllTokenIds_emptyStorage_shouldReturnEmptyArray() {
+        val promise = mockk<Promise>(relaxed = true)
+        val latch = CountDownLatch(1)
+
+        every { promise.resolve(any()) } answers {
+            latch.countDown()
+        }
+
+        module.getAllTokenIds(promise)
+
+        latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { promise.resolve(any()) }
+    }
+
+    @Test
+    fun testGetAllTokenIds_withTokens_shouldReturnIds() {
+        val savePromise1 = mockk<Promise>(relaxed = true)
+        val savePromise2 = mockk<Promise>(relaxed = true)
+        val getPromise = mockk<Promise>(relaxed = true)
+        val saveLatch = CountDownLatch(2)
+        val getLatch = CountDownLatch(1)
+
+        every { savePromise1.resolve(any()) } answers { saveLatch.countDown() }
+        every { savePromise2.resolve(any()) } answers { saveLatch.countDown() }
+        every { getPromise.resolve(any()) } answers { getLatch.countDown() }
+
+        // Save multiple tokens
+        module.saveToken("token-1", "data-1", savePromise1)
+        module.saveToken("token-2", "data-2", savePromise2)
+        saveLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+
+        // Get all IDs
+        module.getAllTokenIds(getPromise)
+        getLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+
+        verify { getPromise.resolve(any()) }
+    }
+
+    @Test
+    fun testClearTokens_shouldRemoveAllTokens() {
+        val savePromise1 = mockk<Promise>(relaxed = true)
+        val savePromise2 = mockk<Promise>(relaxed = true)
+        val clearPromise = mockk<Promise>(relaxed = true)
+        val getPromise = mockk<Promise>(relaxed = true)
+        val saveLatch = CountDownLatch(2)
+        val clearLatch = CountDownLatch(1)
+        val getLatch = CountDownLatch(1)
+
+        every { savePromise1.resolve(any()) } answers { saveLatch.countDown() }
+        every { savePromise2.resolve(any()) } answers { saveLatch.countDown() }
+        every { clearPromise.resolve(any()) } answers { clearLatch.countDown() }
+        every { getPromise.resolve(any()) } answers { getLatch.countDown() }
+
+        // Save tokens
+        module.saveToken("token-1", "data-1", savePromise1)
+        module.saveToken("token-2", "data-2", savePromise2)
+        saveLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+
+        // Clear all
+        module.clearTokens(clearPromise)
+        clearLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { clearPromise.resolve(null) }
+
+        // Verify tokens are cleared
+        module.getToken("token-1", getPromise)
+        getLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { getPromise.resolve(null) }
+    }
+
+    // MARK: - Metadata Operations Tests
+
+    @Test
+    fun testSaveMetadata_shouldResolvePromise() {
+        val promise = mockk<Promise>(relaxed = true)
+        val latch = CountDownLatch(1)
+
+        every { promise.resolve(any()) } answers {
+            latch.countDown()
+        }
+
+        module.saveMetadata("test-id", "test-metadata", promise)
+
+        latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { promise.resolve(null) }
+    }
+
+    @Test
+    fun testSaveAndGetMetadata_shouldReturnSavedMetadata() {
+        val savePromise = mockk<Promise>(relaxed = true)
+        val getPromise = mockk<Promise>(relaxed = true)
+        val saveLatch = CountDownLatch(1)
+        val getLatch = CountDownLatch(1)
+
+        every { savePromise.resolve(any()) } answers {
+            saveLatch.countDown()
+        }
+        every { getPromise.resolve(any()) } answers {
+            getLatch.countDown()
+        }
+
+        // Save metadata
+        module.saveMetadata("test-id", "test-metadata", savePromise)
+        saveLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { savePromise.resolve(null) }
+
+        // Get metadata
+        module.getMetadata("test-id", getPromise)
+        getLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { getPromise.resolve("test-metadata") }
+    }
+
+    @Test
+    fun testGetMetadata_nonExistent_shouldResolveNull() {
+        val promise = mockk<Promise>(relaxed = true)
+        val latch = CountDownLatch(1)
+
+        every { promise.resolve(any()) } answers {
+            latch.countDown()
+        }
+
+        module.getMetadata("non-existent", promise)
+
+        latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { promise.resolve(null) }
+    }
+
+    @Test
+    fun testRemoveMetadata_shouldRemoveMetadata() {
+        val savePromise = mockk<Promise>(relaxed = true)
+        val removePromise = mockk<Promise>(relaxed = true)
+        val getPromise = mockk<Promise>(relaxed = true)
+        val saveLatch = CountDownLatch(1)
+        val removeLatch = CountDownLatch(1)
+        val getLatch = CountDownLatch(1)
+
+        every { savePromise.resolve(any()) } answers { saveLatch.countDown() }
+        every { removePromise.resolve(any()) } answers { removeLatch.countDown() }
+        every { getPromise.resolve(any()) } answers { getLatch.countDown() }
+
+        // Save metadata
+        module.saveMetadata("test-id", "test-metadata", savePromise)
+        saveLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+
+        // Remove metadata
+        module.removeMetadata("test-id", removePromise)
+        removeLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { removePromise.resolve(null) }
+
+        // Verify metadata is removed
+        module.getMetadata("test-id", getPromise)
+        getLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { getPromise.resolve(null) }
+    }
+
+    // MARK: - Default Token ID Tests
+
+    @Test
+    fun testSetDefaultTokenId_shouldResolvePromise() {
+        val promise = mockk<Promise>(relaxed = true)
+        val latch = CountDownLatch(1)
+
+        every { promise.resolve(any()) } answers {
+            latch.countDown()
+        }
+
+        module.setDefaultTokenId("default-id", promise)
+
+        latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { promise.resolve(null) }
+    }
+
+    @Test
+    fun testSetAndGetDefaultTokenId_shouldReturnSavedId() {
+        val setPromise = mockk<Promise>(relaxed = true)
+        val getPromise = mockk<Promise>(relaxed = true)
+        val setLatch = CountDownLatch(1)
+        val getLatch = CountDownLatch(1)
+
+        every { setPromise.resolve(any()) } answers {
+            setLatch.countDown()
+        }
+        every { getPromise.resolve(any()) } answers {
+            getLatch.countDown()
+        }
+
+        // Set default
+        module.setDefaultTokenId("default-id", setPromise)
+        setLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { setPromise.resolve(null) }
+
+        // Get default
+        module.getDefaultTokenId(getPromise)
+        getLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { getPromise.resolve("default-id") }
+    }
+
+    @Test
+    fun testSetDefaultTokenId_null_shouldClearDefault() {
+        val setPromise = mockk<Promise>(relaxed = true)
+        val setNullPromise = mockk<Promise>(relaxed = true)
+        val getPromise = mockk<Promise>(relaxed = true)
+        val setLatch = CountDownLatch(1)
+        val setNullLatch = CountDownLatch(1)
+        val getLatch = CountDownLatch(1)
+
+        every { setPromise.resolve(any()) } answers { setLatch.countDown() }
+        every { setNullPromise.resolve(any()) } answers { setNullLatch.countDown() }
+        every { getPromise.resolve(any()) } answers { getLatch.countDown() }
+
+        // Set default
+        module.setDefaultTokenId("default-id", setPromise)
+        setLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+
+        // Clear default
+        module.setDefaultTokenId(null, setNullPromise)
+        setNullLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { setNullPromise.resolve(null) }
+
+        // Get default
+        module.getDefaultTokenId(getPromise)
+        getLatch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { getPromise.resolve(null) }
+    }
+
+    @Test
+    fun testGetDefaultTokenId_notSet_shouldResolveNull() {
+        val promise = mockk<Promise>(relaxed = true)
+        val latch = CountDownLatch(1)
+
+        every { promise.resolve(any()) } answers {
+            latch.countDown()
+        }
+
+        module.getDefaultTokenId(promise)
+
+        latch.await(OPERATION_TIMEOUT_MS, TimeUnit.MILLISECONDS)
+        verify { promise.resolve(null) }
+    }
+}
