@@ -1,0 +1,15 @@
+{
+  "name": "@repo/detox-e2e",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "Apache-2.0",
+  "private": true,
+  "scripts": {
+  },
+  "devDependencies": {
+    "@repo/env": "*",
+    "@repo/typescript-config": "*",
+    "detox": "^20.50.4",
+    "jest": "^29.7.0"
+  }
+}

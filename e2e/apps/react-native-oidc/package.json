@@ -47,9 +47,11 @@
     "@react-native-community/cli": "latest",
     "@repo/env": "*",
     "@types/react": "~19.0.10",
+    "detox": "^20.50.4",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
     "expo-build-properties": "^1.0.10",
+    "jest": "^29.7.0",
     "typescript": "~5.8.3"
   },
   "private": true
