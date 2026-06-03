@@ -2,7 +2,7 @@
   "name": "@okta/auth-foundation",
   "version": "0.7.2",
   "type": "module",
-  "main": "dist/esm/index.js",
+  "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "author": "jared.perreault@okta.com",
@@ -20,27 +20,31 @@
   "exports": {
     ".": {
       "types": "./dist/types/index.d.ts",
-      "import": "./dist/esm/index.js"
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
     },
     "./core" : {
       "types": "./dist/types/core.d.ts",
-      "import": "./dist/esm/core.js"
+      "import": "./dist/esm/core.js",
+      "require": "./dist/cjs/core.js"
     },
     "./internal": {
       "types": "./dist/types/internal.d.ts",
-      "import": "./dist/esm/internal.js"
+      "import": "./dist/esm/internal.js",
+      "require": "./dist/cjs/internal.js"
     },
     "./package.json": "./package.json"
   },
   "sideEffects": [
-    "./src/oktaUserAgent.ts"
+    "./dist/cjs/oktaUserAgent.js",
+    "./dist/esm/oktaUserAgent.js"
   ],
   "scripts": {
     "lint": "eslint --ext .js,.ts,.jsx .",
-    "build": "yarn build:esm && yarn build:types",
-    "build:watch": "rollup -c --watch & tsc --watch",
-    "build:esm": "rollup -c",
-    "build:types": "tsc",
+    "build": "yarn build:lib && yarn build:types",
+    "build:watch": "yarn build:lib --watch & yarn build:types --watch",
+    "build:lib": "rollup -c",
+    "build:types": "tsc --outDir ./dist/types",
     "test": "yarn test:unit",
     "test:unit": "jest",
     "test:watch": "jest --watchAll",

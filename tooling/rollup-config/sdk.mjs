@@ -13,14 +13,24 @@ const __dirname = path.dirname(__filename);
 export default function (tsModule, packageJson) {
   return {
     input: 'src/index.ts',
-    output: {
-      dir: 'dist/esm',
-      format: 'es',
-      exports: 'named',
-      sourcemap: true,
-      preserveModules: true,
-      preserveModulesRoot: 'src',
-    },
+    output: [
+      {
+        dir: 'dist/esm',
+        format: 'es',
+        exports: 'named',
+        sourcemap: true,
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+      },
+      {
+        dir: 'dist/cjs',
+        format: 'cjs',
+        exports: 'named',
+        sourcemap: true,
+        preserveModules: true,
+        preserveModulesRoot: 'src',
+      },
+    ],
     plugins: [
       replace({
         __PKG_NAME__: JSON.stringify(packageJson.name),
@@ -35,7 +45,6 @@ export default function (tsModule, packageJson) {
           emitDeclarationOnly: false,
           module: 'nodenext',
           moduleResolution: 'nodenext',
-          outDir: 'dist/esm',
         }
       }),
       cleanup({
