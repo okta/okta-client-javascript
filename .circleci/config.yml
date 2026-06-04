@@ -16,7 +16,7 @@ executors:
 
   macos:
     macos:
-      xcode: "16.3"
+      xcode: 26.4.1
     resource_class: m4pro.medium
 
 jobs:
