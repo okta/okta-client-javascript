@@ -1,36 +1,34 @@
 /** @type {Detox.DetoxConfig} */
-const path = require('path');
-
 module.exports = {
   testRunner: {
     args: {
       '$0': 'wdio',
-      config: path.resolve(__dirname, '../../../tests/detox/wdio.conf.js')
+      config: 'detox/wdio.conf.js'
     }
   },
   apps: {
     'ios.debug': {
       type: 'ios.app',
-      binaryPath: 'ios/build/Build/Products/Debug-iphonesimulator/reporeactnativeoidc.app',
-      build: 'xcodebuild -workspace ios/reporeactnativeoidc.xcworkspace -scheme reporeactnativeoidc -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build'
+      binaryPath: '../apps/react-native-oidc/ios/build/Build/Products/Debug-iphonesimulator/reporeactnativeoidc.app',
+      build: 'xcodebuild -workspace ../apps/react-native-oidc/ios/reporeactnativeoidc.xcworkspace -scheme reporeactnativeoidc -configuration Debug -sdk iphonesimulator -derivedDataPath ../apps/react-native-oidc/ios/build'
     },
     'ios.release': {
       type: 'ios.app',
-      binaryPath: 'ios/build/Build/Products/Release-iphonesimulator/reporeactnativeoidc.app',
-      build: 'xcodebuild -workspace ios/reporeactnativeoidc.xcworkspace -scheme reporeactnativeoidc -configuration Release -sdk iphonesimulator -derivedDataPath ios/build'
+      binaryPath: '../apps/react-native-oidc/ios/build/Build/Products/Release-iphonesimulator/reporeactnativeoidc.app',
+      build: 'xcodebuild -workspace ../apps/react-native-oidc/ios/reporeactnativeoidc.xcworkspace -scheme reporeactnativeoidc -configuration Release -sdk iphonesimulator -derivedDataPath ../apps/react-native-oidc/ios/build'
     },
     'android.debug': {
       type: 'android.apk',
-      binaryPath: 'android/app/build/outputs/apk/debug/app-debug.apk',
-      build: 'cd android && ./gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug',
+      binaryPath: '../apps/react-native-oidc/android/app/build/outputs/apk/debug/app-debug.apk',
+      build: 'cd ../apps/react-native-oidc/android && ./gradlew assembleDebug assembleAndroidTest -DtestBuildType=debug',
       reversePorts: [
         8081
       ]
     },
     'android.release': {
       type: 'android.apk',
-      binaryPath: 'android/app/build/outputs/apk/release/app-release.apk',
-      build: 'cd android && ./gradlew assembleRelease assembleAndroidTest -DtestBuildType=release'
+      binaryPath: '../apps/react-native-oidc/android/app/build/outputs/apk/release/app-release.apk',
+      build: 'cd ../apps/react-native-oidc/android && ./gradlew assembleRelease assembleAndroidTest -DtestBuildType=release'
     }
   },
   devices: {
