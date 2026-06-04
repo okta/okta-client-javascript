@@ -1,0 +1,17 @@
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
+
+buildscript {
+  // repositories provided by init.gradle mirror configuration
+  dependencies {
+    classpath('com.android.tools.build:gradle')
+    classpath('com.facebook.react:react-native-gradle-plugin')
+    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
+  }
+}
+
+allprojects {
+  // repositories provided by init.gradle mirror configuration
+}
+
+apply plugin: "expo-root-project"
+apply plugin: "com.facebook.react.rootproject"
