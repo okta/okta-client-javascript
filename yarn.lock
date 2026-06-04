@@ -8378,11 +8378,6 @@ expo-updates-interface@~2.0.0:
   resolved "https://registry.yarnpkg.com/expo-updates-interface/-/expo-updates-interface-2.0.0.tgz#7721cb64c37bcb46b23827b2717ef451a9378749"
   integrity sha512-pTzAIufEZdVPKql6iMi5ylVSPqV1qbEopz9G6TSECQmnNde2nwq42PxdFBaUEd8IZJ/fdJLQnOT3m6+XJ5s7jg==
 
-expo-web-browser@~15.0.9:
-  version "15.0.10"
-  resolved "https://registry.yarnpkg.com/expo-web-browser/-/expo-web-browser-15.0.10.tgz#ee7fb59b4f143f262c13c020433a83444181f1a3"
-  integrity sha512-fvDhW4bhmXAeWFNFiInmsGCK83PAqAcQaFyp/3pE/jbdKmFKoRCWr46uZGIfN4msLK/OODhaQ/+US7GSJNDHJg==
-
 expo@^54.0.0:
   version "54.0.33"
   resolved "https://registry.yarnpkg.com/expo/-/expo-54.0.33.tgz#f7d572857323f5a8250a9afe245a487d2ee2735f"

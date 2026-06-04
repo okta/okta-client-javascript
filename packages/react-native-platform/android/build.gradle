@@ -80,6 +80,8 @@ repositories {
     }
 }
 
+// Repositories are configured in the root settings.gradle with repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'com.facebook.react:react-android:0.81.0'
