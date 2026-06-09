@@ -20,11 +20,13 @@ let package = Package(
     targets: [
         .target(
             name: "RNBrowserSessionBridge",
-            dependencies: []
+            dependencies: [],
+            exclude: ["BrowserSessionBridge.m", "BrowserSessionBridge.h"]
         ),
         .target(
             name: "RNTokenStorageBridge",
-            dependencies: []
+            dependencies: [],
+            exclude: ["TokenStorageBridge.swift", "TokenStorageBridge.m", "TokenStorageBridge.h"]
         ),
         .testTarget(
             name: "RNTokenStorageBridgeTests",

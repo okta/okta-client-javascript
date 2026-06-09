@@ -134,8 +134,8 @@ class BrowserSessionModuleTest {
         
         module.openBrowser("not a valid url", options, promise)
         
-        val codeSlot = slot<String>()
-        verify { promise.reject(capture(codeSlot), any()) }
+        val codeSlot: io.mockk.Slot<String> = slot()
+        verify { promise.reject(capture(codeSlot), any<String>()) }
         assertThat(codeSlot.captured).isEqualTo("invalid_url")
     }
 
@@ -150,8 +150,8 @@ class BrowserSessionModuleTest {
         
         module.openBrowser("https://example.com", options, promise)
         
-        val codeSlot = slot<String>()
-        verify { promise.reject(capture(codeSlot), any()) }
+        val codeSlot: io.mockk.Slot<String> = slot()
+        verify { promise.reject(capture(codeSlot), any<String>()) }
         assertThat(codeSlot.captured).isEqualTo("no_activity")
     }
 
