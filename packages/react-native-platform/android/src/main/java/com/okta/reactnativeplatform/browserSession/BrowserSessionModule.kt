@@ -41,8 +41,6 @@ class BrowserSessionModule(reactContext: ReactApplicationContext) :
         options: ReadableMap,
         promise: Promise
     ) {
-        println("in openBrowser")
-
         try {
             val uri = Uri.parse(url)
             if (uri.scheme == null || uri.host == null) {

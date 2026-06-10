@@ -121,7 +121,6 @@ class BrowserSessionBridge: NSObject {
       
       // Start the authentication session
       if authSession.start() {
-        print("[BrowserSession] OAuth session started successfully")
       } else {
         guard !completed else { return }
         completed = true

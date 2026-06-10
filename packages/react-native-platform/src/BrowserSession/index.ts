@@ -38,7 +38,6 @@ async function openAuthSessionAndroid (
   redirectUri: string,
   options: BrowserSessionOptions
 ): Promise<BrowserSessionResult> {
-  console.log('[openAuthSession] called');
 
   let resolver: (value: BrowserSessionResult) => void;
   const deepLinkPromise = new Promise<BrowserSessionResult> ((resolve) => {
@@ -46,16 +45,11 @@ async function openAuthSessionAndroid (
   });
 
   const subscription = Linking.addEventListener('url', ({ url: deepLinkUrl }) => {
-    console.log('[openAuthSession] Deep link received:', deepLinkUrl);
-
     if (deepLinkUrl.startsWith(redirectUri)) {
-      console.log('[openAuthSession] Redirect matched!');
       resolver({
         type: 'success',
         url: deepLinkUrl,
       });
-    } else {
-      console.log('[openAuthSession] URL does not match redirect:', deepLinkUrl, 'expected start with:', redirectUri);
     }
   });
 
@@ -63,12 +57,10 @@ async function openAuthSessionAndroid (
   // Android CustomTabsIntent launches immediately, returns opened status
   const browserPromise = NativeBrowserSessionBridgeSpec.openBrowser(url, options)
   .then(() => {
-    console.log('[openAuthSession] Native Android browser launched');
     // return a promise that never resolves
     return new Promise<BrowserSessionResult>(() => {});
   })
   .catch((error) => {
-    console.error('[openAuthSession] Native Android bridge error:', error);
     // If browser fails to open, return cancel
     return { type: 'cancel' as const };
   });

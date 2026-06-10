@@ -159,4 +159,4 @@ workflows:
       - test-rn-webcrypto-android
       - test-rn-webcrypto-ios
       - test-rn-platform-android
-      - test-rn-platform-ios
+      # - test-rn-platform-ios

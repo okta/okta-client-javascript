@@ -17,17 +17,14 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
     }
 
     init {
-        Log.i("TokenStorageModule", "TokenStorageModule initializing")
     }
 
     override fun getName(): String = NAME
 
     // DataStore provider for encrypted token and metadata storage
     private val dataStore = try {
-        Log.i("TokenStorageModule", "Creating TokenDataStore")
         TokenDataStore(reactContext)
     } catch (e: Exception) {
-        Log.e("TokenStorageModule", "Failed to create TokenDataStore", e)
         throw e
     }
 
@@ -40,16 +37,11 @@ class TokenStorageModule(reactContext: ReactApplicationContext) :
 
     @ReactMethod
     override fun saveToken(id: String, tokenData: String, promise: Promise) {
-        Log.i("TokenStorageModule", "saveToken called with id: $id")
         scope.launch {
             try {
                 dataStore.saveToken(id, tokenData)
-                Log.i("TokenStorageModule", "Token saved successfully")
                 promise.resolve(null)
             } catch (e: Exception) {
-                Log.e("TokenStorageModule", "Failed to save token: ${e.message}", e)
-                Log.e("TokenStorageModule", "Exception cause: ${e.cause}")
-                Log.e("TokenStorageModule", "Full stacktrace: ${e.stackTraceToString()}")
                 promise.reject("token_save_error", "Failed to save token: ${e.message}", e)
             }
         }
