@@ -39,13 +39,18 @@ async function openAuthSessionAndroid (
   options: BrowserSessionOptions
 ): Promise<BrowserSessionResult> {
 
+  console.log('[BrowserSession]', 'open android', redirectUri, options)
+
   let resolver: (value: BrowserSessionResult) => void;
   const deepLinkPromise = new Promise<BrowserSessionResult> ((resolve) => {
     resolver = resolve;
   });
 
+  console.log('[BrowserSession]', 'open android', redirectUri)
   const subscription = Linking.addEventListener('url', ({ url: deepLinkUrl }) => {
+      console.log('[BrowserSession]', 'linking listener', deepLinkUrl)
     if (deepLinkUrl.startsWith(redirectUri)) {
+        console.log('[BrowserSession]', 'resolving', deepLinkUrl)
       resolver({
         type: 'success',
         url: deepLinkUrl,
@@ -53,14 +58,18 @@ async function openAuthSessionAndroid (
     }
   });
 
+    console.log('[BrowserSession]', 'registered linking api callback' )
+
   // Browser promise - just opens the browser, doesn't wait for result
   // Android CustomTabsIntent launches immediately, returns opened status
   const browserPromise = NativeBrowserSessionBridgeSpec.openBrowser(url, options)
   .then(() => {
+      console.log('[BrowserSession]', 'bridge promise resolved')
     // return a promise that never resolves
     return new Promise<BrowserSessionResult>(() => {});
   })
   .catch((error) => {
+      console.log('[BrowserSession]', 'cancel called')
     // If browser fails to open, return cancel
     return { type: 'cancel' as const };
   });
@@ -75,6 +84,7 @@ async function openAuthSessionAndroid (
     ]);
   }
   finally {
+      console.log('[BrowserSession]', 'finally block')
     subscription.remove();
   }
 }

@@ -20,12 +20,19 @@
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
+      <!-- Expo Development Client deep link -->
       <intent-filter>
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="us.sigmanetcorp.android-fchen-tc2:/callback"/>
-        <data android:scheme="exp+reporeact-native-oidc"/>
+        <data android:scheme="exp+reporeact-native-oidc" android:host="expo-development-client"/>
+      </intent-filter>
+      <!-- OAuth Redirect deep link -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data android:scheme="com.oktapreview.jperreault-test" android:host="callback"/>
       </intent-filter>
     </activity>
   </application>

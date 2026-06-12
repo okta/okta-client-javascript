@@ -4,6 +4,63 @@ apply plugin: "com.facebook.react"
 
 def projectRoot = rootDir.getAbsoluteFile().getParentFile().getAbsolutePath()
 
+// Load test configuration from testenv file
+def testenvFile = file('../../../../../testenv')
+def oauthEmail = ''
+def oauthPassword = ''
+
+if (testenvFile.exists()) {
+    println("📋 Loading testenv from: ${testenvFile.absolutePath}")
+    testenvFile.eachLine { line ->
+        line = line.trim()
+        if (!line.startsWith('#') && line.contains('=')) {
+            def (key, value) = line.split('=', 2)
+            key = key.trim()
+            value = value.trim().replaceAll('^"|"$', '')
+            
+            if (key == 'USERNAME') {
+                oauthEmail = value
+                println("  ✓ USERNAME loaded")
+            }
+            if (key == 'PASSWORD') {
+                oauthPassword = value
+                println("  ✓ PASSWORD loaded")
+            }
+        }
+    }
+} else {
+    println("⚠️  testenv file not found at: ${testenvFile.absolutePath}")
+}
+
+// Validate credentials
+println("\n🔐 Test Credentials Check:")
+println("  USERNAME: ${oauthEmail ? '✓ Found' : '✗ MISSING'}")
+println("  PASSWORD: ${oauthPassword ? '✓ Found' : '✗ MISSING'}")
+
+if (!oauthEmail) {
+    throw new GradleException("""
+ERROR: OAuth TEST USERNAME IS REQUIRED BUT NOT FOUND
+
+Please set USERNAME in testenv file:
+  USERNAME="jared.perreault+bu@okta.com"
+
+Testenv file: ${testenvFile.absolutePath}
+    """.stripIndent())
+}
+
+if (!oauthPassword) {
+    throw new GradleException("""
+ERROR: OAuth TEST PASSWORD IS REQUIRED BUT NOT FOUND
+
+Please set PASSWORD in testenv file:
+  PASSWORD="okta"
+
+Testenv file: ${testenvFile.absolutePath}
+    """.stripIndent())
+}
+
+println("  ✓ All credentials present\n")
+
 /**
  * This is the configuration block to customize your React Native Android app.
  * By default you don't need to apply any configuration, just uncomment the lines you need.
@@ -97,6 +154,11 @@ android {
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        
+        testInstrumentationRunnerArguments(
+            'USERNAME': oauthEmail,
+            'PASSWORD': oauthPassword
+        )
     }
     signingConfigs {
         debug {
@@ -122,6 +184,8 @@ android {
             crunchPngs enablePngCrunchInRelease.toBoolean()
         }
     }
+    // Use release build for instrumented tests instead of debug
+    testBuildType "release"
     packagingOptions {
         jniLibs {
             def enableLegacyPackaging = findProperty('expo.useLegacyPackaging') ?: 'false'
@@ -181,8 +245,13 @@ dependencies {
         implementation jscFlavor
     }
 
+    // Espresso and testing dependencies
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.test.espresso:espresso-intents:3.6.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.1")
+    androidTestImplementation("androidx.test.uiautomator:uiautomator:2.3.0")
+    androidTestImplementation("androidx.test:core:1.6.1")
+    androidTestImplementation("junit:junit:4.13.2")
 }

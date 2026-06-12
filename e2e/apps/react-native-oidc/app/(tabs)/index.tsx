@@ -98,8 +98,8 @@ export default function AuthScreen() {
           )}
 
           <ThemedView style={styles.stepContainer}>
-            <Button title="Request Token" onPress={handleSignIn} />
-            <Button title="Sign Out" onPress={handleSignOut} color="#ff3b30" />
+            <Button accessibilityLabel="requestTokenButton" title="Request Token" onPress={handleSignIn} />
+            <Button accessibilityLabel="signOutButton" title="Sign Out" onPress={handleSignOut} color="#ff3b30" />
           </ThemedView>
 
           <ThemedView style={styles.stepContainer}>

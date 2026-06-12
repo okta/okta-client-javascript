@@ -31,6 +31,7 @@ export default function TabLayout() {
         options={{
           title: 'Login',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarTestID: 'loginTab',
         }}
       />
       <Tabs.Screen
@@ -38,6 +39,7 @@ export default function TabLayout() {
         options={{
           title: 'Creds',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
+          tabBarTestID: 'credentialsTab',
         }}
       />
       <Tabs.Screen
@@ -45,6 +47,7 @@ export default function TabLayout() {
         options={{
           title: 'Token',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="lock.document.fill" color={color} />,
+          tabBarTestID: 'tokenTab',
         }}
       />
     </Tabs>
