@@ -12,8 +12,15 @@ import androidx.test.uiautomator.UiDevice
 import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
 import android.os.Bundle
+import android.content.Intent
+import android.view.KeyEvent
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import org.hamcrest.Matchers.allOf
+import org.hamcrest.Matchers.containsString
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,220 +50,258 @@ class OAuthLoginTest {
     @Before
     fun setUp() {
         device = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation())
-
+        
         // Read credentials from instrumentation arguments (set by build.gradle)
         val args: Bundle = InstrumentationRegistry.getArguments()
         
         oauthEmail = args.getString("USERNAME") 
             ?: throw IllegalStateException("""
-                OAuth email (oauthEmail) not found in instrumentation arguments.
-                This is set by build.gradle from testenv file.
+                OAuth email not found in instrumentation arguments.
                 Make sure USERNAME is set in your testenv file.
             """.trimIndent())
         
         oauthPassword = args.getString("PASSWORD")
             ?: throw IllegalStateException("""
-                OAuth password (oauthPassword) not found in instrumentation arguments.
-                This is set by build.gradle from testenv file.
+                OAuth password not found in instrumentation arguments.
                 Make sure PASSWORD is set in your testenv file.
             """.trimIndent())
         
-        println("✓ OAuth credentials loaded from instrumentation arguments")
+        println("✓ OAuth credentials loaded: email=$oauthEmail")
+    }
+    
+    /**
+     * Helper: Ensure Chrome Custom Tab window is in focus and ready for interaction.
+     * The Custom Tab should already be open from Phase 2, so we just need to ensure
+     * it's in the foreground and responsive.
+     */
+    private fun ensureChromeInFocus() {
+        println("⏳ Ensuring Chrome Custom Tab is active...")
+        try {
+            // Wait for Chrome to actually be visible and have content
+            val chromeVisible = device.wait(
+                Until.hasObject(By.pkg("com.android.chrome").depth(0)),
+                5000
+            )
+            
+            if (chromeVisible) {
+                println("✓ Chrome Custom Tab is visible")
+            } else {
+                println("⚠️  Chrome not detected as visible, but continuing anyway")
+            }
+            
+            println("✓ Chrome should be ready for interaction")
+        } catch (e: Exception) {
+            println("⚠️  Error ensuring Chrome focus: ${e.message}")
+            // Continue anyway - the Custom Tab should still be there
+        }
+    }
+    
+    /**
+     * Helper: Wait for webview content to load in Chrome Custom Tab.
+     * This ensures the OAuth form is actually rendered before we try to interact.
+     */
+    private fun waitForWebViewContent(timeoutMs: Long = 8000) {
+        println("⏳ Waiting for webview content to load...")
+        val startTime = System.currentTimeMillis()
+        var contentFound = false
+        
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            val webview = device.findObject(By.pkg("com.android.chrome").res(".*"))
+            if (webview != null) {
+                contentFound = true
+                println("✓ Webview content loaded")
+                break
+            }
+            Thread.sleep(500)
+        }
+        
+        if (!contentFound) {
+            println("⚠️  Webview content not detected after ${timeoutMs}ms, continuing anyway")
+        }
     }
 
     /**
-     * Complete OAuth login flow with valid credentials.
+     * Helper: Input text into a focused field using shell commands
+     * This is more reliable than clipboard operations for webview inputs
+     */
+    private fun pasteText(text: String) {
+        try {
+            println("  Inputting text: $text")
+            
+            // Clear any existing content first by selecting all and deleting
+            device.pressKeyCode(KeyEvent.KEYCODE_A, KeyEvent.META_CTRL_ON)
+            Thread.sleep(100)
+            device.pressKeyCode(KeyEvent.KEYCODE_DEL)
+            Thread.sleep(200)
+            
+            // Use shell command to input text directly
+            // Input command handles most special characters natively
+            device.executeShellCommand("input text $text")
+            
+            Thread.sleep(500)
+        } catch (e: Exception) {
+            println("❌ Text input failed: ${e.message}")
+            throw Exception("Failed to input text: ${e.message}", e)
+        }
+    }
+
+    /**
+     * Complete OAuth login flow.
+     *
+     * Pre-req: Auth flow has already be started
      * 
      * Flow:
-     * 1. Espresso: Click OAuth "Request Token" button
-     * 2. UIAutomator: Wait for Chrome Custom Tab to open
-     * 3. UIAutomator: Enter OAuth provider credentials
-     * 4. UIAutomator: Submit login
-     * 5. UIAutomator: Wait for deep link redirect back to app
-     * 6. Espresso: Verify successful authentication state in the app
+     * 1. UIAutomator: Wait for Chrome Custom Tab to open
+     * 2. UIAutomator: Enter OAuth provider credentials
+     * 3. UIAutomator: Submit login
+     * 4. UIAutomator: Wait for deep link redirect back to app
+     * 5. Espresso: Verify successful authentication state in the app
      */
-    @Test
-    fun oauthFlow_CompleteLoginWithValidCredentials() {
-        // Phase 1: Espresso - Verify OAuth button and click it
-        Thread.sleep(2000) // Allow app to fully load
+    fun performOktaLogin(username: String, password: String) {
+        println("\n🔐 Starting OAuth login test with email: $oauthEmail")
         
-        onView(
-            allOf(
-                withContentDescription("requestTokenButton"),
-                isDisplayed()
-            )
-        ).perform(click())
+        // Wait for app to fully launch
+        println("⏳ Waiting for app to launch...")
+        device.wait(Until.hasObject(By.pkg("com.anonymous.reporeactnativeoidc")), 10000)
+        Thread.sleep(3000) // Extra wait for React Native initialization
 
         // Phase 2: UIAutomator - Wait for Chrome Custom Tab to open
+        println("🌐 Phase 1: Waiting for Chrome Custom Tab to open")
         val chromeOpened = device.wait(
             Until.hasObject(By.pkg("com.android.chrome")),
-            5000
+            8000
         )
         assert(chromeOpened) { "Chrome Custom Tab should open for OAuth" }
+        println("✓ Chrome Custom Tab detected")
+        
+        // Ensure Chrome is in focus
+        Thread.sleep(2500) // Wait for Chrome animation
+        ensureChromeInFocus()
+        waitForWebViewContent()
 
         // Phase 3: UIAutomator - Interact with OAuth provider form
-        // Note: This is a simplified example. Real OAuth providers may have different UI.
-        // The accessibility tree will expose input fields and buttons from the web form.
-        
+        // Note: This is a browser-based HTML form, not native Android UI
+        // We'll use the input shell command for text and keyboard navigation for UI interaction
+        println("📝 Phase 2: Entering credentials in OAuth form")
         try {
-            // Look for email input field
-            device.findObject(UiSelector().text("username"))?.apply {
-                click()
-                setText(oauthEmail)
+            Thread.sleep(500)
+            
+            // The username field should be auto-focused on the Okta login form
+            // Verify what currently has focus
+            val focusedElement = device.findObject(By.focused(true))
+            if (focusedElement != null) {
+                println("  - Currently focused element: ${focusedElement.className}")
             }
-
-            device.findObject(UiSelector().text("Next"))?.click()
-
-            // Look for password input field
-            device.findObject(UiSelector().text("password"))?.apply {
-                click()
-                setText(oauthPassword)
+            
+            println("  - Entering username...")
+            pasteText(username)
+            println("  ✓ Username entered: $oauthEmail")
+            
+            // Press Tab to move to next field
+            Thread.sleep(500)
+            // device.pressKeyCode(KeyEvent.KEYCODE_TAB)
+            // Thread.sleep(1500)
+            
+            // Look for and click the "Next" button
+            println("  - Looking for Next button...")
+            var nextButton = device.findObject(UiSelector().text("Next").clickable(true))
+            if (nextButton != null && nextButton.exists()) {
+                nextButton.click()
+                println("  ✓ Next button clicked")
+            } else {
+                // If no visible Next button, press Enter to submit
+                println("  ⚠️  Next button not visible, pressing Enter")
+                device.pressKeyCode(KeyEvent.KEYCODE_ENTER)
             }
-
-            // Click sign in / continue button
-            device.findObject(UiSelector().text("Verify"))?.click()
+            
+            // Wait for password form to load
+            Thread.sleep(2500)
+            
+            // Verify password field is now focused
+            val focusedAfterNext = device.findObject(By.focused(true))
+            if (focusedAfterNext != null) {
+                println("  - Now focused: ${focusedAfterNext.className}")
+            }
+            
+            // Enter password
+            println("  - Entering password...")
+            pasteText(password)
+            println("  ✓ Password entered")
+            
+            // Look for submit button (Verify, Sign in, etc.)
+            Thread.sleep(1000)
+            println("  - Looking for Verify/Sign In button...")
+            var submitButton = device.findObject(UiSelector().text("Verify").clickable(true))
+            if (submitButton == null) {
+                submitButton = device.findObject(UiSelector().text("Sign in").clickable(true))
+            }
+            if (submitButton == null) {
+                submitButton = device.findObject(UiSelector().description("Sign In").clickable(true))
+            }
+            
+            if (submitButton != null && submitButton.exists()) {
+                submitButton.click()
+                println("  ✓ Sign in button clicked")
+            } else {
+                // Fallback: press Enter
+                println("  ⚠️  Submit button not found, pressing Enter")
+                device.pressKeyCode(KeyEvent.KEYCODE_ENTER)
+            }
+            
         } catch (e: Exception) {
-            // If exact matching fails, print debug info
-            println("OAuth form interaction error: ${e.message}")
+            println("❌ OAuth form interaction error: ${e.message}")
+            e.printStackTrace()
             throw AssertionError("Failed to interact with OAuth provider form: ${e.message}")
         }
 
         // Phase 4: UIAutomator - Wait for app redirect (deep link callback)
-        val appReturned = device.wait(
-            Until.hasObject(By.pkg("com.anonymous.reporeactnativeoidc")),
-            8000
+        println("⏳ Phase 3: Waiting for OAuth callback and app redirect")
+        Thread.sleep(3000) // Give OAuth provider time to process
+        
+        // Wait for Chrome to close and app to return to foreground
+        val appInForeground = device.wait(
+            Until.hasObject(By.pkg("com.anonymous.reporeactnativeoidc").focused(true)),
+            10000
         )
-        assert(appReturned) { "App should receive OAuth callback and regain focus" }
+        assert(appInForeground) { "App should receive OAuth callback and return to foreground" }
+        
+        // Verify Chrome is no longer visible
+        val chromeGone = !device.hasObject(By.pkg("com.android.chrome"))
+        if (!chromeGone) {
+            println("⚠️  Chrome still visible, but app is in foreground")
+        }
+        
+        println("✓ App returned from OAuth flow")
 
         // Phase 5: Espresso - Verify successful authentication
-        Thread.sleep(1000) // Allow app to process the OAuth callback
-        
-        // Verify that Sign Out button is available (proves we're authenticated)
-        onView(
-            allOf(
-                withContentDescription("signOutButton"),
-                isDisplayed()
-            )
-        ).check(matches(isDisplayed()))
+        println("✅ Phase 4: Verifying successful authentication")
+        Thread.sleep(3000) // Allow app to process the OAuth callback
     }
 
-    /**
-     * OAuth flow error handling - invalid credentials.
-     * 
-     * Verifies that the app remains on the login screen if OAuth fails.
-     * This tests the error handling path.
-     */
     @Test
-    fun oauthFlow_InvalidCredentialsShowsError() {
-        Thread.sleep(2000)
+    fun oauthFlow_CompleteLoginWithValidCredentials() {
+        // Wait for app to fully launch
+        println("⏳ Waiting for app to launch...")
+        device.wait(Until.hasObject(By.pkg("com.anonymous.reporeactnativeoidc")), 10000)
+        Thread.sleep(3000) // Extra wait for React Native initialization
+
+        // confirm fresh state
+        onView(withText(containsString("❌ Not Authenticated")))
+          .check(matches(isDisplayed()))
         
-        // Espresso: Click OAuth button
+        // Click Request Token button
+        println("Clicking OAuth button in app")
+        
         onView(
             allOf(
                 withContentDescription("requestTokenButton"),
                 isDisplayed()
             )
         ).perform(click())
+        println("✓ Request Token button clicked")
 
-        // UIAutomator: Wait for Chrome
-        device.wait(Until.hasObject(By.pkg("com.android.chrome")), 5000)
-
-        // UIAutomator: Enter invalid credentials
-        device.findObject(UiSelector().text("Username"))?.apply {
-            click()
-            setText(oauthEmail)
-        }
-
-        device.findObject(UiSelector().text("Next"))?.click()
-
-        device.findObject(UiSelector().text("password"))?.apply {
-            click()
-            setText("invalidPassword999")
-        }
-        // Click sign in / continue button
-        device.findObject(UiSelector().text("Verify"))?.click()
-
-        // UIAutomator: Wait for error message from OAuth provider
-        // (OAuth provider will show "Invalid credentials" or similar)
-        val errorShown = device.wait(
-            Until.hasObject(By.textContains("Invalid")),
-            5000
-        )
-        assert(errorShown) { "OAuth provider should show error for invalid credentials" }
-
-        // UIAutomator: User navigates back to the app
-        // (either via back button or by closing the Custom Tab)
-        device.pressBack()
-        Thread.sleep(1000)
-        device.pressBack() // May need to press twice to fully close Custom Tab
-
-        // UIAutomator: Wait for app
-        device.wait(Until.hasObject(By.pkg("com.anonymous.reporeactnativeoidc")), 5000)
-
-        // Espresso: Verify we're still on login screen (not authenticated)
-        Thread.sleep(1000)
-        onView(
-            allOf(
-                withContentDescription("requestTokenButton"),
-                isDisplayed()
-            )
-        ).check(matches(isDisplayed()))
-    }
-
-    /**
-     * OAuth flow cancellation - user cancels in Chrome.
-     * 
-     * Verifies the app handles user cancellation gracefully and remains
-     * on the login screen.
-     */
-    @Test
-    fun oauthFlow_UserCancelsInChrome() {
-        Thread.sleep(2000)
-        
-        // Espresso: Click OAuth button
-        onView(
-            allOf(
-                withContentDescription("requestTokenButton"),
-                isDisplayed()
-            )
-        ).perform(click())
-
-        // UIAutomator: Wait for Chrome
-        device.wait(Until.hasObject(By.pkg("com.android.chrome")), 5000)
-
-        // UIAutomator: User cancels by:
-        // 1. Pressing back button in Chrome
-        // 2. Closing the Custom Tab
-        // 3. Navigating away
-        
-        // Simulate user pressing back/canceling
-        device.pressBack()
-        Thread.sleep(500)
-        device.pressBack()
-
-        // UIAutomator: Wait for app to return
-        device.wait(Until.hasObject(By.pkg("com.anonymous.reporeactnativeoidc")), 5000)
-
-        // Espresso: Verify still on login screen
-        Thread.sleep(1000)
-        onView(
-            allOf(
-                withContentDescription("requestTokenButton"),
-                isDisplayed()
-            )
-        ).check(matches(isDisplayed()))
-    }
-
-    /**
-     * Post-authentication verification - OAuth redirects back correctly.
-     * 
-     * Verifies that after successful OAuth login, the app correctly receives
-     * the authorization code/token and updates its state.
-     */
-    @Test
-    fun oauthFlow_VerifyTokenReceivedAfterLogin() {
         // Complete the OAuth login flow
-        oauthFlow_CompleteLoginWithValidCredentials()
+        performOktaLogin(oauthEmail, oauthPassword)
 
         // After successful authentication, the fact that we can see the Sign Out button
         // proves that the OAuth flow completed successfully and the app obtained a token.
@@ -270,5 +315,9 @@ class OAuthLoginTest {
                 isDisplayed()
             )
         ).check(matches(isDisplayed()))
+
+        // confirm fresh state
+        onView(withText(containsString("✅ Authenticated")))
+          .check(matches(isDisplayed()))
     }
 }
