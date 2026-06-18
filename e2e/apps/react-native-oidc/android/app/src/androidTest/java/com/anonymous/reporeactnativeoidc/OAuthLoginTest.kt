@@ -70,14 +70,13 @@ class OAuthLoginTest {
     }
     
     /**
-     * Helper: Ensure Chrome Custom Tab window is in focus and ready for interaction.
-     * The Custom Tab should already be open from Phase 2, so we just need to ensure
-     * it's in the foreground and responsive.
+     * Helper: Wait for Okta login form to be available in Chrome Custom Tab.
+     * Ensures Chrome is visible and webview content has loaded.
      */
-    private fun ensureChromeInFocus() {
-        println("⏳ Ensuring Chrome Custom Tab is active...")
+    private fun waitForOktaLogin(timeoutMs: Long = 8000) {
+        println("⏳ Waiting for Okta login form...")
         try {
-            // Wait for Chrome to actually be visible and have content
+            // Wait for Chrome to actually be visible
             val chromeVisible = device.wait(
                 Until.hasObject(By.pkg("com.android.chrome").depth(0)),
                 5000
@@ -89,34 +88,28 @@ class OAuthLoginTest {
                 println("⚠️  Chrome not detected as visible, but continuing anyway")
             }
             
-            println("✓ Chrome should be ready for interaction")
-        } catch (e: Exception) {
-            println("⚠️  Error ensuring Chrome focus: ${e.message}")
-            // Continue anyway - the Custom Tab should still be there
-        }
-    }
-    
-    /**
-     * Helper: Wait for webview content to load in Chrome Custom Tab.
-     * This ensures the OAuth form is actually rendered before we try to interact.
-     */
-    private fun waitForWebViewContent(timeoutMs: Long = 8000) {
-        println("⏳ Waiting for webview content to load...")
-        val startTime = System.currentTimeMillis()
-        var contentFound = false
-        
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            val webview = device.findObject(By.pkg("com.android.chrome").res(".*"))
-            if (webview != null) {
-                contentFound = true
-                println("✓ Webview content loaded")
-                break
+            // Wait for webview content to load
+            val startTime = System.currentTimeMillis()
+            var contentFound = false
+            
+            while (System.currentTimeMillis() - startTime < timeoutMs) {
+                val webview = device.findObject(By.pkg("com.android.chrome").res(".*"))
+                if (webview != null) {
+                    contentFound = true
+                    println("✓ Webview content loaded")
+                    break
+                }
+                Thread.sleep(500)
             }
-            Thread.sleep(500)
-        }
-        
-        if (!contentFound) {
-            println("⚠️  Webview content not detected after ${timeoutMs}ms, continuing anyway")
+            
+            if (!contentFound) {
+                println("⚠️  Webview content not detected after ${timeoutMs}ms, continuing anyway")
+            }
+            
+            println("✓ Okta login form is ready for interaction")
+        } catch (e: Exception) {
+            println("⚠️  Error waiting for Okta login: ${e.message}")
+            // Continue anyway - the form should still be there
         }
     }
 
@@ -176,8 +169,7 @@ class OAuthLoginTest {
         
         // Ensure Chrome is in focus
         Thread.sleep(2500) // Wait for Chrome animation
-        ensureChromeInFocus()
-        waitForWebViewContent()
+        waitForOktaLogin()
 
         // Phase 3: UIAutomator - Interact with OAuth provider form
         // Note: This is a browser-based HTML form, not native Android UI
@@ -319,5 +311,32 @@ class OAuthLoginTest {
         // confirm fresh state
         onView(withText(containsString("✅ Authenticated")))
           .check(matches(isDisplayed()))
+    }
+
+    @test
+    fun oauthFlow_ChromeTabClosedBeforeCompletion() {
+        // Wait for app to fully launch
+        println("⏳ Waiting for app to launch...")
+        device.wait(Until.hasObject(By.pkg("com.anonymous.reporeactnativeoidc")), 10000)
+        Thread.sleep(3000) // Extra wait for React Native initialization
+
+        // confirm fresh state
+        onView(withText(containsString("❌ Not Authenticated")))
+          .check(matches(isDisplayed()))
+        
+        // Click Request Token button
+        println("Clicking OAuth button in app")
+        
+        onView(
+            allOf(
+                withContentDescription("requestTokenButton"),
+                isDisplayed()
+            )
+        ).perform(click())
+        println("✓ Request Token button clicked")
+
+        waitForOktaLogin()
+
+        
     }
 }

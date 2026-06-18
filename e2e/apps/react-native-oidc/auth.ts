@@ -34,50 +34,15 @@ export const flow = new AuthorizationCodeFlow(client, {
   redirectUri: Constants?.expoConfig?.extra?.env.NATIVE_REDIRECT_URI
 });
 
-export async function handleAuthFlowCallback (params: string | URLSearchParams) {
-  try {
-    const { token, context } = await flow.resume(params);
-    console.log('token', token);
-    console.log('context', context);
-    const credential = await Credential.store(token);
-    return credential.id;
-  }
-  catch (err) {
-    console.log('here 3');
-    console.log(err, (err as Error)?.stack);
-    throw err;
-  }
-  finally {
-    flow.reset();
-  }
-}
-
 export async function performSignIn () {
-  try {
-    console.log('here 1')
-    const uri = await flow.start();
-
-    // @ts-ignore
-    const transaction = new AuthTransaction(flow.context);
-    await transaction.save();
-    console.log('here 2.5 - transaction saved')
-    const result = await openAuthSession(uri.href, flow.redirectUri);
-    console.log('result: ', result)
-
-    if (result.type === 'success') {
-      if (['ios', 'macos'].includes(Platform.OS)) {
-        return await handleAuthFlowCallback(result.url);
-      }
-    }
-
-    // TODO: handle this
-    console.log('[WARNING] auth did not complete')
+  const result = await AuthorizationCodeFlow.PerformBrowserSignIn(flow);
+  if (result.completed) {
+    const { token } = result;
+    const credential = await Credential.store(token);
+    return credential;
   }
-  catch (err) {
-    console.log('here 3');
-    console.log(err, (err as Error)?.stack);
-    throw err;
-  }
+
+  return null;
 }
 
 export async function performSignOut () {

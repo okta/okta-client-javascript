@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import { Linking, Platform } from 'react-native';
+import { Linking, Platform, AppState } from 'react-native';
 import NativeBrowserSessionBridgeSpec from '../specs/NativeBrowserSessionBridge.ts';
 import type { BrowserSessionResult } from './types.ts';
 import type { BrowserSessionOptions } from '../specs/NativeBrowserSessionBridge.ts';
@@ -41,51 +41,59 @@ async function openAuthSessionAndroid (
 
   console.log('[BrowserSession]', 'open android', redirectUri, options)
 
-  let resolver: (value: BrowserSessionResult) => void;
+  let deepLinkResolver: (value: BrowserSessionResult) => void;
+  let appStateResolver: () => void;
+  
   const deepLinkPromise = new Promise<BrowserSessionResult> ((resolve) => {
-    resolver = resolve;
+    deepLinkResolver = resolve;
+  });
+
+  const appStatePromise = new Promise<void> ((resolve) => {
+    appStateResolver = resolve;
+  })
+  .then(() => {
+    return { type: 'cancel' as const };
+  });
+
+  // Listen for app state changes to detect when browser is dismissed
+  console.log('appState', AppState.currentState)
+  let appStateSubscription = AppState.addEventListener('change', (state) => {
+    console.log('[BrowserSession]', 'app state changed:', state);
+    
+    if (state === 'active') {
+      appStateResolver();
+    }
   });
 
   console.log('[BrowserSession]', 'open android', redirectUri)
   const subscription = Linking.addEventListener('url', ({ url: deepLinkUrl }) => {
       console.log('[BrowserSession]', 'linking listener', deepLinkUrl)
     if (deepLinkUrl.startsWith(redirectUri)) {
-        console.log('[BrowserSession]', 'resolving', deepLinkUrl)
-      resolver({
+      console.log('[BrowserSession]', 'resolving', deepLinkUrl)
+      deepLinkResolver({
         type: 'success',
         url: deepLinkUrl,
       });
     }
   });
 
-    console.log('[BrowserSession]', 'registered linking api callback' )
+  console.log('[BrowserSession]', 'registered linking api callback' )
 
-  // Browser promise - just opens the browser, doesn't wait for result
-  // Android CustomTabsIntent launches immediately, returns opened status
-  const browserPromise = NativeBrowserSessionBridgeSpec.openBrowser(url, options)
-  .then(() => {
-      console.log('[BrowserSession]', 'bridge promise resolved')
-    // return a promise that never resolves
-    return new Promise<BrowserSessionResult>(() => {});
-  })
-  .catch((error) => {
-      console.log('[BrowserSession]', 'cancel called')
-    // If browser fails to open, return cancel
-    return { type: 'cancel' as const };
-  });
+  // Open the browser - it will return immediately when CustomTabsIntent launches
+  await NativeBrowserSessionBridgeSpec.openBrowser(url, options);
+  console.log('[BrowserSession]', 'bridge promise resolved - browser opened')
 
-  // TODO: throw if browser fails to open, listen for close
-
-  // If deeplink arrives, return success; if browser closes without redirect, return cancel
+  // If deeplink arrives, return success; if app resumes without deeplink, return cancel
   try {
     return await Promise.race([
-      deepLinkPromise,    // only resolves when deeplink (redirectUri) is navigated to
-      browserPromise      // only throws when user closes browser window
+      deepLinkPromise,    // resolves when deeplink (redirectUri) is navigated to
+      appStatePromise     // resolves when app returns to foreground without deeplink
     ]);
   }
   finally {
-      console.log('[BrowserSession]', 'finally block')
+    console.log('[BrowserSession]', 'finally block')
     subscription.remove();
+    appStateSubscription?.remove();
   }
 }
 

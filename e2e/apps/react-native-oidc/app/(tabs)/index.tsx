@@ -41,7 +41,7 @@ export default function AuthScreen() {
       setLoading(true);
       setError(null);
       await signIn();
-      setIsAuthenticated(true);
+      await checkAuth();
     } catch (err) {
       console.error('Sign in failed:', err);
       setError(err instanceof Error ? err.message : 'Sign in failed');

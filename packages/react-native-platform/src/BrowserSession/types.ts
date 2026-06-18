@@ -1,6 +1,5 @@
 /**
  * Browser session result returned from openAuthSession
- * Matches the expo-web-browser API for compatibility
  */
 export type BrowserSessionResult = {
   type: 'success';
