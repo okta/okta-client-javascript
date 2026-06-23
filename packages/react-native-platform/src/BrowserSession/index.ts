@@ -15,6 +15,10 @@ export type * from './types.ts';
 export type { BrowserSessionOptions };
 
 
+export const DEFAULT_OPTIONS: BrowserSessionOptions = {
+  ephemeralSession: true
+};
+
 // iOS: Use native ASWebAuthenticationSession which handles OAuth natively
 // No Linking listener needed - native session intercepts redirects
 async function openAuthSessionIOS (
@@ -38,9 +42,6 @@ async function openAuthSessionAndroid (
   redirectUri: string,
   options: BrowserSessionOptions
 ): Promise<BrowserSessionResult> {
-
-  console.log('[BrowserSession]', 'open android', redirectUri, options)
-
   let deepLinkResolver: (value: BrowserSessionResult) => void;
   let appStateResolver: () => void;
   
@@ -56,20 +57,14 @@ async function openAuthSessionAndroid (
   });
 
   // Listen for app state changes to detect when browser is dismissed
-  console.log('appState', AppState.currentState)
   let appStateSubscription = AppState.addEventListener('change', (state) => {
-    console.log('[BrowserSession]', 'app state changed:', state);
-    
     if (state === 'active') {
       appStateResolver();
     }
   });
 
-  console.log('[BrowserSession]', 'open android', redirectUri)
   const subscription = Linking.addEventListener('url', ({ url: deepLinkUrl }) => {
-      console.log('[BrowserSession]', 'linking listener', deepLinkUrl)
     if (deepLinkUrl.startsWith(redirectUri)) {
-      console.log('[BrowserSession]', 'resolving', deepLinkUrl)
       deepLinkResolver({
         type: 'success',
         url: deepLinkUrl,
@@ -77,11 +72,8 @@ async function openAuthSessionAndroid (
     }
   });
 
-  console.log('[BrowserSession]', 'registered linking api callback' )
-
   // Open the browser - it will return immediately when CustomTabsIntent launches
   await NativeBrowserSessionBridgeSpec.openBrowser(url, options);
-  console.log('[BrowserSession]', 'bridge promise resolved - browser opened')
 
   // If deeplink arrives, return success; if app resumes without deeplink, return cancel
   try {
@@ -91,7 +83,6 @@ async function openAuthSessionAndroid (
     ]);
   }
   finally {
-    console.log('[BrowserSession]', 'finally block')
     subscription.remove();
     appStateSubscription?.remove();
   }
@@ -150,7 +141,7 @@ async function openAuthSessionAndroid (
 export async function openAuthSession(
   url: string,
   redirectUri: string,
-  options: BrowserSessionOptions = { ephemeralSession: false }
+  options: BrowserSessionOptions = { ...DEFAULT_OPTIONS }
 ): Promise<BrowserSessionResult> {
   if (!NativeBrowserSessionBridgeSpec) {
     throw new Error(

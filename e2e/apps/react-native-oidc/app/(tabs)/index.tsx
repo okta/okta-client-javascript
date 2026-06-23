@@ -64,6 +64,17 @@ export default function AuthScreen() {
     }
   };
 
+  const handleClearStorage = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await Credential.clear();
+    }
+    finally {
+      setLoading(true);
+    }
+  }
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -100,6 +111,7 @@ export default function AuthScreen() {
           <ThemedView style={styles.stepContainer}>
             <Button accessibilityLabel="requestTokenButton" title="Request Token" onPress={handleSignIn} />
             <Button accessibilityLabel="signOutButton" title="Sign Out" onPress={handleSignOut} color="#ff3b30" />
+            <Button accessibilityLabel="clearButton" title="Clear" onPress={handleClearStorage} color="#ffce1b" />
           </ThemedView>
 
           <ThemedView style={styles.stepContainer}>
