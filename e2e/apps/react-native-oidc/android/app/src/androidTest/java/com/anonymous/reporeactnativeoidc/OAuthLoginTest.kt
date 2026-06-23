@@ -175,6 +175,9 @@ class OAuthLoginTest {
         // Note: This is a browser-based HTML form, not native Android UI
         // We'll use the input shell command for text and keyboard navigation for UI interaction
         println("📝 Phase 2: Entering credentials in OAuth form")
+
+        // TODO: START HERE FIX LOG IN TO HANDLE FACTOR SELECTION
+
         try {
             Thread.sleep(500)
             
@@ -313,7 +316,7 @@ class OAuthLoginTest {
           .check(matches(isDisplayed()))
     }
 
-    @test
+    @Test
     fun oauthFlow_ChromeTabClosedBeforeCompletion() {
         // Wait for app to fully launch
         println("⏳ Waiting for app to launch...")

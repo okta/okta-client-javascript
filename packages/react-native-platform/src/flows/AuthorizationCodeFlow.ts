@@ -8,13 +8,25 @@ import {
   AuthorizationCodeFlow as AuthorizationCodeFlowBase,
   AuthenticationFlowError
 } from '@okta/oauth2-flows';
-import { openAuthSession } from '../BrowserSession/index.ts';
+import {
+  openAuthSession,
+  BrowserSessionOptions,
+  DEFAULT_OPTIONS as defaultBrowserSessionOpts
+} from '../BrowserSession/index.ts';
 
 
 export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
+
+  public static defaultBrowserSessionOptions: BrowserSessionOptions = {
+    ...defaultBrowserSessionOpts,
+    ephemeralSession: true
+  }
   
   /**
-   * TODO
+   * TODO: complete doc
+   * 
+   * defaults `ephemeralSession` to `true`. OIDC Logout cannot be completed in an React Native context
+   * because Android chrome windows require user interaction (is not a part of the current OIDC logout flow)
    */
   static async PerformBrowserSignIn (flow: AuthorizationCodeFlow): Promise<AuthorizationCodeFlow.BrowserSignInResult> {
     try {
@@ -32,7 +44,11 @@ export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
       let result: Awaited<ReturnType<typeof openAuthSession>>;
       try {
         // open window using NativeBridge
-        result = await openAuthSession(authorizeUrl.href, flow.redirectUri);
+        result = await openAuthSession(
+          authorizeUrl.href,
+          flow.redirectUri,
+          { ...AuthorizationCodeFlow.defaultBrowserSessionOptions }
+        );
       }
       catch (err) {
         // catches bridge-related error

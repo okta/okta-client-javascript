@@ -16,7 +16,7 @@ export type { BrowserSessionOptions };
 
 
 export const DEFAULT_OPTIONS: BrowserSessionOptions = {
-  ephemeralSession: true
+  ephemeralSession: false
 };
 
 // iOS: Use native ASWebAuthenticationSession which handles OAuth natively

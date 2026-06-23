@@ -29,14 +29,24 @@ if (isNewArchitectureEnabled()) {
 
 android {
     namespace "com.okta.reactnativeplatform"
-    compileSdkVersion 35
+
+    // Read from gradle.properties or default to 36 (required by androidx.browser:browser:1.9.0)
+    compileSdkVersion project.hasProperty('android.compileSdkVersion') 
+        ? Integer.parseInt(project.property('android.compileSdkVersion'))
+        : 35
 
     defaultConfig {
         minSdkVersion 24
-        targetSdkVersion 35
+        targetSdkVersion project.hasProperty('android.targetSdkVersion') 
+          ? Integer.parseInt(project.property('android.targetSdkVersion'))
+          : 35
+
         versionCode 1
         versionName "1.0"
     }
+
+    println("  compileSdkVersion: ${compileSdkVersion}")
+    println("  targetSdkVersion: ${defaultConfig.targetSdkVersion}")
 
     buildTypes {
         release {
