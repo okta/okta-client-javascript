@@ -30,7 +30,6 @@ if (isNewArchitectureEnabled()) {
 android {
     namespace "com.okta.reactnativeplatform"
 
-    // Read from gradle.properties or default to 36 (required by androidx.browser:browser:1.9.0)
     compileSdkVersion project.hasProperty('android.compileSdkVersion') 
         ? Integer.parseInt(project.property('android.compileSdkVersion'))
         : 35

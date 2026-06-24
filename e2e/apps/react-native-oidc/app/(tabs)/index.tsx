@@ -71,7 +71,7 @@ export default function AuthScreen() {
       await Credential.clear();
     }
     finally {
-      setLoading(true);
+      setLoading(false);
     }
   }
 

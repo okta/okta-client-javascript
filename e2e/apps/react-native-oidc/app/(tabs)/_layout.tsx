@@ -30,24 +30,24 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Login',
+          tabBarAccessibilityLabel: 'loginTab',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-          tabBarTestID: 'loginTab',
         }}
       />
       <Tabs.Screen
         name="credentials"
         options={{
           title: 'Creds',
+          tabBarAccessibilityLabel: 'credentialsTab',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="list.bullet" color={color} />,
-          tabBarTestID: 'credentialsTab',
         }}
       />
       <Tabs.Screen
         name="token"
         options={{
           title: 'Token',
+          tabBarAccessibilityLabel: 'tokenTab',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="lock.document.fill" color={color} />,
-          tabBarTestID: 'tokenTab',
         }}
       />
     </Tabs>
