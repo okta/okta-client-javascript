@@ -84,7 +84,6 @@ class ReactNativeOIDCAppTest {
 
     /**
      * Helper: Input text into a focused field using shell commands
-     * This is more reliable than clipboard operations for webview inputs
      */
     private fun pasteText(text: String) {
         try {
@@ -141,6 +140,9 @@ class ReactNativeOIDCAppTest {
       navigateToTab("Login")
     }
 
+    /**
+     * Helper: Determines the authentication status of the Test App
+     */
     private fun verifyAuthenticationStatus(expectAuthenticated: Boolean): Boolean {
         return try {
             val expectedStatus = if (expectAuthenticated) "✅ Authenticated" else "❌ Not Authenticated"
@@ -152,6 +154,9 @@ class ReactNativeOIDCAppTest {
         }
     }
 
+    /**
+     * Helper: Navigates between tabs within the Test App
+     */
     private fun navigateToTab(tab: String) {
         val tabConfig: Map<String, Map<String, String>> = mapOf(
           "Login" to mapOf(

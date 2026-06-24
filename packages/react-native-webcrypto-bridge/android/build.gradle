@@ -29,16 +29,11 @@ if (isNewArchitectureEnabled()) {
 
 android {
     namespace "com.okta.webcryptobridge"
-    // Allow host project to override compileSdkVersion via gradle.properties
-    compileSdkVersion project.hasProperty('android.compileSdkVersion') 
-        ? Integer.parseInt(project.property('android.compileSdkVersion'))
-        : 35
+    compileSdkVersion 35
 
     defaultConfig {
         minSdkVersion 24
-        targetSdkVersion project.hasProperty('android.targetSdkVersion')
-            ? Integer.parseInt(project.property('android.targetSdkVersion'))
-            : 35
+        targetSdkVersion 35
         versionCode 1
         versionName "1.0"
     }
