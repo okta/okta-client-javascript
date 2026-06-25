@@ -164,11 +164,10 @@ jobs:
       - platform-helpers/step-load-dependencies
 
       - run:
-        name: Verify secrets loaded
-        command: |
-          if [ -z "${DEPLOY_KEY}" ]; then echo "ERROR: DEPLOY_KEY not loaded"; exit 1; fi
-          if [ -z "${API_TOKEN}" ]; then echo "ERROR: API_TOKEN not loaded"; exit 1; fi
-          echo "All secrets loaded successfully"
+          name: Verify secrets loaded
+          command: |
+            if [ -z "${USERNAME}" ]; then echo "ERROR: USERNAME not loaded"; exit 1; fi
+            echo "All secrets loaded successfully"
 
       # - restore_cache:
       #     keys:
