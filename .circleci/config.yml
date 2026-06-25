@@ -3,7 +3,7 @@ version: 2.1
 orbs:
   general-platform-helpers: okta/general-platform-helpers@1.9.4
   platform-helpers: okta/platform-helpers@2.0.0
-  eng-platform-helpers: atko-eng/eng-services-platform-helpers-general@2
+  eng-platform-helpers: okta/eng-services-platform-helpers-general@2
   macos: circleci/macos@2
   android: circleci/android@3.1.0
 
