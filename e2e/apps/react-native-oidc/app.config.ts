@@ -31,7 +31,7 @@ export default ({ config }: ConfigContext) => ({
   "ios": {
     "bundleIdentifier": "com.anonymous.reporeactnativeoidc"
   },
-  scheme: "com.oktapreview.jperreault-test",
+  scheme: process.env.NATIVE_SCHEME_URI,
   autolinking: {
     searchPaths: [
       "../../node_modules",
@@ -44,7 +44,7 @@ export default ({ config }: ConfigContext) => ({
       autoVerify: true,
       data: [
         {
-          scheme: "com.oktapreview.jperreault-test"
+          scheme: process.env.NATIVE_SCHEME_URI
         }
       ],
       category: ["BROWSABLE", "DEFAULT"]

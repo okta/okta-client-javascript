@@ -40,9 +40,6 @@ android {
         versionName "1.0"
     }
 
-    println("  compileSdkVersion: ${compileSdkVersion}")
-    println("  targetSdkVersion: ${defaultConfig.targetSdkVersion}")
-
     buildTypes {
         release {
             minifyEnabled false

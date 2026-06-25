@@ -32,7 +32,7 @@
         <action android:name="android.intent.action.VIEW"/>
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
-        <data android:scheme="com.oktapreview.jperreault-test" android:host="callback"/>
+        <data android:scheme="${OAUTH_SCHEME}" android:host="callback"/>
       </intent-filter>
     </activity>
   </application>

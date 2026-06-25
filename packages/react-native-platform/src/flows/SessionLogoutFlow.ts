@@ -26,7 +26,7 @@ export class SessionLogoutFlow extends SessionLogoutFlowBase {
   static async PerformBrowserLogout (logoutUrl: URL): Promise<SessionLogoutFlow.BrowserLogoutResult> {
     try {
       console.log('logoutURL', logoutUrl);
-      const baseUrl = new URL(logoutUrl.origin + logoutUrl.pathname);
+      // const baseUrl = new URL(logoutUrl.origin + logoutUrl.pathname);
 
       const postLogoutRedirectUri = logoutUrl.searchParams.get('post_logout_redirect_uri');
       console.log('postLogoutRedirect: ', postLogoutRedirectUri);
@@ -39,7 +39,7 @@ export class SessionLogoutFlow extends SessionLogoutFlowBase {
       console.log('URL: ', logoutUrl.href);
       const result = await openAuthSession(logoutUrl.href, postLogoutRedirectUri);
 
-      console.log('browser result', result)
+      console.log('browser result', result);
 
       // User completed the logout flow and returned via the redirect URI
       if (result.type === 'success') {

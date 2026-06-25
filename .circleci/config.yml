@@ -161,52 +161,44 @@ jobs:
       GRADLE_OPTS: -Xmx4g
     steps:
       - checkout
-
-      - restore_cache:
-          keys:
-            - gradle-e2e-oauth-{{ checksum "e2e/apps/react-native-oidc/android/app/build.gradle" }}
-            - gradle-e2e-oauth-
+      - platform-helpers/step-load-dependencies
 
       - run:
-          name: Setup Node and install dependencies
-          command: |
-            npm i -g yarn@1.22.22
-            yarn install --frozen-lockfile
+        name: Verify secrets loaded
+        command: |
+          if [ -z "${DEPLOY_KEY}" ]; then echo "ERROR: DEPLOY_KEY not loaded"; exit 1; fi
+          if [ -z "${API_TOKEN}" ]; then echo "ERROR: API_TOKEN not loaded"; exit 1; fi
+          echo "All secrets loaded successfully"
 
-      - run:
-          name: Build E2E OAuth test app (release build)
-          command: |
-            cd e2e/apps/react-native-oidc/android
-            ./gradlew assembleRelease assembleAndroidTest -PnewArchEnabled=true --info
+      # - restore_cache:
+      #     keys:
+      #       - gradle-e2e-oauth-{{ checksum "e2e/apps/react-native-oidc/android/app/build.gradle" }}
+      #       - gradle-e2e-oauth-
 
-      - run:
-          name: Run E2E OAuth Espresso tests
-          command: |
-            cd e2e/apps/react-native-oidc/android
-            ./gradlew connectedAndroidTest \
-              -Pandroid.testInstrumentationRunnerArguments.class=com.anonymous.reporeactnativeoidc.AppLaunchTest \
-              --info
+      # - run:
+      #     name: Setup Node and install dependencies
+      #     command: |
+      #       npm i -g yarn@1.22.22
+      #       yarn install --frozen-lockfile
 
-      - run:
-          name: Run E2E OAuth hybrid tests (Espresso + UIAutomator)
-          command: |
-            cd e2e/apps/react-native-oidc/android
-            ./gradlew connectedAndroidTest \
-              -Pandroid.testInstrumentationRunnerArguments.class=com.anonymous.reporeactnativeoidc.OAuthLoginTest \
-              --info
+      # - run:
+      #     name: Run OIDC Test App E2E tests
+      #     command: |
+      #       cd e2e/apps/react-native-oidc/android
+      #       ./gradlew connectedAndroidTest
 
-      - save_cache:
-          key: gradle-e2e-oauth-{{ checksum "e2e/apps/react-native-oidc/android/app/build.gradle" }}
-          paths:
-            - ~/.gradle
-            - .gradle
+      # - save_cache:
+      #     key: gradle-e2e-oauth-{{ checksum "e2e/apps/react-native-oidc/android/app/build.gradle" }}
+      #     paths:
+      #       - ~/.gradle
+      #       - .gradle
 
-      - store_test_results:
-          path: e2e/apps/react-native-oidc/android/app/build/outputs/androidTest-results
+      # - store_test_results:
+      #     path: e2e/apps/react-native-oidc/android/app/build/outputs/androidTest-results
 
-      - store_artifacts:
-          path: e2e/apps/react-native-oidc/android/app/build/reports
-          destination: e2e-oauth-android-test-reports
+      # - store_artifacts:
+      #     path: e2e/apps/react-native-oidc/android/app/build/reports
+      #     destination: e2e-oauth-android-test-reports
 
 workflows:
   version: 2
@@ -215,5 +207,10 @@ workflows:
       - test-rn-webcrypto-android
       - test-rn-webcrypto-ios
       - test-rn-platform-android
-      # - test-rn-platform-ios
-      # - e2e-oauth-android-tests
+
+      - platform-helpers/job-secrets-obtain:
+          name: cache-username
+          secret_key: "USERNAME"
+      - e2e-oauth-android-tests:
+          requires:
+            - cache-username

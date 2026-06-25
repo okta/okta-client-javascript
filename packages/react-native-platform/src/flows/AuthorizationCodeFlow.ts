@@ -1,8 +1,4 @@
-import {
-  type OAuth2ErrorResponse,
-  isOAuth2ErrorResponse,
-  OAuth2Error
-} from '@okta/auth-foundation/core';
+import { OAuth2Error } from '@okta/auth-foundation/core';
 import {
   AuthTransaction,
   AuthorizationCodeFlow as AuthorizationCodeFlowBase,
@@ -20,7 +16,7 @@ export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
   public static defaultBrowserSessionOptions: BrowserSessionOptions = {
     ...defaultBrowserSessionOpts,
     ephemeralSession: true
-  }
+  };
   
   /**
    * TODO: complete doc
