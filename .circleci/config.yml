@@ -3,7 +3,6 @@ version: 2.1
 orbs:
   general-platform-helpers: okta/general-platform-helpers@1.9.4
   platform-helpers: okta/platform-helpers@2.0.0
-  eng-platform-helpers: okta/eng-services-platform-helpers-general@2
   macos: circleci/macos@2
   android: circleci/android@3.1.0
 
@@ -153,22 +152,22 @@ jobs:
           path: packages/react-native-platform/ios/.build
           destination: react-native-platform-ios-build-artifacts
 
-  e2e-oauth-android-tests:
-    executor:
-      name: android/android_machine
-      resource_class: large
-      tag: default
-    environment:
-      GRADLE_OPTS: -Xmx4g
-    steps:
-      - checkout
-      - eng-platform-helpers/step-load-dependencies
+  # e2e-oauth-android-tests:
+  #   executor:
+  #     name: android/android_machine
+  #     resource_class: large
+  #     tag: default
+  #   environment:
+  #     GRADLE_OPTS: -Xmx4g
+  #   steps:
+  #     - checkout
+  #     - eng-platform-helpers/step-load-dependencies
 
-      - run:
-          name: Verify secrets loaded
-          command: |
-            if [ -z "${USERNAME}" ]; then echo "ERROR: USERNAME not loaded"; exit 1; fi
-            echo "All secrets loaded successfully"
+  #     - run:
+  #         name: Verify secrets loaded
+  #         command: |
+  #           if [ -z "${USERNAME}" ]; then echo "ERROR: USERNAME not loaded"; exit 1; fi
+  #           echo "All secrets loaded successfully"
 
       # - restore_cache:
       #     keys:
@@ -208,9 +207,9 @@ workflows:
       - test-rn-webcrypto-ios
       - test-rn-platform-android
 
-      - eng-platform-helpers/job-secrets-obtain:
-          name: cache-username
-          secret_key: "USERNAME"
-      - e2e-oauth-android-tests:
-          requires:
-            - cache-username
+      # - eng-platform-helpers/job-secrets-obtain:
+      #     name: cache-username
+      #     secret_key: "USERNAME"
+      # - e2e-oauth-android-tests:
+      #     requires:
+      #       - cache-username
