@@ -32,18 +32,7 @@
     ],
     "nohoist": [
       "@repo/okta-client-js-docs/**",
-      "**/typedoc",
-      "**/expo",
-      "**/expo/**",
-      "**/expo-*",
-      "**/expo-*/**",
-      "**/@expo/**",
-      "**/@expo/**/**",
-      "**/@react-navigation/**",
-      "react",
-      "react-native",
-      "react-native-oidc/@okta/*",
-      "react-native-oidc/@okta/**"
+      "**/typedoc"
     ]
   },
   "devEngines": {

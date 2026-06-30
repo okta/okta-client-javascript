@@ -25,6 +25,8 @@ import { PlatformDefaults } from './platform/defaults.ts';
 // Register the React Native Platform default singleton dependencies
 Platform.registerDefaultsLoader(() => PlatformDefaults);
 
+export { AuthorizationCodeFlow, SessionLogoutFlow } from './flows/index.ts';
+
 // Install the React Native WebCrypto Bridge Polyfill
 import { installWebCryptoPolyfill } from '@okta/react-native-webcrypto-bridge';
 export { installWebCryptoPolyfill };
@@ -33,4 +35,8 @@ installWebCryptoPolyfill();
 // Override TokenStorage to use React Native Storage Bridge
 import { ReactNativeTokenStorage } from './Credential/TokenStorage.ts';
 import { Credential } from '@okta/auth-foundation/core';
+
+// Export Browser Session API
+export { openAuthSession } from './BrowserSession/index.ts';
+export type { BrowserSessionResult, BrowserSessionErrorCode } from './BrowserSession/types.ts';
 Credential.coordinator.tokenStorage = new ReactNativeTokenStorage();

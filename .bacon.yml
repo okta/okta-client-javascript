@@ -49,12 +49,12 @@ test_suites:
     sort_order: '5'
     timeout: '10'
     criteria: MERGE
-    queue_name: small
+    queue_name: al2023
   - name: snyk
     script_path: /root/okta/okta-client-javascript/scripts/bacon
     script_name: snyk
     sort_order: '7'
     timeout: '200'
     criteria: MAINLINE
-    queue_name: small
+    queue_name: al2023
     trigger: AUTO

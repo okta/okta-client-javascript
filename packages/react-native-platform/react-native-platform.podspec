@@ -9,11 +9,12 @@ Pod::Spec.new do |s|
   s.description  = package['description'] || "Okta authentication platform for React Native"
   s.homepage     = "https://github.com/okta/okta-client-javascript"
   s.license      = package['license']
-  s.authors      = { "Okta" => "jared.perreault@okta.com" }
+  s.authors      = package["author"]
   s.platforms    = { :ios => "13.0" }
   s.source       = { :git => "https://github.com/okta/okta-client-javascript.git", :tag => "v#{s.version}" }
 
-  s.source_files = "ios/**/*.{h,m,mm,swift}"
+  s.source_files = "ios/Sources/**/*.{h,m,mm,swift}"
+  s.exclude_files = "ios/Tests/**/*"
 
   s.pod_target_xcconfig = {
     'DEFINES_MODULE' => 'YES',

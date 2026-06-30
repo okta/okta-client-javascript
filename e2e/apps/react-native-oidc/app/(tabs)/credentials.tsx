@@ -117,6 +117,7 @@ export default function CredentialsScreen() {
           {credentials.map((cred) => (
             <TouchableOpacity
               key={cred.id}
+              accessibilityLabel={`credentialItem-${cred.id}`}
               style={styles.credentialCard}
               onPress={() => handleCredentialPress(cred.id)}>
               <ThemedView style={styles.credentialHeader}>

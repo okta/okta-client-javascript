@@ -5,7 +5,13 @@ import envModule from '@repo/env';
 envModule.setEnvironmentVarsFromTestEnv(__dirname);
 const env: any = {};
 // List of environment variables made available to the app
-['ISSUER', 'NATIVE_CLIENT_ID', 'USE_DPOP'].forEach((key) => {
+[
+  'ISSUER',
+  'NATIVE_CLIENT_ID',
+  'NATIVE_REDIRECT_URI',
+  'NATIVE_LOGOUT_REDIRECT_URI',
+  'USE_DPOP'
+].forEach((key) => {
   if (!process.env[key]) {
     console.warn(`Environment variable ${key} should be set for development. See README.md`);
   }
@@ -25,14 +31,20 @@ export default ({ config }: ConfigContext) => ({
   "ios": {
     "bundleIdentifier": "com.anonymous.reporeactnativeoidc"
   },
-  scheme: "com.oktapreview.jperreault-test",
+  scheme: process.env.NATIVE_SCHEME_URI,
+  autolinking: {
+    searchPaths: [
+      "../../node_modules",
+      "../../packages"
+    ]
+  },
   intentFilters: [
     {
       action: "VIEW",
       autoVerify: true,
       data: [
         {
-          scheme: "com.oktapreview.jperreault-test"
+          scheme: process.env.NATIVE_SCHEME_URI
         }
       ],
       category: ["BROWSABLE", "DEFAULT"]

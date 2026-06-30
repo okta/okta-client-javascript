@@ -16,7 +16,7 @@ executors:
 
   macos:
     macos:
-      xcode: "16.3"
+      xcode: 26.4.1
     resource_class: m4pro.medium
 
 jobs:
@@ -34,10 +34,16 @@ jobs:
             - gradle-
 
       - run:
-          name: Run Android Unit and Integration Tests
+          name: Setup Node and install dependencies
           command: |
-            cd packages/react-native-webcrypto-bridge/android
-            ./gradlew testDebugUnitTest --info
+            npm i -g yarn@1.22.22
+            yarn install --frozen-lockfile
+
+      - run:
+          name: Run React Native Platform Android Tests
+          command: |
+            cd packages/react-native-platform/android
+            ./gradlew testDebugUnitTest -PnewArchEnabled=true --info
 
       - save_cache:
           key: gradle-{{ checksum "packages/react-native-webcrypto-bridge/android/build.gradle" }}
@@ -94,10 +100,16 @@ jobs:
             - gradle-rn-platform-
 
       - run:
+          name: Setup Node and install dependencies
+          command: |
+            npm i -g yarn@1.22.22
+            yarn install --frozen-lockfile
+
+      - run:
           name: Run React Native Platform Android Tests
           command: |
             cd packages/react-native-platform/android
-            ./gradlew testDebugUnitTest --info
+            ./gradlew testDebugUnitTest -PnewArchEnabled=true --info
 
       - save_cache:
           key: gradle-rn-platform-{{ checksum "packages/react-native-platform/android/build.gradle" }}
@@ -140,6 +152,53 @@ jobs:
           path: packages/react-native-platform/ios/.build
           destination: react-native-platform-ios-build-artifacts
 
+  # e2e-oauth-android-tests:
+  #   executor:
+  #     name: android/android_machine
+  #     resource_class: large
+  #     tag: default
+  #   environment:
+  #     GRADLE_OPTS: -Xmx4g
+  #   steps:
+  #     - checkout
+  #     - eng-platform-helpers/step-load-dependencies
+
+  #     - run:
+  #         name: Verify secrets loaded
+  #         command: |
+  #           if [ -z "${USERNAME}" ]; then echo "ERROR: USERNAME not loaded"; exit 1; fi
+  #           echo "All secrets loaded successfully"
+
+      # - restore_cache:
+      #     keys:
+      #       - gradle-e2e-oauth-{{ checksum "e2e/apps/react-native-oidc/android/app/build.gradle" }}
+      #       - gradle-e2e-oauth-
+
+      # - run:
+      #     name: Setup Node and install dependencies
+      #     command: |
+      #       npm i -g yarn@1.22.22
+      #       yarn install --frozen-lockfile
+
+      # - run:
+      #     name: Run OIDC Test App E2E tests
+      #     command: |
+      #       cd e2e/apps/react-native-oidc/android
+      #       ./gradlew connectedAndroidTest
+
+      # - save_cache:
+      #     key: gradle-e2e-oauth-{{ checksum "e2e/apps/react-native-oidc/android/app/build.gradle" }}
+      #     paths:
+      #       - ~/.gradle
+      #       - .gradle
+
+      # - store_test_results:
+      #     path: e2e/apps/react-native-oidc/android/app/build/outputs/androidTest-results
+
+      # - store_artifacts:
+      #     path: e2e/apps/react-native-oidc/android/app/build/reports
+      #     destination: e2e-oauth-android-test-reports
+
 workflows:
   version: 2
   build_and_test:
@@ -147,4 +206,10 @@ workflows:
       - test-rn-webcrypto-android
       - test-rn-webcrypto-ios
       - test-rn-platform-android
-      - test-rn-platform-ios
+
+      # - eng-platform-helpers/job-secrets-obtain:
+      #     name: cache-username
+      #     secret_key: "USERNAME"
+      # - e2e-oauth-android-tests:
+      #     requires:
+      #       - cache-username
