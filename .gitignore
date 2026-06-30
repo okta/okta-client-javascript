@@ -42,6 +42,7 @@ docs/api/*
 out/
 build
 dist
+.build
 
 
 # Debug

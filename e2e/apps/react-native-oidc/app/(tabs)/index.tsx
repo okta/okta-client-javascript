@@ -41,7 +41,7 @@ export default function AuthScreen() {
       setLoading(true);
       setError(null);
       await signIn();
-      setIsAuthenticated(true);
+      await checkAuth();
     } catch (err) {
       console.error('Sign in failed:', err);
       setError(err instanceof Error ? err.message : 'Sign in failed');
@@ -63,6 +63,17 @@ export default function AuthScreen() {
       setLoading(false);
     }
   };
+
+  const handleClearStorage = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      await Credential.clear();
+    }
+    finally {
+      setLoading(false);
+    }
+  }
 
   return (
     <ParallaxScrollView
@@ -98,8 +109,9 @@ export default function AuthScreen() {
           )}
 
           <ThemedView style={styles.stepContainer}>
-            <Button title="Request Token" onPress={handleSignIn} />
-            <Button title="Sign Out" onPress={handleSignOut} color="#ff3b30" />
+            <Button accessibilityLabel="requestTokenButton" title="Request Token" onPress={handleSignIn} />
+            <Button accessibilityLabel="signOutButton" title="Sign Out" onPress={handleSignOut} color="#ff3b30" />
+            <Button accessibilityLabel="clearButton" title="Clear" onPress={handleClearStorage} color="#ffce1b" />
           </ThemedView>
 
           <ThemedView style={styles.stepContainer}>

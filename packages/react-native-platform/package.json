@@ -1,6 +1,7 @@
 {
   "name": "@okta/react-native-platform",
   "version": "0.7.0",
+  "author": "developer@okta.com",
   "type": "module",
   "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
@@ -15,11 +16,13 @@
   "files": [
     "./LICENSE",
     "./dist",
-    "./ios",
+    "./ios/Sources",
+    "./ios/Package.swift",
     "./android",
     "./cpp",
     "*.md",
     "package.json",
+    "react-native.config.js",
     "react-native-platform.podspec"
   ],
   "exports": {
@@ -77,7 +80,7 @@
     }
   },
   "codegenConfig": {
-    "name": "RNTokenStorageSpec",
+    "name": "RNOktaPlatformSpecs",
     "type": "modules",
     "jsSrcsDir": "src/specs",
     "android": {

@@ -1,6 +1,7 @@
 package com.okta.webcryptobridge
 
 import com.okta.webcryptobridge.algorithms.RSAHandler
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * Registry for managing cryptographic algorithm handlers.
@@ -10,7 +11,7 @@ import com.okta.webcryptobridge.algorithms.RSAHandler
  * for dispatching algorithm-specific operations in the WebCryptoBridgeModule.
  */
 object CryptoAlgorithmRegistry {
-    private val handlers = mutableMapOf<String, CryptoAlgorithmHandler>()
+    private val handlers = ConcurrentHashMap<String, CryptoAlgorithmHandler>()
 
     init {
         // Register built-in handlers

@@ -102,8 +102,8 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
   }
 
   /** @internal */
-  protected parseAuthorizationCode (url: URL): AuthorizationCodeFlow.RedirectValues | OAuth2ErrorResponse {
-    const params = url.searchParams;
+  protected parseAuthorizationCode (url: URL | URLSearchParams): AuthorizationCodeFlow.RedirectValues | OAuth2ErrorResponse {
+    const params = url instanceof URL ? url.searchParams : url;
 
     const error = getSearchParam(params, 'error');
     if (error) {
@@ -245,14 +245,14 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
    * @param redirectUri 
    * @returns 
    */
-  async resume (redirectUri?: string): Promise<AuthorizationCodeFlow.Result> {
+  async resume (redirectUri: string | URL | URLSearchParams): Promise<AuthorizationCodeFlow.Result> {
     this.inProgress = true;
 
     let oauthState = '';
     try {
-      const currentUrl = new URL(redirectUri ?? window.location.href);
+      const callbackUrl = typeof redirectUri === 'string' ? new URL(redirectUri) : redirectUri;
 
-      const values = this.parseAuthorizationCode(currentUrl);
+      const values = this.parseAuthorizationCode(callbackUrl);
       if (isOAuth2ErrorResponse(values)) {
         throw new OAuth2Error(values);
       }

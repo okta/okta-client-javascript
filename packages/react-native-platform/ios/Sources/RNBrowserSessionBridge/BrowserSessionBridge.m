@@ -1,5 +1,10 @@
-#import "BrowserSessionBridge.h"
+#import <React/RCTBridgeModule.h>
 
-@implementation BrowserSessionBridge
+@interface RCT_EXTERN_MODULE(BrowserSessionBridge, NSObject)
+
+RCT_EXTERN_METHOD(openAuthSession:(NSString *)url
+                  redirectScheme:(NSString *)redirectScheme
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
 
 @end

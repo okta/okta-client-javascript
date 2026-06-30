@@ -1,5 +1,6 @@
 buildscript {
     ext.kotlin_version = '2.1.0'
+    ext.android_gradle_plugin_version = '8.1.0'
 
     repositories {
         google()
@@ -7,21 +8,34 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.android.tools.build:gradle:8.1.0'
+        classpath "com.android.tools.build:gradle:$android_gradle_plugin_version"
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
 
-apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.facebook.react' apply false
+}
+
+def isNewArchitectureEnabled() {
+    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+}
+
+if (isNewArchitectureEnabled()) {
+    apply plugin: 'com.facebook.react'
+}
 
 android {
     namespace "com.okta.reactnativeplatform"
-    compileSdkVersion 35
+
+    compileSdkVersion 36
 
     defaultConfig {
         minSdkVersion 24
         targetSdkVersion 35
+
         versionCode 1
         versionName "1.0"
     }
@@ -47,9 +61,7 @@ android {
 
     sourceSets {
         main {
-            java {
-                exclude 'com/okta/reactnativeplatform/browserSession/**'
-            }
+            java.srcDirs += 'build/generated/source/codegen/java'
         }
     }
 }
@@ -57,13 +69,26 @@ android {
 repositories {
     google()
     mavenCentral()
+    maven {
+        url "$rootDir/../node_modules/react-native/android"
+    }
 }
+
+repositories {
+    google()
+    mavenCentral()
+    maven {
+        url "$rootDir/../node_modules/react-native/android"
+    }
+}
+
+// Repositories are configured in the root settings.gradle with repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'com.facebook.react:react-android:0.81.0'
     implementation 'androidx.datastore:datastore-preferences:1.0.0'
-    implementation 'androidx.browser:browser:1.7.0'
+    implementation 'androidx.browser:browser:1.9.0'
 
     // Testing dependencies
     testImplementation 'junit:junit:4.13.2'
@@ -79,5 +104,3 @@ tasks.withType(Test) {
         includeTestsMatching 'com.okta.reactnativeplatform.TokenStorageModuleTest'
     }
 }
-
-
