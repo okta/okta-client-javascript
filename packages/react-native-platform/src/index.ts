@@ -25,6 +25,8 @@ import { PlatformDefaults } from './platform/defaults.ts';
 // Register the React Native Platform default singleton dependencies
 Platform.registerDefaultsLoader(() => PlatformDefaults);
 
+export { AuthorizationCodeFlow, SessionLogoutFlow } from './flows/index.ts';
+
 // Install the React Native WebCrypto Bridge Polyfill
 import { installWebCryptoPolyfill } from '@okta/react-native-webcrypto-bridge';
 export { installWebCryptoPolyfill };

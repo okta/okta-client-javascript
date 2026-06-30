@@ -202,7 +202,7 @@ export default function TokenScreen() {
       )}
 
       <ThemedView style={styles.section}>
-        <Button title="Revoke Token" onPress={handleRevoke} />
+        <Button accessibilityLabel="revokeTokenButton" title="Revoke Token" onPress={handleRevoke} />
       </ThemedView>
     </ParallaxScrollView>
   );

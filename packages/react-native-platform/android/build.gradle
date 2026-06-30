@@ -29,11 +29,13 @@ if (isNewArchitectureEnabled()) {
 
 android {
     namespace "com.okta.reactnativeplatform"
-    compileSdkVersion 35
+
+    compileSdkVersion 36
 
     defaultConfig {
         minSdkVersion 24
         targetSdkVersion 35
+
         versionCode 1
         versionName "1.0"
     }
@@ -80,11 +82,13 @@ repositories {
     }
 }
 
+// Repositories are configured in the root settings.gradle with repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     implementation 'com.facebook.react:react-android:0.81.0'
     implementation 'androidx.datastore:datastore-preferences:1.0.0'
-    implementation 'androidx.browser:browser:1.7.0'
+    implementation 'androidx.browser:browser:1.9.0'
 
     // Testing dependencies
     testImplementation 'junit:junit:4.13.2'

@@ -6,7 +6,7 @@
  * @packageDocumentation
  */
 
-import { Linking, Platform } from 'react-native';
+import { Linking, Platform, AppState } from 'react-native';
 import NativeBrowserSessionBridgeSpec from '../specs/NativeBrowserSessionBridge.ts';
 import type { BrowserSessionResult } from './types.ts';
 import type { BrowserSessionOptions } from '../specs/NativeBrowserSessionBridge.ts';
@@ -14,6 +14,10 @@ import type { BrowserSessionOptions } from '../specs/NativeBrowserSessionBridge.
 export type * from './types.ts';
 export type { BrowserSessionOptions };
 
+
+export const DEFAULT_OPTIONS: BrowserSessionOptions = {
+  ephemeralSession: false
+};
 
 // iOS: Use native ASWebAuthenticationSession which handles OAuth natively
 // No Linking listener needed - native session intercepts redirects
@@ -38,44 +42,49 @@ async function openAuthSessionAndroid (
   redirectUri: string,
   options: BrowserSessionOptions
 ): Promise<BrowserSessionResult> {
-
-  let resolver: (value: BrowserSessionResult) => void;
+  let deepLinkResolver: (value: BrowserSessionResult) => void;
+  let appStateResolver: () => void;
+  
   const deepLinkPromise = new Promise<BrowserSessionResult> ((resolve) => {
-    resolver = resolve;
+    deepLinkResolver = resolve;
+  });
+
+  const appStatePromise = new Promise<void> ((resolve) => {
+    appStateResolver = resolve;
+  })
+  .then(() => {
+    return { type: 'cancel' as const };
+  });
+
+  // Listen for app state changes to detect when browser is dismissed
+  let appStateSubscription = AppState.addEventListener('change', (state) => {
+    if (state === 'active') {
+      appStateResolver();
+    }
   });
 
   const subscription = Linking.addEventListener('url', ({ url: deepLinkUrl }) => {
     if (deepLinkUrl.startsWith(redirectUri)) {
-      resolver({
+      deepLinkResolver({
         type: 'success',
         url: deepLinkUrl,
       });
     }
   });
 
-  // Browser promise - just opens the browser, doesn't wait for result
-  // Android CustomTabsIntent launches immediately, returns opened status
-  const browserPromise = NativeBrowserSessionBridgeSpec.openBrowser(url, options)
-  .then(() => {
-    // return a promise that never resolves
-    return new Promise<BrowserSessionResult>(() => {});
-  })
-  .catch((error) => {
-    // If browser fails to open, return cancel
-    return { type: 'cancel' as const };
-  });
+  // Open the browser - it will return immediately when CustomTabsIntent launches
+  await NativeBrowserSessionBridgeSpec.openBrowser(url, options);
 
-  // TODO: throw if browser fails to open, listen for close
-
-  // If deeplink arrives, return success; if browser closes without redirect, return cancel
+  // If deeplink arrives, return success; if app resumes without deeplink, return cancel
   try {
     return await Promise.race([
-      deepLinkPromise,    // only resolves when deeplink (redirectUri) is navigated to
-      browserPromise      // only throws when user closes browser window
+      deepLinkPromise,    // resolves when deeplink (redirectUri) is navigated to
+      appStatePromise     // resolves when app returns to foreground without deeplink
     ]);
   }
   finally {
     subscription.remove();
+    appStateSubscription?.remove();
   }
 }
 
@@ -132,7 +141,7 @@ async function openAuthSessionAndroid (
 export async function openAuthSession(
   url: string,
   redirectUri: string,
-  options: BrowserSessionOptions = { ephemeralSession: false }
+  options: BrowserSessionOptions = { ...DEFAULT_OPTIONS }
 ): Promise<BrowserSessionResult> {
   if (!NativeBrowserSessionBridgeSpec) {
     throw new Error(

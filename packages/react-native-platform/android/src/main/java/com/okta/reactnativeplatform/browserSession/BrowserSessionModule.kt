@@ -8,7 +8,8 @@ import com.facebook.react.module.annotations.ReactModule
 
 /**
  * BrowserSessionModule for opening OAuth flows in native browser
- * Simply launches CustomTabsIntent - OAuth completion is handled via Linking API on JavaScript side
+ * Uses CustomTabsIntent for better compatibility with React Native's activity lifecycle.
+ * OAuth completion is handled via Linking API on JavaScript side
  */
 @ReactModule(name = BrowserSessionModule.NAME)
 class BrowserSessionModule(reactContext: ReactApplicationContext) :
@@ -71,8 +72,11 @@ class BrowserSessionModule(reactContext: ReactApplicationContext) :
             }
 
             // Launch in CustomTabsIntent (Chrome/default browser)
+            // CustomTabsIntent is compatible with React Native's activity lifecycle
             val customTabsIntent = CustomTabsIntent.Builder()
                 .setShareState(shareState)
+                .setEphemeralBrowsingEnabled(ephemeralSession)
+                .setUrlBarHidingEnabled(true)
                 .build()
 
             customTabsIntent.launchUrl(activity, uri)
