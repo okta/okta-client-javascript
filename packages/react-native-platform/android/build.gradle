@@ -27,14 +27,18 @@ if (isNewArchitectureEnabled()) {
     apply plugin: 'com.facebook.react'
 }
 
+def safeExtGet(prop, fallback) {
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
 android {
     namespace "com.okta.reactnativeplatform"
 
-    compileSdkVersion 36
+    compileSdkVersion safeExtGet('compileSdkVersion', 36)
 
     defaultConfig {
-        minSdkVersion 24
-        targetSdkVersion 35
+        minSdkVersion safeExtGet('minSdkVersion', 24)
+        targetSdkVersion safeExtGet('targetSdkVersion', 35)
 
         versionCode 1
         versionName "1.0"
