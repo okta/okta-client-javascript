@@ -38,6 +38,17 @@
                ReferencedContainer = "container:reporeactnativeoidc.xcodeproj">
             </BuildableReference>
          </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "E55BC1892FF45F6F009F0154"
+               BuildableName = "reporeactnativeoidcUITests.xctest"
+               BlueprintName = "reporeactnativeoidcUITests"
+               ReferencedContainer = "container:reporeactnativeoidc.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
       </Testables>
    </TestAction>
    <LaunchAction
