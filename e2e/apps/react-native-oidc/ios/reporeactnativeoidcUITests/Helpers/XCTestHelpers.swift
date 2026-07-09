@@ -3,13 +3,6 @@ import XCTest
 // MARK: - XCUIElement Extensions
 
 extension XCUIElement {
-    /// Wait for element to exist with optional timeout
-    /// - parameter timeout: Maximum time to wait in seconds (default: 5)
-    /// - returns: True if element exists, false otherwise
-    func waitForExistence(timeout: TimeInterval = 5) -> Bool {
-        return self.waitForExistence(timeout: timeout)
-    }
-    
     /// Check if element is displayed (exists and is hittable)
     var isDisplayed: Bool {
         return self.exists && self.isHittable
@@ -26,6 +19,22 @@ extension XCUIElement {
     /// Get element text value
     var textValue: String {
         return (self.value as? String) ?? ""
+    }
+
+    func clearAndEnterText(text: String) {
+      guard let currentValue = self.value as? String else {
+        XCTFail("Cannot clear element without a value")
+        return
+      }
+
+      // focus the element
+      self.tap()
+
+      // creates string of delete characters to clear the current value
+      let deleteString = String(repeating: XCUIKeyboardKey.delete.rawValue, count: currentValue.count)
+
+      self.typeText(deleteString)
+      self.typeText(text)
     }
 }
 

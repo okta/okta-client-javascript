@@ -13,6 +13,7 @@ export const client = new OAuth2Client({
   clientId: Constants?.expoConfig?.extra?.env.NATIVE_CLIENT_ID,
   scopes: ['openid', 'email', 'profile', 'offline_access'],
   dpop: false,
+  allowHTTP: true
 });
 
 export const flow = new AuthorizationCodeFlow(client, {

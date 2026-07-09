@@ -15,17 +15,28 @@ class TestHelpers {
     /// - returns: Tuple of (username, password)
     /// - throws: XCTestError if credentials not found
     static func loadOAuthCredentials() throws -> (username: String, password: String) {
+        print("🔑 [TestHelpers] Starting credential load...")
+        
         var username: String?
         var password: String?
         
         // First, try to read from testenv file (mirrors Android build.gradle approach)
-        if let testenvCredentials = try? loadCredentialsFromTestenv() {
-            return testenvCredentials
+        do {
+            if let testenvCredentials = try? loadCredentialsFromTestenv() {
+                print("✅ [TestHelpers] Successfully loaded from testenv file")
+                return testenvCredentials
+            }
+        } catch {
+            print("⚠️ [TestHelpers] testenv load failed: \(error)")
         }
         
         // Fallback to environment variables
+        print("🔍 [TestHelpers] Checking environment variables...")
         username = ProcessInfo.processInfo.environment["USERNAME"]
         password = ProcessInfo.processInfo.environment["PASSWORD"]
+        
+        print("  USERNAME from env: \(username?.isEmpty == false ? "***" : "(not set)")")
+        print("  PASSWORD from env: \(password?.isEmpty == false ? "***" : "(not set)")")
         
         guard let username = username, !username.isEmpty else {
             throw NSError(domain: "TestHelpers", code: 1,
@@ -36,42 +47,38 @@ class TestHelpers {
                 userInfo: [NSLocalizedDescriptionKey: "PASSWORD not found in testenv file or environment variable"])
         }
         
+        print("✅ [TestHelpers] Loaded from environment variables")
         return (username, password)
     }
     
     /// Load credentials from testenv file
-    /// Searches for testenv file at workspace root and parses USERNAME and PASSWORD
+    /// Searches for testenv file in known workspace locations
     /// - returns: Tuple of (username, password) if found
     /// - throws: Error if file not found or credentials missing
     private static func loadCredentialsFromTestenv() throws -> (username: String, password: String) {
-        // Find testenv file relative to this source file location
-        // Source is at: e2e/apps/react-native-oidc/ios/E2e/Helpers/TestHelpers.swift
-        // Need to go up to workspace root
-        let sourcePath = #filePath // Current file path
         let fileManager = FileManager.default
         
-        // Walk up the directory tree to find testenv
-        var currentPath = (sourcePath as NSString).deletingLastPathComponent
-        var attempts = 0
-        let maxAttempts = 10 // Prevent infinite loops
+        // Try common monorepo root locations
+        let commonPaths = [
+            // CI environment variable (can be set by build system)
+            ProcessInfo.processInfo.environment["TESTENV_PATH"],
+            // Typical local dev setup - absolute path
+            "/Users/jaredperreault/Code/devex/client-js/testenv",
+            // Try from current working directory
+            (FileManager.default.currentDirectoryPath as NSString).appendingPathComponent("testenv"),
+        ].compactMap { $0 }
         
-        while attempts < maxAttempts {
-            let potentialTestenvPath = (currentPath as NSString).appendingPathComponent("testenv")
-            
-            if fileManager.fileExists(atPath: potentialTestenvPath) {
-                return try parseTestenvFile(at: potentialTestenvPath)
+        print("🔍 [TestHelpers] Searching for testenv in \(commonPaths.count) locations...")
+        
+        for path in commonPaths {
+            print("🔍 [TestHelpers] Checking: \(path)")
+            if fileManager.fileExists(atPath: path) {
+                print("✅ [TestHelpers] Found testenv at: \(path)")
+                return try parseTestenvFile(at: path)
             }
-            
-            let parentPath = (currentPath as NSString).deletingLastPathComponent
-            if parentPath == currentPath {
-                // Reached root directory
-                break
-            }
-            
-            currentPath = parentPath
-            attempts += 1
         }
         
+        print("❌ [TestHelpers] testenv file not found in any location")
         throw NSError(domain: "TestEnv", code: 1, 
             userInfo: [NSLocalizedDescriptionKey: "testenv file not found"])
     }
@@ -82,10 +89,13 @@ class TestHelpers {
     /// - throws: Error if credentials not found
     private static func parseTestenvFile(at path: String) throws -> (username: String, password: String) {
         let content = try String(contentsOfFile: path, encoding: .utf8)
+        print("📄 [TestHelpers] testenv file content:\n\(content)")
+        
         var username: String?
         var password: String?
         
         let lines = content.components(separatedBy: .newlines)
+        print("📄 [TestHelpers] Parsing \(lines.count) lines from testenv")
         
         for line in lines {
             let trimmed = line.trimmingCharacters(in: .whitespaces)
@@ -107,6 +117,8 @@ class TestHelpers {
                 value = String(value.dropFirst().dropLast())
             }
             
+            print("  → \(key) = \(value.isEmpty ? "(empty)" : "***")")
+            
             if key == "USERNAME" {
                 username = value
             } else if key == "PASSWORD" {
@@ -115,15 +127,17 @@ class TestHelpers {
         }
         
         guard let username = username, !username.isEmpty else {
+            print("❌ [TestHelpers] USERNAME not found or empty in testenv")
             throw NSError(domain: "TestEnv", code: 2,
                 userInfo: [NSLocalizedDescriptionKey: "USERNAME not found in testenv file"])
         }
         guard let password = password, !password.isEmpty else {
+            print("❌ [TestHelpers] PASSWORD not found or empty in testenv")
             throw NSError(domain: "TestEnv", code: 3,
                 userInfo: [NSLocalizedDescriptionKey: "PASSWORD not found in testenv file"])
         }
         
-        print("📋 Loaded credentials from testenv file")
+        print("✅ [TestHelpers] Loaded credentials from testenv file")
         return (username, password)
     }
     
@@ -138,8 +152,13 @@ class TestHelpers {
     
     /// Verify fresh app state (not authenticated, no credentials)
     func assertFreshAppState() throws {
+        print("   ⏳ Checking authentication status...")
         try verifyAuthenticationStatus(expected: false)
+        print("   ✅ Auth status verified")
+        
+        print("   ⏳ Checking credentials count...")
         try verifyCredentialsCount(expected: 0)
+        print("   ✅ Credentials count verified")
     }
     
     /// Verify authentication status: either "✅ Authenticated" or "❌ Not Authenticated"
@@ -147,6 +166,9 @@ class TestHelpers {
     func verifyAuthenticationStatus(expected: Bool) throws {
         let expectedText = expected ? "✅ Authenticated" : "❌ Not Authenticated"
         let statusElement = app.staticTexts.element(containingText: expectedText)
+        
+        print("      → Looking for auth status: '\(expectedText)'...")
+        print("      → Element exists: \(statusElement.exists)")
         
         XCTestWait.waitForElement(
             statusElement,
@@ -157,17 +179,26 @@ class TestHelpers {
             statusElement.exists,
             "Expected authentication status: \(expectedText)"
         )
+        print("      ✅ Auth status correct: '\(expectedText)'")
     }
     
     /// Verify number of stored credentials
     /// - parameter expected: Expected credential count
     func verifyCredentialsCount(expected: Int) throws {
-        let countText = "\(expected) credential\(expected == 1 ? "" : "s") stored"
+        let countText: String
+        if expected == 0 {
+            countText = "No credentials found"
+        } else {
+            countText = "\(expected) credential\(expected == 1 ? "" : "s") stored"
+        }
         let countElement = app.staticTexts.element(containingText: countText)
         
+        print("      → Navigating to Credentials tab...")
         // Navigate to Credentials tab first
         try navigateToTab(name: "Creds")
+        print("      ✅ On Credentials tab")
         
+        print("      → Waiting for: '\(countText)'...")
         XCTestWait.waitForElement(
             countElement,
             timeout: 5,
@@ -177,6 +208,7 @@ class TestHelpers {
             countElement.exists,
             "Expected to see: \(countText)"
         )
+        print("      ✅ Found: '\(countText)'")
     }
     
     // MARK: - App Navigation
@@ -195,13 +227,19 @@ class TestHelpers {
                 userInfo: [NSLocalizedDescriptionKey: "Unknown tab: \(name)"])
         }
         
+        print("        [navigating to '\(name)' tab]")
         let tabButton = app.buttons[config.contentDesc]
+        print("        → Tab button exists: \(tabButton.exists)")
         XCTAssertTrue(
             tabButton.exists,
             "Tab button for \(name) should exist"
         )
-        tabButton.tapSafely()
         
+        print("        → Tapping tab...")
+        tabButton.tapSafely()
+        Thread.sleep(forTimeInterval: 0.3)
+        
+        print("        → Waiting for tab title '\(config.title)'...")
         // Wait for tab content to load
         let titleElement = app.staticTexts.element(containingText: config.title)
         XCTestWait.waitForElement(
@@ -209,6 +247,7 @@ class TestHelpers {
             timeout: 3,
             message: "Should navigate to \(name) tab"
         )
+        print("        ✅ Tab '\(name)' loaded")
     }
     
     // MARK: - Action Helpers

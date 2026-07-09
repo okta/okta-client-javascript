@@ -15,8 +15,10 @@ class CredentialsScreenPageObject {
     }
     
     var credentialCountText: XCUIElement {
-        // Looks for text like "2 credentials stored"
-        return app.staticTexts.element(containingText: "stored")
+        // Looks for text like "2 credentials stored" or "No credentials found"
+        let stored = app.staticTexts.element(containingText: "stored")
+        let notFound = app.staticTexts.element(containingText: "No credentials")
+        return stored.exists ? stored : notFound
     }
     
     var defaultBadge: XCUIElement {
@@ -25,27 +27,6 @@ class CredentialsScreenPageObject {
     
     var credentialsTableView: XCUIElement {
         return app.tables.element
-    }
-    
-    // MARK: - Navigation
-    
-    /// Navigate to Credentials tab
-    func navigateToTab() {
-        XCTAssertTrue(
-            credentialsTabButton.exists,
-            "Credentials tab button should exist"
-        )
-        credentialsTabButton.tapSafely()
-        
-        // Wait for tab to load
-        Thread.sleep(forTimeInterval: 0.5)
-        
-        // Verify tab title appears
-        let tabTitle = app.staticTexts["Credentials"]
-        XCTAssertTrue(
-            tabTitle.waitForExistence(timeout: 3),
-            "Credentials tab should load"
-        )
     }
     
     // MARK: - State Verification
@@ -59,6 +40,12 @@ class CredentialsScreenPageObject {
         }
         
         let text = countElement.label
+        
+        // Check for "No credentials found" first
+        if text.contains("No credentials") {
+            return 0
+        }
+        
         // Extract number from text like "2 credentials stored"
         let components = text.components(separatedBy: " ")
         if let firstComponent = components.first, let count = Int(firstComponent) {

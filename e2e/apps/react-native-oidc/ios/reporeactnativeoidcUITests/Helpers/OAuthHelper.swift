@@ -14,7 +14,8 @@ class OAuthHelper {
     /// This waits for the system OAuth sheet to be presented
     /// - parameter timeout: Maximum time to wait for OAuth UI in seconds
     /// - returns: True if OAuth UI appeared, false if timeout
-    func waitForOAuthUI(timeout: TimeInterval = 8) -> Bool {
+    func waitForOAuthUI(timeout: TimeInterval = 5) -> Bool {
+        print("⏳ [OAuthHelper] Waiting for OAuth UI (timeout: \(timeout)s)...")
         let deadline = Date().addingTimeInterval(timeout)
         var attempts = 0
         let maxAttempts = Int(timeout * 10)
@@ -24,11 +25,13 @@ class OAuthHelper {
             // This is a heuristic since ASWebAuthenticationSession webview is restricted
             let webviewElements = app.webViews
             if webviewElements.element.exists {
+                print("✅ [OAuthHelper] Found webview element")
                 return true
             }
             
             // Also check for any text containing "Sign In" or "Login" which might come from OAuth provider
             if app.staticTexts["Sign In"].exists || app.webViews.element.exists {
+                print("✅ [OAuthHelper] Found OAuth UI element")
                 return true
             }
             
@@ -36,6 +39,9 @@ class OAuthHelper {
             attempts += 1
         }
         
+        print("❌ [OAuthHelper] OAuth UI not found after \(attempts) attempts (\(timeout)s)")
+        print("   DEBUG: webviews.count = \(app.webViews.count)")
+        print("   DEBUG: staticTexts.count = \(app.staticTexts.count)")
         return app.webViews.element.exists
     }
     
@@ -51,42 +57,48 @@ class OAuthHelper {
             throw OAuthError.webViewNotAccessible
         }
         
-        let webView = app.webViews.element
+        // let webView = app.webViews.element
         
-        // Attempt to find and fill username field
-        // Note: Safari/system webviews may expose form elements through the accessibility tree
-        let usernameField = webView.textFields.element(boundBy: 0)
-        if usernameField.exists {
-            usernameField.tap()
-            Thread.sleep(forTimeInterval: 0.2)
-            usernameField.typeText(username)
-            Thread.sleep(forTimeInterval: 0.3)
-        } else {
-            // If direct field access fails, attempt keyboard input
-            // This assumes the field is already focused
-            let remoteDismiss = app.keys["Delete"]
-            if remoteDismiss.exists {
-                // Attempt to clear any existing text
-                for _ in 0..<20 {
-                    remoteDismiss.press()
-                }
-            }
-            app.typeText(username)
-        }
-        
-        // Move to password field and enter password
-        app.typeText("\t") // Tab to next field
+        // // Attempt to find and fill username field
+        // // Note: Safari/system webviews may expose form elements through the accessibility tree
+        // let usernameField = webView.textFields.element(boundBy: 0)
+        // if usernameField.exists {
+        //     usernameField.tap()
+        //     Thread.sleep(forTimeInterval: 0.2)
+        //     usernameField.typeText(username)
+        //     Thread.sleep(forTimeInterval: 0.3)
+        // } else {
+        //     // If direct field access fails, attempt keyboard input
+        //     // This assumes the field is already focused
+        //     let remoteDismiss = app.keys["Delete"]
+        //     if remoteDismiss.exists {
+        //         // Attempt to clear any existing text
+        //         for _ in 0..<20 {
+        //           remoteDismiss.press(forDuration: 0.5)
+        //         }
+        //     }
+        //     app.typeText(username)
+        // }
+
+        app.typeText(username)
+        app.typeText(XCUIKeyboardKey.enter)
+
         Thread.sleep(forTimeInterval: 0.3)
         
-        let passwordField = webView.secureTextFields.element(boundBy: 0)
-        if passwordField.exists {
-            passwordField.tap()
-            Thread.sleep(forTimeInterval: 0.2)
-            passwordField.typeText(password)
-            Thread.sleep(forTimeInterval: 0.3)
-        } else {
-            app.typeText(password)
-        }
+        // let passwordField = webView.secureTextFields.element(boundBy: 0)
+        // if passwordField.exists {
+        //     passwordField.tap()
+        //     Thread.sleep(forTimeInterval: 0.2)
+        //     passwordField.typeText(password)
+        //     Thread.sleep(forTimeInterval: 0.3)
+        // } else {
+        //     app.typeText(password)
+        // }
+
+        // TODO: select password authenticator
+
+        app.typeText(password)
+        app.typeText(XCUIKeyboardKey.enter)
         
         // Attempt to submit form
         let submitButton = webView.buttons["Sign In"]
@@ -103,18 +115,26 @@ class OAuthHelper {
     /// Wait for OAuth flow to complete and app to return to foreground
     /// Waits for the app's authentication status to update after OAuth callback
     /// - parameter timeout: Maximum time to wait for OAuth completion in seconds
-    func waitForOAuthCompletion(timeout: TimeInterval = 10) throws {
+    func waitForOAuthCompletion(timeout: TimeInterval = 8) throws {
+        print("⏳ [OAuthHelper] Waiting for OAuth completion (timeout: \(timeout)s)...")
         let deadline = Date().addingTimeInterval(timeout)
         let authStatusProperty = "label"
         
         var authStatusFound = false
+        var iterations = 0
         while Date() < deadline {
+            iterations += 1
             // Check if app is back in foreground (no longer showing OAuth sheet)
             let webviewGone = !app.webViews.element.exists
             let appInForeground = app.staticTexts["Authentication"].exists || app.buttons["requestTokenButton"].exists
             
+            if iterations % 20 == 0 {
+                print("   [OAuthHelper iteration \(iterations)] webviewGone=\(webviewGone), appInForeground=\(appInForeground)")
+            }
+            
             if webviewGone && appInForeground {
                 authStatusFound = true
+                print("✅ [OAuthHelper] OAuth completion detected")
                 break
             }
             
@@ -122,11 +142,12 @@ class OAuthHelper {
         }
         
         guard authStatusFound else {
+            print("❌ [OAuthHelper] OAuth completion timeout after \(iterations) iterations")
             throw OAuthError.completionTimeout
         }
         
         // Brief additional wait for app state to settle
-        Thread.sleep(forTimeInterval: 1)
+        Thread.sleep(forTimeInterval: 0.5)
     }
     
     /// Dismiss the OAuth sheet (simulating user cancellation)

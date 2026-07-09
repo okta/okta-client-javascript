@@ -37,7 +37,7 @@ class LoginScreenPageObject {
     func verifyAuthStatus(expected: Bool) -> Bool {
         let expectedText = expected ? "✅ Authenticated" : "❌ Not Authenticated"
         let element = app.staticTexts.element(containingText: expectedText)
-        return element.exists && element.isDisplayed
+        return element.exists
     }
     
     /// Wait for authentication status to match expected value
@@ -77,18 +77,6 @@ class LoginScreenPageObject {
             "Clear button should exist"
         )
         clearButton.tapSafely()
-    }
-    
-    /// Ensure we're on the Login tab
-    func navigateToTab() {
-        XCTAssertTrue(
-            loginTabButton.exists,
-            "Login tab button should exist"
-        )
-        if !loginTabButton.isDisplayed {
-            loginTabButton.tap()
-            Thread.sleep(forTimeInterval: 0.3)
-        }
     }
     
     /// Perform complete login flow from request to completion

@@ -26,9 +26,14 @@ final class ReactNativeOIDCAppUITests: XCTestCase {
     // MARK: - Setup & Teardown
     
     override func setUpWithError() throws {
+        print("\n" + String(repeating: "=", count: 60))
+        print("🧪 setUp START")
+        print(String(repeating: "=", count: 60))
+        
         // Disable automatic screenshot capture to speed up tests
         continueAfterFailure = false
         
+        print("📱 Initializing app...")
         // Initialize app
         app = XCUIApplication()
         testHelpers = TestHelpers(app: app)
@@ -37,34 +42,54 @@ final class ReactNativeOIDCAppUITests: XCTestCase {
         credentialsScreen = CredentialsScreenPageObject(app: app)
         tokenScreen = TokenScreenPageObject(app: app)
         
+        print("🔐 Loading OAuth credentials...")
         // Load OAuth credentials from environment
         do {
             oauthCredentials = try TestHelpers.loadOAuthCredentials()
-            print("✓ OAuth credentials loaded")
+            print("✅ OAuth credentials loaded: \(oauthCredentials.username)")
         } catch {
+            print("❌ Failed to load OAuth credentials: \(error)")
             XCTFail("Failed to load OAuth credentials: \(error)")
             throw error
         }
+
+        app.launchEnvironment["XCODE_WAIT_FOR_IDLE_TIMEOUT"] = "5"
         
-        // Launch app
+        print("🚀 Launching app...")
+        // Launch app - XCTest will wait for app to idle after launch
         app.launch()
+        print("📲 App launched, waiting for UI elements...")
         
         // Wait for app to fully load
+        print("⏳ Waiting for loginTab button (10s timeout)...")
         let authTab = app.buttons["loginTab"]
         let launched = authTab.waitForExistence(timeout: 10)
+        print("   → loginTab exists: \(authTab.exists), launched: \(launched)")
         XCTAssertTrue(launched, "App should launch successfully")
+        print("✅ App UI loaded")
         
+        print("🔍 Verifying fresh app state...")
         // Verify fresh app state
-        try testHelpers.assertFreshAppState()
+        do {
+            try testHelpers.assertFreshAppState()
+            print("✅ Fresh app state verified")
+        } catch {
+            print("❌ Fresh app state check failed: \(error)")
+            throw error
+        }
+        
+        print("✅ setUp COMPLETE\n")
     }
     
     override func tearDownWithError() throws {
-        // Clear app data after each test
-        try testHelpers.navigateToTab(name: "Login")
-        try testHelpers.tapClear()
-        Thread.sleep(forTimeInterval: 1)
+        print("\n🧹 tearDown START")
+        defer { print("✅ tearDown COMPLETE\n") }
         
-        app = nil
+        print("   Cleaning up app...")
+        // Simply terminate without trying to interact with UI
+        // This avoids hanging if app is in bad state
+        app.terminate()
+        print("   → App terminated")
     }
     
     // MARK: - Test Cases
@@ -78,15 +103,16 @@ final class ReactNativeOIDCAppUITests: XCTestCase {
     /// 4. Authorize (approve) the request
     /// 5. Verify app receives callback and shows authenticated state
     func testOAuthFlow_CompleteLoginWithValidCredentials() throws {
-        print("Starting: testOAuthFlow_CompleteLoginWithValidCredentials")
+        print("\n🧪 TEST #1: testOAuthFlow_CompleteLoginWithValidCredentials")
         
-        // Verify initial not authenticated state
+        print("   Performing login...")
+        try testHelpers.navigateToTab(name: "Login")
         try loginScreen.performLogin(
             oauthHelper: oauthHelper,
             credentials: oauthCredentials
         )
         
-        print("✓ Login successful, app authenticated")
+        print("✅ Test #1 PASSED: Login successful, app authenticated\n")
     }
     
     /// Test Case 2: ASWebAuthenticationSession Dismissed Before Completion
@@ -105,7 +131,7 @@ final class ReactNativeOIDCAppUITests: XCTestCase {
         Thread.sleep(forTimeInterval: 2)
         
         // Verify not authenticated at start
-        try loginScreen.navigateToTab()
+        try testHelpers.navigateToTab(name: "Login")
         XCTAssertTrue(
             loginScreen.verifyAuthStatus(expected: false),
             "Should start in not authenticated state"
@@ -156,7 +182,7 @@ final class ReactNativeOIDCAppUITests: XCTestCase {
         )
         
         // Navigate to Token tab
-        tokenScreen.navigateToTab()
+        try testHelpers.navigateToTab(name: "Token")
         XCTAssertTrue(
             tokenScreen.isTokenDisplayed(),
             "Token details should be displayed"
@@ -166,7 +192,7 @@ final class ReactNativeOIDCAppUITests: XCTestCase {
         tokenScreen.tapRevokeToken()
         
         // Navigate back to Login tab to verify logout
-        try loginScreen.navigateToTab()
+        try testHelpers.navigateToTab(name: "Login")
         
         // Wait for authenticated status to change to not authenticated
         let loggedOut = loginScreen.waitForAuthStatus(expected: false, timeout: 5)
@@ -223,7 +249,7 @@ final class ReactNativeOIDCAppUITests: XCTestCase {
         )
         
         // Navigate to Credentials tab to verify 2 credentials exist
-        credentialsScreen.navigateToTab()
+        try testHelpers.navigateToTab(name: "Creds")
         
         let twoCredentials = credentialsScreen.waitForCredentialCount(
             expected: 2,
@@ -240,11 +266,11 @@ final class ReactNativeOIDCAppUITests: XCTestCase {
         )
         
         // Navigate to Token tab to revoke default credential
-        tokenScreen.navigateToTab()
+        try testHelpers.navigateToTab(name: "Token")
         tokenScreen.tapRevokeToken()
         
         // Navigate back to Credentials tab to verify count decreased
-        credentialsScreen.navigateToTab()
+        try testHelpers.navigateToTab(name: "Creds")
         
         let oneCredential = credentialsScreen.waitForCredentialCount(
             expected: 1,

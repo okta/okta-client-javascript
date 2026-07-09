@@ -26,27 +26,6 @@ class TokenScreenPageObject {
         return app.staticTexts.element(containingText: "expiresAt")
     }
     
-    // MARK: - Navigation
-    
-    /// Navigate to Token tab
-    func navigateToTab() {
-        XCTAssertTrue(
-            tokenTabButton.exists,
-            "Token tab button should exist"
-        )
-        tokenTabButton.tapSafely()
-        
-        // Wait for tab to load
-        Thread.sleep(forTimeInterval: 0.5)
-        
-        // Verify tab title appears
-        let tabTitle = app.staticTexts["Token Details"]
-        XCTAssertTrue(
-            tabTitle.waitForExistence(timeout: 3),
-            "Token Details tab should load"
-        )
-    }
-    
     // MARK: - State Verification
     
     /// Check if token details are displayed
@@ -100,29 +79,5 @@ class TokenScreenPageObject {
         
         // Wait for revocation to complete
         Thread.sleep(forTimeInterval: 1.5)
-    }
-    
-    /// Perform token revocation flow
-    /// - parameter credentialsPageObject: Used to verify credential count changes
-    func performRevocation(credentialsPageObject: CredentialsScreenPageObject) throws {
-        // Get current credential count before revocation
-        let countBefore = credentialsPageObject.getCredentialCount() ?? 0
-        
-        // Revoke the token
-        tapRevokeToken()
-        
-        // Navigate to Credentials tab to verify count decreased
-        credentialsPageObject.navigateToTab()
-        
-        let expectedCount = max(0, countBefore - 1)
-        let countDecreased = credentialsPageObject.waitForCredentialCount(
-            expected: expectedCount,
-            timeout: 5
-        )
-        
-        XCTAssertTrue(
-            countDecreased,
-            "Credential count should decrease from \(countBefore) to \(expectedCount)"
-        )
     }
 }

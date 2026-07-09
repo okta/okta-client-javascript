@@ -222,8 +222,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
       scopes: (json.scope ?? this.configuration.scopes).split(' '),
       ...(acrValues && { acrValues }),
       ...(maxAge && { maxAge }),
-      // TODO: client info
-      // clientSettings: tokenRequest.clientConfiguration.serialize()
+      clientSettings: this.configuration.getOptions()
     };
 
     if (this.configuration.dpop && dpopPairId) {
@@ -274,7 +273,9 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
       // Will throw if invalid
       OAuth2Client.idTokenValidator.validate(token.idToken, new URL(issuer), this.configuration.clientId, {
         // eslint-disable-next-line camelcase
-        supportedAlgs: id_token_signing_alg_values_supported, ...context
+        supportedAlgs: id_token_signing_alg_values_supported,
+        allowHTTP: this.configuration.allowHTTP,
+        ...context
       });
 
       await OAuth2Client.accessTokenValidator.validate(token.accessToken, token.idToken);
