@@ -69,6 +69,11 @@ export default function AuthScreen() {
       setLoading(true);
       setError(null);
       await Credential.clear();
+      await checkAuth();
+    }
+    catch (err) {
+      console.log('CLEAR FAILED', err);
+      throw error;
     }
     finally {
       setLoading(false);

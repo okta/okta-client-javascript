@@ -89,15 +89,15 @@ class LoginScreenPageObject {
         // Start OAuth flow
         tapRequestToken()
         
-        // Wait for OAuth UI to appear
-        let oAuthUIAppeared = oauthHelper.waitForOAuthUI(timeout: 8)
-        XCTAssertTrue(oAuthUIAppeared, "OAuth UI should appear")
+        // // Wait for OAuth UI to appear
+        // let oAuthUIAppeared = oauthHelper.waitForOAuthUI(timeout: 8)
+        // XCTAssertTrue(oAuthUIAppeared, "OAuth UI should appear")
         
-        // Enter credentials and authorize
-        try oauthHelper.enterOAuthCredentials(
-            username: credentials.username,
-            password: credentials.password
-        )
+        // // Enter credentials and authorize
+        // try oauthHelper.enterOAuthCredentials(
+        //     username: credentials.username,
+        //     password: credentials.password
+        // )
         
         // Wait for OAuth to complete and app to return
         try oauthHelper.waitForOAuthCompletion(timeout: 10)

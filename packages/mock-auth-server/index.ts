@@ -32,10 +32,11 @@ const authServer = express.Router();
 authServer.get('/.well-known/openid-configuration', (req: Request, res: Response) => {
   const baseUrl = getHostUrl(req);
   res.json({
-    issuer: path.join(baseUrl, '/'),
+    issuer: path.join(baseUrl, '/oauth2'),
     authorization_endpoint: path.join(baseUrl, '/oauth2/authorize'),
     token_endpoint: path.join(baseUrl, '/oauth2/token'),
     jwks_uri: path.join(baseUrl, '/oauth2/keys'),
+    revocation_endpoint: path.join(baseUrl, '/oauth2/revoke'),
     id_token_signing_alg_values_supported: [ 'RS256' ]
   });
 });
@@ -70,7 +71,7 @@ authServer.post('/token', async (req: Request, res: Response) => {
   }
 
   if (grant_type === 'authorization_code') {
-    const issuer = getHostUrl(req);
+    const issuer = path.join(getHostUrl(req), '/oauth2');
     const transaction = pending[code];
     const { client_id, scope, nonce } = transaction.params;
 
@@ -83,8 +84,12 @@ authServer.post('/token', async (req: Request, res: Response) => {
     res.json(response);
   }
   else if (grant_type === 'foo') {
-    
+
   }
+});
+
+authServer.post('/revoke', (req: Request, res: Response) => {
+  res.send(200);
 });
 
 app.use('/oauth2', authServer);

@@ -57,7 +57,7 @@ class OAuthHelper {
             throw OAuthError.webViewNotAccessible
         }
         
-        // let webView = app.webViews.element
+        let webView = app.webViews.element
         
         // // Attempt to find and fill username field
         // // Note: Safari/system webviews may expose form elements through the accessibility tree
@@ -81,7 +81,7 @@ class OAuthHelper {
         // }
 
         app.typeText(username)
-        app.typeText(XCUIKeyboardKey.enter)
+        app.typeText(XCUIKeyboardKey.enter.rawValue)
 
         Thread.sleep(forTimeInterval: 0.3)
         
@@ -98,7 +98,7 @@ class OAuthHelper {
         // TODO: select password authenticator
 
         app.typeText(password)
-        app.typeText(XCUIKeyboardKey.enter)
+        app.typeText(XCUIKeyboardKey.enter.rawValue)
         
         // Attempt to submit form
         let submitButton = webView.buttons["Sign In"]

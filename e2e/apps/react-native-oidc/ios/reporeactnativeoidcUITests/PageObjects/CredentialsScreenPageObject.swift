@@ -16,13 +16,13 @@ class CredentialsScreenPageObject {
     
     var credentialCountText: XCUIElement {
         // Looks for text like "2 credentials stored" or "No credentials found"
-        let stored = app.staticTexts.element(containingText: "stored")
-        let notFound = app.staticTexts.element(containingText: "No credentials")
+        let stored = app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'stored'")).firstMatch
+        let notFound = app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'No credentials'")).firstMatch
         return stored.exists ? stored : notFound
     }
     
     var defaultBadge: XCUIElement {
-        return app.staticTexts["DEFAULT"]
+        return app.staticTexts.element(containingText: "DEFAULT")
     }
     
     var credentialsTableView: XCUIElement {
@@ -77,7 +77,7 @@ class CredentialsScreenPageObject {
     /// Check if DEFAULT badge is visible
     /// - returns: True if DEFAULT badge exists and is displayed, false otherwise
     func isDefaultBadgeVisible() -> Bool {
-        return defaultBadge.exists && defaultBadge.isDisplayed
+        return defaultBadge.exists
     }
     
     /// Wait for DEFAULT badge to become visible

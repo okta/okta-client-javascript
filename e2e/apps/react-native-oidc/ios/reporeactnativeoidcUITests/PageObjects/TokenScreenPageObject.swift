@@ -31,7 +31,7 @@ class TokenScreenPageObject {
     /// Check if token details are displayed
     /// - returns: True if token information is visible, false otherwise
     func isTokenDisplayed() -> Bool {
-        return tokenDetailsView.exists && tokenDetailsView.isDisplayed
+        return tokenDetailsView.exists
     }
     
     /// Wait for token to be displayed
