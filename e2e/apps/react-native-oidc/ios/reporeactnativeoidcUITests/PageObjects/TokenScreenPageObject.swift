@@ -9,11 +9,7 @@ class TokenScreenPageObject {
     }
     
     // MARK: - Elements
-    
-    var tokenTabButton: XCUIElement {
-        return app.buttons["tokenTab"]
-    }
-    
+
     var revokeTokenButton: XCUIElement {
         return app.buttons["revokeTokenButton"]
     }
@@ -21,26 +17,13 @@ class TokenScreenPageObject {
     var tokenDetailsView: XCUIElement {
         return app.staticTexts.element(containingText: "Token Details")
     }
-    
-    var tokenExpirationText: XCUIElement {
-        return app.staticTexts.element(containingText: "expiresAt")
-    }
-    
+
     // MARK: - State Verification
     
     /// Check if token details are displayed
     /// - returns: True if token information is visible, false otherwise
     func isTokenDisplayed() -> Bool {
         return tokenDetailsView.exists
-    }
-    
-    /// Wait for token to be displayed
-    /// - parameter timeout: Maximum time to wait in seconds
-    /// - returns: True if token appears, false on timeout
-    func waitForTokenDisplay(timeout: TimeInterval = 3) -> Bool {
-        return XCTestWait.waitFor(timeout: timeout) {
-            return self.isTokenDisplayed()
-        }
     }
     
     /// Check if revoke button is accessible (visible and hittable)

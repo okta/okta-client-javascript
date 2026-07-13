@@ -9,11 +9,7 @@ class CredentialsScreenPageObject {
     }
     
     // MARK: - Elements
-    
-    var credentialsTabButton: XCUIElement {
-        return app.buttons["credentialsTab"]
-    }
-    
+
     var credentialCountText: XCUIElement {
         // Looks for text like "2 credentials stored" or "No credentials found"
         let stored = app.staticTexts.containing(NSPredicate(format: "label CONTAINS 'stored'")).firstMatch
@@ -24,11 +20,7 @@ class CredentialsScreenPageObject {
     var defaultBadge: XCUIElement {
         return app.staticTexts.element(containingText: "DEFAULT")
     }
-    
-    var credentialsTableView: XCUIElement {
-        return app.tables.element
-    }
-    
+
     // MARK: - State Verification
     
     /// Get the current credential count from displayed text
@@ -78,28 +70,5 @@ class CredentialsScreenPageObject {
     /// - returns: True if DEFAULT badge exists and is displayed, false otherwise
     func isDefaultBadgeVisible() -> Bool {
         return defaultBadge.exists
-    }
-    
-    /// Wait for DEFAULT badge to become visible
-    /// - parameter timeout: Maximum time to wait in seconds
-    /// - returns: True if badge becomes visible, false on timeout
-    func waitForDefaultBadge(timeout: TimeInterval = 3) -> Bool {
-        return XCTestWait.waitFor(timeout: timeout) {
-            return self.isDefaultBadgeVisible()
-        }
-    }
-    
-    /// Wait for DEFAULT badge to disappear
-    /// - parameter timeout: Maximum time to wait in seconds
-    /// - returns: True if badge disappears, false on timeout
-    func waitForDefaultBadgeToDisappear(timeout: TimeInterval = 3) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        while Date() < deadline {
-            if !isDefaultBadgeVisible() {
-                return true
-            }
-            Thread.sleep(forTimeInterval: 0.1)
-        }
-        return !isDefaultBadgeVisible()
     }
 }

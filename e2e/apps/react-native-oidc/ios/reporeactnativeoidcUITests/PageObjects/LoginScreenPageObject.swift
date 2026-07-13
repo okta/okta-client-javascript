@@ -9,11 +9,7 @@ class LoginScreenPageObject {
     }
     
     // MARK: - Elements
-    
-    var authStatusElement: XCUIElement {
-        return app.staticTexts.element(containingText: "Authenticated")
-    }
-    
+
     var requestTokenButton: XCUIElement {
         return app.buttons["requestTokenButton"]
     }
@@ -25,11 +21,7 @@ class LoginScreenPageObject {
     var clearButton: XCUIElement {
         return app.buttons["clearButton"]
     }
-    
-    var loginTabButton: XCUIElement {
-        return app.buttons["loginTab"]
-    }
-    
+
     // MARK: - State Verification
     
     /// Verify current authentication status
@@ -89,6 +81,11 @@ class LoginScreenPageObject {
         // Start OAuth flow
         tapRequestToken()
         
+        /**
+          NOTE: Test suite is now designed against a mock Authorization Server.
+          This method no longer enters credentials, since `/authorize` requests
+          respond with a 302
+        */
         // // Wait for OAuth UI to appear
         // let oAuthUIAppeared = oauthHelper.waitForOAuthUI(timeout: 8)
         // XCTAssertTrue(oAuthUIAppeared, "OAuth UI should appear")
