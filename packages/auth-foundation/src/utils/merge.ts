@@ -44,6 +44,7 @@ function mergeIntoByIterator<
  * Merges `n` number of {@link !URLSearchParams} instances
  * 
  * @group Utils
+ * @internal
  */
 export function mergeURLSearchParameters(
   target: URLSearchParams,
@@ -60,6 +61,7 @@ export function mergeURLSearchParameters(
  * Merges `n` number of {@link !Headers} instances
  * 
  * @group Utils
+ * @internal
  */
 export function mergeHeaders (
   target: Headers,

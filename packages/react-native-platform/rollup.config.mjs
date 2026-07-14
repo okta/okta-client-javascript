@@ -6,7 +6,7 @@ const base = baseConfig(ts, pkg);
 
 export default {
   ...base,
-  input: 'src/index.ts',
+  input: [base.input, 'src/flows.ts'],
   external: [
     ...Object.keys(pkg.dependencies || {}),
     ...Object.keys(pkg.peerDependencies || {}),

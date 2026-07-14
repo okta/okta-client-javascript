@@ -1,3 +1,9 @@
+/**
+ * @module
+ * @mergeModuleWith Platform
+ */
+
+
 import { PlatformDefaults as FoundationalPlatformDefaults } from '@okta/auth-foundation/internal';
 import { type PlatformDependencies } from '@okta/auth-foundation/core';
 

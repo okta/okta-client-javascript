@@ -1,9 +1,12 @@
 /**
  * Browser Session API for React Native
- * Opens an OAuth flow in a native browser (Safari on iOS, Chrome on Android)
- * Based on the expo-web-browser openAuthSessionAsync API
+ * Opens an OAuth flow in a native browser (Safari on iOS, Chrome on Android).
+ * 
+ * Based on the `expo-web-browser` openAuthSessionAsync API
  *
  * @packageDocumentation
+ * @module
+ * @mergeModuleWith Platform
  */
 
 import { Linking, Platform, AppState } from 'react-native';
@@ -15,6 +18,9 @@ export type * from './types.ts';
 export type { BrowserSessionOptions };
 
 
+/**
+ * @internal
+ */
 export const DEFAULT_OPTIONS: BrowserSessionOptions = {
   ephemeralSession: false
 };
@@ -111,16 +117,24 @@ async function openAuthSessionAndroid (
  *                    (Safari on iOS, SHARE_STATE_OFF on Android). Defaults to false for convenience.
  *
  * @returns A promise that resolves with the result of the browser session
- *          - `{ type: 'success', url: '...' }` - User completed OAuth, returned with callback URL
- *          - `{ type: 'cancel' }` - User closed the browser without completing flow
- *          - `{ type: 'dismiss' }` - Browser was dismissed programmatically
+ * | Result | Description |
+ * | ------ | ------ |
+ * | `{ type: 'success', url: '...' }` | User completed OAuth, returned with callback URL |
+ * | `{ type: 'cancel' }` | User closed the browser without completing flow |
+ * | `{ type: 'dismiss' }` | Browser was dismissed programmatically |
  *
  * @throws Error with code if the operation fails:
- *         - 'invalid_url' - The provided URL is malformed
- *         - 'no_activity' (Android) - Current activity not available
- *         - 'no_window' (iOS) - Key window not found
- *         - 'browser_session_error' - Generic native error
- *         - 'native_module_not_available' - Native module not loaded
+ * | Error | Description |
+ * | ------ | ------ |
+ * | `invalid_url` | The provided URL is malformed |
+ * | `no_activity` (Android) | Current activity not available |
+ * | `no_window` (iOS) | Key window not found |
+ * | `browser_session_error` | Generic native error |
+ * | `native_module_not_available` | Native module not loaded |
+ * 
+ * @remarks
+ * This feature is based on Expo's [`expo-web-browser`](https://docs.expo.dev/versions/latest/sdk/webbrowser/).
+ * Their implementation is more complete and can be used instead.
  *
  * @example
  * ```typescript

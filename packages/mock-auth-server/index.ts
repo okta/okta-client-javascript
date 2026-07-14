@@ -4,14 +4,20 @@ import { shortID } from '@okta/auth-foundation';
 import path from 'node:path';
 import { generateKeyPair } from './crypto.ts';
 import { createTokenResponseMock } from './mocks/token.ts';
+import { requestLogger, errorLogger, logException } from './logger.ts';
 
+process.on('uncaughtException', (err) => {
+  logException(err);
+});
 
 const keyPair = await generateKeyPair();
-console.log(keyPair)
 
 const app = express();
+app.use(requestLogger);
 app.use(express.json()); // for parsing application/json
 app.use(express.urlencoded({ extended: true }));
+app.use(cors());
+
 
 function getHostUrl (req: Request) {
   return path.join(`${req.protocol}://${req.host}`, '/');
@@ -19,13 +25,11 @@ function getHostUrl (req: Request) {
 
 const pending: Record<string, any> = {};
 
-app.use(cors());
-
-app.get('/create-flow', (req: Request, res: Response) => {
-  const params = req.query;
+// app.get('/create-flow', (req: Request, res: Response) => {
+//   const params = req.query;
 
 
-});
+// });
 
 const authServer = express.Router();
 
@@ -83,8 +87,8 @@ authServer.post('/token', async (req: Request, res: Response) => {
 
     res.json(response);
   }
-  else if (grant_type === 'foo') {
-
+  else {
+    console.warn('unknown grant_type');
   }
 });
 
@@ -94,4 +98,10 @@ authServer.post('/revoke', (req: Request, res: Response) => {
 
 app.use('/oauth2', authServer);
 
-app.listen(3030);
+app.use(errorLogger);
+
+app.listen(3030, (err) => {
+  if (!err) {
+    console.log('Started Mock OAuth2 Server');
+  }
+});

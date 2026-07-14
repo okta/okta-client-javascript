@@ -7,7 +7,10 @@ import type { JsonRecord } from '../../types/index.ts';
 
 
 /**
+ * `JWT` claims associated with a `DPoP` proof 
  * @group DPoP
+ * 
+ * @see {@link https://datatracker.ietf.org/doc/html/rfc9449#section-4.2-3 | RFC 9499 - DPoP Proof Claims}
  */
 export interface DPoPClaims extends JsonRecord {
   /**
@@ -37,7 +40,10 @@ export interface DPoPClaims extends JsonRecord {
 }
 
 /**
+ * `JWT` header parameters for a `DPoP` proof
  * @group DPoP
+ * 
+ * @see {@link https://datatracker.ietf.org/doc/html/rfc9449#section-4.2-1 | RFC 9499 - DPoP Proof Header}
  */
 export interface DPoPHeaders {
   alg: 'RS256',
@@ -46,6 +52,7 @@ export interface DPoPHeaders {
 }
 
 /**
+ * Parameters required to generate a `DPoP` proof
  * @group DPoP
  */
 export interface DPoPProofParams {

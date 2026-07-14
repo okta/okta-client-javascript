@@ -1,20 +1,40 @@
 {
-  "extends": "./typedoc.jsonc",
+  "extends": "./typedoc.mjs",
   "entryPoints": [
     "../../../packages/spa-platform/src"
   ],
   "entryPointStrategy": "expand",
   "out": "../../api/spa-platform",
   "excludeReferences": true,
+  "useTsLinkResolution": true,
+  "excludeScopesInPaths": true,
   "externalSymbolLinkMappings": {
     "@okta/auth-foundation": {
-      "Credential": "/api/auth-foundation/Credential/classes/Credential",
-      "TokenOrchestrator.AuthorizeParams": "/api/auth-foundation/TokenOrchestrator/namespaces/TokenOrchestrator/type-aliases/AuthorizeParams",
+      "PlatformDependencies": "/api/auth-foundation/Platform/interfaces/PlatformDependencies/",
+      "Credential": "/api/auth-foundation/Credential/",
+      "Token": "/api/auth-foundation/Token/",
+      "TokenOrchestrator": "/api/auth-foundation/TokenOrchestrator/",
       "*": "/api/auth-foundation"
     },
     "AuthFoundation": {
-      "Credential": "/api/auth-foundation/Credential/classes/Credential",
+      "Platform": "/api/auth-foundation/Platform/",
+      "PlatformDependencies": "/api/auth-foundation/Platform/interfaces/PlatformDependencies/",
+      "Credential": "/api/auth-foundation/Credential/",
+      "Token": "/api/auth-foundation/Token/",
+      "TokenOrchestrator": "/api/auth-foundation/TokenOrchestrator/",
       "*": "/api/auth-foundation"
+    },
+    "@okta/oauth2-flows": {
+      "AuthorizationCodeFlow": "/api/oauth2-flows/AuthorizationCodeFlow/",
+      "AuthorizationCodeFlow.RedirectValues": "/api/oauth2-flows/AuthorizationCodeFlow/interfaces/RedirectValues/",
+      "SessionLogoutFlow": "/api/oauth2-flows/SessionLogoutFlow/",
+      "*": "/api/oauth2-flows"
+    },
+    "OAuth2Flows": {
+      "AuthorizationCodeFlow": "/api/oauth2-flows/AuthorizationCodeFlow/",
+      "AuthorizationCodeFlow.RedirectValues": "/api/oauth2-flows/AuthorizationCodeFlow/interfaces/RedirectValues/",
+      "SessionLogoutFlow": "/api/oauth2-flows/SessionLogoutFlow/",
+      "*": "/api/oauth2-flows"
     }
   }
 }

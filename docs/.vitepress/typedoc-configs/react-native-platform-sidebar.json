@@ -1,0 +1,39 @@
+[
+  {
+    "text": "Platform",
+    "link": "/api/react-native-platform/Platform/",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "openAuthSession",
+        "link": "/api/react-native-platform/Platform/functions/openAuthSession.md"
+      },
+      {
+        "text": "PlatformDefaults",
+        "link": "/api/react-native-platform/Platform/variables/PlatformDefaults.md"
+      }
+    ]
+  },
+  {
+    "text": "OAuth2 Flows",
+    "link": "/api/react-native-platform/Flows/",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "AuthorizationCodeFlow",
+        "link": "/api/react-native-platform/Flows/AuthorizationCodeFlow.md",
+        "collapsed": true,
+        "items": [
+          {
+            "text": "Result",
+            "link": "/api/react-native-platform/Flows/AuthorizationCodeFlow/type-aliases/Result.md"
+          },
+          {
+            "text": "BrowserSignInResult",
+            "link": "/api/react-native-platform/Flows/AuthorizationCodeFlow/type-aliases/BrowserSignInResult.md"
+          }
+        ]
+      }
+    ]
+  }
+]

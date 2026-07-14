@@ -2,6 +2,40 @@
 
 OAuth2 is vast, detailed and complex. There will way to distill OAuth2 in a simple `README`. Instead, here is a glossary of common terms used in the context of OAuth2.
 
+## References
+
+### OAuth 2.0
+
+* [RFC 6749: The OAuth 2.0 Authorization Framework](https://datatracker.ietf.org/doc/html/rfc6749)
+* [RFC 6750: The OAuth 2.0 Authorization Framework: Bearer Token Usage](https://datatracker.ietf.org/doc/html/rfc6750)
+* [RFC 8414: OAuth 2.0 Authorization Server Metadata](https://datatracker.ietf.org/doc/html/rfc8414)
+* [RFC 8252: OAuth 2.0 for Native Apps](https://datatracker.ietf.org/doc/html/rfc8252)
+* [RFC 9207: OAuth 2.0 Authorization Server Issuer Identification](https://datatracker.ietf.org/doc/html/rfc9207)
+* [RFC 7636: Proof Key for Code Exchange by OAuth Public Clients (PKCE)](https://datatracker.ietf.org/doc/html/rfc7636)
+* [RFC 7009: OAuth 2.0 Token Revocation](https://datatracker.ietf.org/doc/html/rfc7009)
+* [RFC 7662: OAuth 2.0 Token Introspection](https://datatracker.ietf.org/doc/html/rfc7662)
+* [RFC 9449: OAuth 2.0 Demonstrating Proof of Possession (DPoP)](https://datatracker.ietf.org/doc/html/rfc9449)
+
+#### Guidance
+
+* [RFC 9700: Best Current Practice for OAuth 2.0 Security](https://datatracker.ietf.org/doc/html/rfc9700)
+* [RFC 6819: OAuth 2.0 Threat Model and Security Considerations](https://datatracker.ietf.org/doc/html/rfc6819)
+
+### JSON Web Specs
+
+* [RFC 7519: JSON Web Token (JWT)](https://datatracker.ietf.org/doc/html/rfc7519)
+* [RFC 7515: JSON Web Signature (JWS)](https://datatracker.ietf.org/doc/html/rfc7515)
+* [RFC 7517: JSON Web Key (JWK)](https://datatracker.ietf.org/doc/html/rfc7517)
+
+### OIDC
+
+* [OpenID Connect (OIDC) Spec](https://openid.net/specs/openid-connect-core-1_0.html)
+* [OpenID Connect (OIDC) Discovery Spec](https://openid.net/specs/openid-connect-discovery-1_0.html)
+
+### HTTP
+
+* [RFC 7235: Hypertext Transfer Protocol (HTTP/1.1): Authentication](https://datatracker.ietf.org/doc/html/rfc7235)
+
 ## Common Terms
 
 * **`Issuer:`** The authorization server (or identity provider) that authenticates users and issues ID tokens.
@@ -32,6 +66,9 @@ OAuth2 is vast, detailed and complex. There will way to distill OAuth2 in a simp
 * **`Refresh Token:`** A credential used to obtain a new access token without re-authenticating the resource owner; typically long-lived.
 
 ## Flows / Grant Types
+
+> [!Tip]
+> Despite the section title, these two words aren't quite synonyms. A **grant type** is a formally spec'd mechanism identified by the `grant_type` parameter sent to the token endpoint (e.g. `authorization_code`, `refresh_token`) — it describes the specific thing being redeemed for a token. A **flow** is the broader, end-to-end journey a client and user go through to get there in the first place, including steps that never touch the token endpoint at all (redirects, consent screens, PKCE, device-code polling, etc.).
 
 * **`Authorization Grant:`** The credential representing the resource owner's authorization; used by the client to obtain an access token.
   * **`Authorization Code:`** A temporary code exchanged for an access token (used in Authorization Code Grant flow).

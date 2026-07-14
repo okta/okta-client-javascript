@@ -1,4 +1,5 @@
 # Consuming Tokens Within an Application
+
 ##### Bridging the gap between user credentials and your application code
 
 ## Overview
@@ -11,14 +12,14 @@ Rather than writing the same token retrieval and validity checks over and over a
 
 ## Introduction to the `TokenOrchestrator` abstract class {#introduction}
 
-The [`TokenOrchestrator`](/api/auth-foundation/TokenOrchestrator/classes/TokenOrchestrator) abstract class aims to be the aforementioned abstraction. It provides a clear pattern for your application behaviors:
+The [`TokenOrchestrator`](/api/auth-foundation/TokenOrchestrator) abstract class aims to be the aforementioned abstraction. It provides a clear pattern for your application behaviors:
 
 * How should new tokens be acquired?
 * How should tokens be stored?
 * How should stored token be retrieved?
 * How should expired tokens be handled?
 
-Abstracting these ubiquitous patterns enables the downstream [Token](/api/auth-foundation/Token/classes/Token) consumers to only concern themselves with _consuming_ the token.
+Abstracting these ubiquitous patterns enables the downstream [Token](/api/auth-foundation/Token) consumers to only concern themselves with _consuming_ the token.
 
 This is best illustrated by an example:
 ```typescript
@@ -33,10 +34,10 @@ const data = await response.json();
 // Do something with data...
 ```
 
-Making an authenticated HTTP request is that simple! The [`TokenOrchestrator`](/api/auth-foundation/TokenOrchestrator/classes/TokenOrchestrator) provides the [`FetchClient`](/api/spa-platform/FetchClient/classes/FetchClient) instance with a token to sign the outgoing request.
+Making an authenticated HTTP request is that simple! The [`TokenOrchestrator`](/api/auth-foundation/TokenOrchestrator) provides the [`FetchClient`](/api/auth-foundation/FetchClient/classes/FetchClient) instance with a token to sign the outgoing request.
 
 ## Included Implementations {#implementations}
-Okta Client JavaScript includes a few implementations of `TokenOrchestrator` to support most common use cases.
+Okta Client JavaScript includes a few implementations of [`TokenOrchestrator`](/api/auth-foundation/TokenOrchestrator) to support most common use cases.
 
 ### Browsers {#impl-browsers}
 
@@ -47,7 +48,7 @@ Okta Client JavaScript includes a few implementations of `TokenOrchestrator` to 
 
 #### Advanced
 
-* `HostOrchestrator` – Delegates all token requests from [`SubApp`](/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/classes/SubApp) (a [`TokenOrchestrator`](/api/auth-foundation/TokenOrchestrator/classes/TokenOrchestrator) implementation) to a centralized [`Host`](/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator/classes/Host) (an abstract class).
+* `HostOrchestrator` – Delegates all token requests from [`SubApp`](/api/spa-platform/Orchestrators/HostOrchestrator/classes/SubApp) (a [`TokenOrchestrator`](/api/auth-foundation/TokenOrchestrator) implementation) to a centralized [`Host`](/api/spa-platform/Orchestrators/HostOrchestrator/classes/HostOrchestrator) (an abstract class).
   * Well suited for large-scale applications, especially those developed by multiple teams.
 
 ### Node.js {#impl-nodejs}
@@ -64,11 +65,11 @@ Coming Soon!
 
 ## See Also
 
-### `abstract class` [`TokenOrchestrator`](/api/auth-foundation/TokenOrchestrator/classes/TokenOrchestrator)
+### `abstract class` [`TokenOrchestrator`](/api/auth-foundation/TokenOrchestrator)
 ##### Bridging the gap between user credentials and your application code 
-### `class` [`AuthorizationCodeFlowOrchestrator`](/api/spa-platform/TokenOrchestrators/classes/AuthorizationCodeFlowOrchestrator)
+### `class` [`AuthorizationCodeFlowOrchestrator`](/api/spa-platform/Orchestrators/AuthorizationCodeFlowOrchestrator/)
 ##### A `TokenOrchestrator` implementation based on Authorization Code Flow
-### `class` [`HostOrchestrator`](/api/spa-platform/TokenOrchestrators/namespaces/HostOrchestrator)
+### `class` [`HostOrchestrator`](/api/spa-platform/Orchestrators/HostOrchestrator/)
 ##### A `TokenOrchestrator` implementation based on a host-delegation pattern
 ### `class` [`FetchClient`](/api/spa-platform/FetchClient/classes/FetchClient)
 ##### A `fetch` wrapper to make authorized requests

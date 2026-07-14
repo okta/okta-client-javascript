@@ -63,7 +63,6 @@ Additionally, [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/
 
 When utilizing __OIDC__ (this cannot be used with only OAuth2), [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow) can be used to terminate both the application's session _and_ the __IDP__ session. This may not be desirable in __SSO__ scenarios, where the __IDP__ is protecting multiple applications. If you're looking to terminate only the application's session, use [`revoke()`](/api/auth-foundation/Credential/classes/Credential#revoke).
 
-<!-- TODO: review this section -->
 While [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow) terminates the __IDP__ session and revokes the corresponding tokens, it will not remove these tokens from storage. Use [`remove()`](/api/auth-foundation/Credential/classes/Credential#remove) before redirecting to ensure a clean state.
 
 ```typescript
@@ -151,3 +150,6 @@ const serviceCredentials = await Credential.find(
 
 ### `class` [`Credential`](/api/auth-foundation/Credential/classes/Credential)
 ###### Convenience object that provides methods and properties for using a user’s authentication tokens.
+
+### `abstract class` [`TokenOrchestrator`](/docs/guides/TokenOrchestrator/)
+###### Bridging the gap between user credentials and your application code.

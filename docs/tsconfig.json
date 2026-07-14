@@ -1,8 +1,10 @@
 {
-  "extends": "@repo/typescript-config/base.json",
+  "extends": "../tooling/typescript-config/base.json",
   "compilerOptions": {
     "lib": [
-      "dom"
+      "DOM",
+      "DOM.Iterable",
+      "ES2022"
     ],
     "isolatedModules": false
   },
@@ -13,6 +15,8 @@
     "../packages/oauth2-flows/src/**/*.ts",
     "../packages/spa-platform/src/**/*.js",
     "../packages/spa-platform/src/**/*.ts",
+    "../packages/react-native-platform/src/**/*.js",
+    "../packages/react-native-platform/src/**/*.ts",
   ],
   "exclude": [
     "*/node_modules",

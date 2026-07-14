@@ -1,5 +1,5 @@
 {
-  "extends": "./typedoc.jsonc",
+  "extends": "./typedoc.mjs",
   "entryPoints": [
     "../../../packages/auth-foundation/src"
   ],
@@ -7,6 +7,7 @@
   "exclude": "../../../packages/auth-foundation/src/internals/**",
   "out": "../../api/auth-foundation",
   "excludeReferences": true,
+  "useTsLinkResolution": true,
   "sidebar": {
     "autoConfiguration": true
   }

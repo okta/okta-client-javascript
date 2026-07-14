@@ -9,7 +9,7 @@ import type { ConfigurationParams } from '../oauth2/configuration.ts';
 import type { OpenIdConfiguration } from './openid.ts';
 
 /**
- * JSON format of an error response from an OAuth2 server
+ * JSON format of an error response returned by authorization server
  * 
  * @group Types
  */
@@ -32,7 +32,6 @@ export interface OAuth2ErrorResponse {
  * 
  * @group Types
  */
-// TODO: move location?
 export function isOAuth2ErrorResponse (input: unknown): input is OAuth2ErrorResponse {
   if (input && typeof input === 'object' && 'error' in input) {
     return true;
@@ -42,7 +41,7 @@ export function isOAuth2ErrorResponse (input: unknown): input is OAuth2ErrorResp
 
 export { OpenIdConfiguration };
 /**
- * Predicate for {@link OpenIdConfiguration}
+ * Type predicate for {@link OpenIdConfiguration}
  * 
  * @group Types
  */
@@ -54,7 +53,7 @@ export function isOpenIdConfiguration (input: unknown): input is OpenIdConfigura
 }
 
 /**
- * Predicate for {@link Core.JWK | JWK}
+ * Type predicate for {@link Core.JWK | JWK}
  * 
  * @group Types
  */
@@ -68,7 +67,7 @@ export function isJWK (input: unknown): input is JWK {
 }
 
 /**
- * Predicate for {@link Core.JWKS | JWKS}
+ * Type predicate for {@link Core.JWKS | JWKS}
  * 
  * @group Types
  */
@@ -128,7 +127,7 @@ export interface APIClientConfiguration {
 export type AcrValues = OktaAcrValues | string | string[];
 
 /**
- * Possible `acr_values` of Okta Authorization Servers
+ * Possible `acr_values` of Okta authorization servers
  * 
  * @group Types
  * 
