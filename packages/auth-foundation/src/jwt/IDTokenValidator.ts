@@ -16,6 +16,7 @@ import { Platform } from '../platform/Platform.ts';
  * @group JWT
  */
 export interface IDTokenValidatorContext {
+  allowHTTP?: boolean;
   nonce?: string;
   maxAge?: number;
   acrValues?: AcrValues;
@@ -82,6 +83,9 @@ export const DefaultIDTokenValidator: IDTokenValidator = {
           throw new JWTError('invalid audience (aud) claim');
 
         case 'scheme':
+          if (context.allowHTTP) {
+            break;
+          }
           if (jwt.issuer) {
             const tokenIssuer = new URL(jwt.issuer);
             if (tokenIssuer.protocol === 'https:') {

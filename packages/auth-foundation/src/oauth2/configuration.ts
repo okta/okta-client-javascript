@@ -128,6 +128,11 @@ export class Configuration extends APIClient.Configuration implements APIClientC
     return matches;
   }
 
+  getOptions (): OAuth2ClientOptions {
+    const { authentication, allowHTTP, syncClockWithAuthorizationServer } = this;
+    return { authentication, allowHTTP, syncClockWithAuthorizationServer };
+  }
+
   toJSON (): JsonRecord {
     const { issuer, discoveryURL, clientId, scopes, authentication, allowHTTP, syncClockWithAuthorizationServer } = this;
     return {

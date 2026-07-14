@@ -13,6 +13,7 @@ import {
   isOAuth2ErrorResponse,
 } from './types/index.ts';
 import type { OAuth2Client } from './oauth2/client.ts';
+import type { OAuth2ClientOptions } from './oauth2/configuration.ts';
 import { OAuth2Error } from './errors/index.ts';
 import { validateURL } from './utils/validators.ts';
 import { shortID } from './crypto/index.ts';
@@ -342,6 +343,7 @@ export namespace Token {
     dpopPairId?: string;
     acrValues?: AcrValues;
     maxAge?: TimeInterval;
+    clientSettings?: OAuth2ClientOptions;
   };
 
   // https://stackoverflow.com/a/54308812
@@ -353,6 +355,7 @@ export namespace Token {
     dpopPairId: undefined,
     acrValues: undefined,
     maxAge: undefined,
+    clientSettings: undefined
   } satisfies Record<(keyof Context), undefined>) as (keyof Context)[];
 
   /**
