@@ -6,7 +6,9 @@
     "predocs:oauth2-flows": "typedoc --options ./.vitepress/typedoc-configs/oauth2-flows.jsonc",
     "predocs:spa-platform": "typedoc --options ./.vitepress/typedoc-configs/spa-platform.jsonc",
     "predocs:react-native-platform": "typedoc --options ./.vitepress/typedoc-configs/react-native-platform.jsonc",
-    "predocs": "yarn predocs:auth-foundation && yarn predocs:oauth2-flows && yarn predocs:spa-platform",
+    "predocs:foundation": "yarn predocs:auth-foundation && yarn predocs:oauth2-flows",
+    "predocs:platform": "yarn predocs:spa-platform && yarn predocs:react-native-platform",
+    "predocs": "yarn predocs:foundation && yarn predocs:platform",
     "docs:dev": "vitepress dev",
     "docs:build": "vitepress build",
     "docs:preview": "vitepress preview"

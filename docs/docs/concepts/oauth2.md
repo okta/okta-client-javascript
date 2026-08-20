@@ -81,5 +81,5 @@ OAuth2 is vast, detailed and complex. There will way to distill OAuth2 in a simp
 
 * **`OpenID Connect (OIDC):`** An identity layer built on top of OAuth2, used to verify a user's identity and obtain basic profile information.
   * **`Single Sign-On (SSO):`** The ability for users to authenticate once and access multiple applications without re-authenticating.
-  * **`Single Logout (SLO):`** A mechanism to log the user out of all connected applications and sessions.
+  * **`Single Logout (SLO):`** A mechanism to log the user out of all connected applications and sessions. See [RP-Initiated Logout](/docs/references/session_logout_flow) for how this SDK implements it.
   * **`UserInfo Endpoint:`** An API endpoint provided by the IdP that returns additional user profile information.

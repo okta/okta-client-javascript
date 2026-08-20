@@ -3,8 +3,8 @@ prev:
   text: OAuth2
   link: /docs/concepts/oauth2
 next:
-  text: Sessions
-  link: /docs/concepts/sessions
+  text: RP-Initiated Logout
+  link: /docs/references/session_logout_flow
 ---
 
 # Authorization Code Flow

@@ -61,9 +61,9 @@ Additionally, [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/
 > [!IMPORTANT]
 > Review [Concepts: Sessions](../concepts/sessions.md) to clarify the differences between session types.
 
-When utilizing __OIDC__ (this cannot be used with only OAuth2), [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow) can be used to terminate both the application's session _and_ the __IDP__ session. This may not be desirable in __SSO__ scenarios, where the __IDP__ is protecting multiple applications. If you're looking to terminate only the application's session, use [`revoke()`](/api/auth-foundation/Credential/classes/Credential#revoke).
+When utilizing __OIDC__ (this cannot be used with only OAuth2), [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow) — see [RP-Initiated Logout](/docs/references/session_logout_flow) — can be used to terminate both the application's session _and_ the __IDP__ session. This may not be desirable in __SSO__ scenarios, where the __IDP__ is protecting multiple applications. If you're looking to terminate only the application's session, use [`revoke()`](/api/auth-foundation/Credential/classes/Credential#revoke).
 
-While [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow) terminates the __IDP__ session and revokes the corresponding tokens, it will not remove these tokens from storage. Use [`remove()`](/api/auth-foundation/Credential/classes/Credential#remove) before redirecting to ensure a clean state.
+[`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow) terminates the __IDP__ session, but it doesn't revoke tokens or remove them from storage — it only builds the `/logout` redirect URL. Use [`revoke()`](/api/auth-foundation/Credential/classes/Credential#revoke) and/or [`remove()`](/api/auth-foundation/Credential/classes/Credential#remove) before redirecting to ensure a clean state.
 
 ```typescript
 const signOutFlow = new SessionLogoutFlow(...);

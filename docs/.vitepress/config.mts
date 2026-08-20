@@ -13,9 +13,14 @@ const pkg = require('../../package.json');
 const minorVersion = pkg.version.split('.').slice(0, -1).join('.');
 
 
+// Only applies to `yarn docs:build` (`NODE_ENV=production`) - a `base` path breaks local dev
+// (`yarn docs:dev`), since the dev server itself isn't served from that subpath.
+const base = process.env.NODE_ENV === 'production' ? '/okta-client-javascript/' : undefined;
+
 // https://vitepress.dev/reference/site-config
 export default withMermaid(
   defineConfig({
+    base,
     title: "Okta Client JavaScript",
     titleTemplate: 'Okta Client JS',
     description: "",
@@ -100,6 +105,10 @@ export default withMermaid(
               {
                 text: 'Authorization Code Flow',
                 link: '/docs/references/authorization_code_flow.md'
+              },
+              {
+                text: 'RP-Initiated (Session) Logout',
+                link: '/docs/references/session_logout_flow.md'
               },
             ]
           },
