@@ -32,7 +32,7 @@ sequenceDiagram
 
     Client->>Client: Generate state, resolve id_token_hint from current session
     Client->>User: Redirect to end_session_endpoint (id_token_hint, post_logout_redirect_uri, state)
-    User->>AS: GET end_session_endpoint
+    User->>AS: POST (or GET) end_session_endpoint
     AS->>AS: Validate id_token_hint, terminate IDP session
     AS->>User: Redirect to post_logout_redirect_uri (state)
     User->>Client: Client parses state from url (post_logout_redirect_uri)
