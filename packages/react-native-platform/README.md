@@ -182,4 +182,4 @@ TODO - guidance about browser login difficult to test in e2e scenarios
 
 ## Samples
 
-A complete Expo-based sample can be found at `e2e/apps/react-native-oidc`
+A complete Expo-based sample can be found at [`e2e/apps/react-native-oidc`](https://github.com/okta/okta-client-javascript/tree/master/e2e/apps/react-native-oidc)

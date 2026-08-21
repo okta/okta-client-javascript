@@ -6,13 +6,18 @@ outline: [2, 3]
 
 Platform library for browser environments for the Okta Client JavaScript ecosystem
 
-Complete documentation at TODO
-
 ## Requirements
 
-This library depends on the [`WebCrypto API`](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API) which is supported by modern browsers
+This library is written for modern JavaScript environments, targeting MDN's [Baseline 2022](https://developer.mozilla.org/en-US/docs/Glossary/Baseline/Compatibility) feature sets. Most notably utilizing the following APIs:
 
-> This library does not support Internet Explorer
+* [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+* [WebCrypto API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Crypto_API)
+* [Web Locks API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Locks_API)
+* [IndexedDB](https://developer.mozilla.org/en-US/docs/Web/API/IndexedDB_API)
+* [Broadcast Channel API](https://developer.mozilla.org/en-US/docs/Web/API/Broadcast_Channel_API)
+
+> [!NOTE]
+> This library does not support Internet Explorer out-of-the-box. Polyfills will be required.
 
 ## Installation
 
@@ -38,9 +43,7 @@ To perform OAuth2 flows (like Authorization Code flow) a peer dependency of `@ok
 
 ### `isModernBrowser`
 
-TODO
-
-TODO
+This library requires modern JavaScript APIs (see [requirements](#requirements)). This utility method returns `true` when the required APIs are available.
 
 ## Platform
 

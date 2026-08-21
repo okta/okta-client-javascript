@@ -1,7 +1,7 @@
 [
   {
     "text": "Platform",
-    "link": "/api/spa-platform/platform/",
+    "link": "/api/spa-platform/Platform/",
     "collapsed": true,
     "items": [
       {
@@ -10,54 +10,54 @@
       },
       {
         "text": "Credential",
-        "link": "/api/spa-platform/platform/classes/Credential.md"
+        "link": "/api/spa-platform/Platform/classes/Credential.md"
       },
       {
         "text": "clearDPoPKeyPairs",
-        "link": "/api/spa-platform/platform/functions/clearDPoPKeyPairs.md"
+        "link": "/api/spa-platform/Platform/functions/clearDPoPKeyPairs.md"
       },
       {
         "text": "isModernBrowser",
-        "link": "/api/spa-platform/platform/functions/isModernBrowser.md"
+        "link": "/api/spa-platform/Platform/functions/isModernBrowser.md"
       }
     ]
   },
   {
     "text": "OAuth2 Flows",
-    "link": "/api/spa-platform/flows/",
+    "link": "/api/spa-platform/Flows/",
     "collapsed": true,
     "items": [
       {
         "text": "AuthorizationCodeFlow",
-        "link": "/api/spa-platform/flows/AuthorizationCodeFlow/",
+        "link": "/api/spa-platform/Flows/AuthorizationCodeFlow/",
         "collapsed": true,
         "items": [
           {
             "text": "RedirectValues",
-            "link": "/api/spa-platform/flows/AuthorizationCodeFlow/interfaces/RedirectValues.md"
+            "link": "/api/spa-platform/Flows/AuthorizationCodeFlow/interfaces/RedirectValues.md"
           },
           {
             "text": "Result",
-            "link": "/api/spa-platform/flows/AuthorizationCodeFlow/type-aliases/Result.md"
+            "link": "/api/spa-platform/Flows/AuthorizationCodeFlow/type-aliases/Result.md"
           },
           {
             "text": "Context",
-            "link": "/api/spa-platform/flows/AuthorizationCodeFlow/interfaces/Context.md"
+            "link": "/api/spa-platform/Flows/AuthorizationCodeFlow/interfaces/Context.md"
           },
           {
             "text": "PopupResult",
-            "link": "/api/spa-platform/flows/AuthorizationCodeFlow/type-aliases/PopupResult.md"
+            "link": "/api/spa-platform/Flows/AuthorizationCodeFlow/type-aliases/PopupResult.md"
           }
         ]
       },
       {
         "text": "SessionLogoutFlow",
-        "link": "/api/spa-platform/flows/SessionLogoutFlow/",
+        "link": "/api/spa-platform/Flows/SessionLogoutFlow/",
         "collapsed": true,
         "items": [
           {
             "text": "PostRedirectOptions",
-            "link": "/api/spa-platform/flows/SessionLogoutFlow/type-aliases/PostRedirectOptions"
+            "link": "/api/spa-platform/Flows/SessionLogoutFlow/type-aliases/PostRedirectOptions"
           }
         ]
       }

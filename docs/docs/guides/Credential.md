@@ -82,8 +82,8 @@ When a token is no longer needed (usually when a user chooses to sign out), it's
 >
 > The default behavior of [`revoke()`](/api/auth-foundation/Credential/classes/Credential#revoke) will revoke both tokens (resulting in two network requests).
 
-<!-- > [!TIP]
-> An invalidated access token can still be used to authenticate against a __Resource Server__ unless the server verifies incoming tokens against the Authorization Server via [introspect](/api/auth-foundation/OAuth2/classes/OAuth2Client#introspect). // TODO: finish this thought -->
+> [!TIP]
+> An invalidated access token can still be used to authenticate against a __Resource Server__ unless the server verifies incoming tokens against the Authorization Server via [introspect](/api/auth-foundation/OAuth2/classes/OAuth2Client#introspect).A __Resource Server__ that only checks a JWT's signature and expiration has no way to learn a token was revoked — it will keep accepting it until it naturally expires. See [Concepts: Sessions](../concepts/sessions.md#terminating-token-based-sessions) for the tradeoffs between these two validation strategies.
 
 ### When to use `remove` {#use-remove}
 
