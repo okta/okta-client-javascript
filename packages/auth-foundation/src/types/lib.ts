@@ -18,10 +18,18 @@ export type Nullify<T> = { [K in keyof T]: null };
 /** @internal */
 export type Neverify<T> = { [K in keyof T]: never };
 
+/**
+ * Primitive types representable in `JSON` objects.
+ */
 export type JsonPrimitive = string | number | boolean | null;
+/**
+ * Type respresentation of a `JSON` object.
+ */
 export type JsonRecord = { [key in string]?: Json | JsonPrimitive };
-export type JsonArray = (Json | JsonPrimitive)[];
-export type Json = JsonRecord | JsonArray;
+/**
+ * Type respresentation of a `JSON` object or array.
+ */
+export type Json = JsonRecord | (Json | JsonPrimitive)[];
 
 
 /** @internal */
@@ -47,6 +55,9 @@ export type TimeInterval = number;
  * Number of seconds elapsed since midnight, Jan 1, 1970 UTC
  */
 export type EpochTimestamp = number;
+/**
+ * Alias for `number`, but more descriptive
+ */
 export type Seconds = number;
 
 /**
@@ -75,6 +86,9 @@ export interface JSONSerializable {
   toJSON (): JsonRecord;
 }
 
+/**
+ * @inline
+ */
 export type RequestAuthorizerInit = RequestInit & { dpopNonce?: string };
 /**
  * An entity which can sign an outgoing {@link !Request}, minimally adding a `Authorization` header

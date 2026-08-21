@@ -61,10 +61,9 @@ Additionally, [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/
 > [!IMPORTANT]
 > Review [Concepts: Sessions](../concepts/sessions.md) to clarify the differences between session types.
 
-When utilizing __OIDC__ (this cannot be used with only OAuth2), [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow) can be used to terminate both the application's session _and_ the __IDP__ session. This may not be desirable in __SSO__ scenarios, where the __IDP__ is protecting multiple applications. If you're looking to terminate only the application's session, use [`revoke()`](/api/auth-foundation/Credential/classes/Credential#revoke).
+When utilizing __OIDC__ (this cannot be used with only OAuth2), [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow) — see [RP-Initiated Logout](/docs/references/session_logout_flow) — can be used to terminate both the application's session _and_ the __IDP__ session. This may not be desirable in __SSO__ scenarios, where the __IDP__ is protecting multiple applications. If you're looking to terminate only the application's session, use [`revoke()`](/api/auth-foundation/Credential/classes/Credential#revoke).
 
-<!-- TODO: review this section -->
-While [`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow) terminates the __IDP__ session and revokes the corresponding tokens, it will not remove these tokens from storage. Use [`remove()`](/api/auth-foundation/Credential/classes/Credential#remove) before redirecting to ensure a clean state.
+[`SessionLogoutFlow`](/api/oauth2-flows/SessionLogoutFlow/classes/SessionLogoutFlow) terminates the __IDP__ session, but it doesn't revoke tokens or remove them from storage — it only builds the `/logout` redirect URL. Use [`revoke()`](/api/auth-foundation/Credential/classes/Credential#revoke) and/or [`remove()`](/api/auth-foundation/Credential/classes/Credential#remove) before redirecting to ensure a clean state.
 
 ```typescript
 const signOutFlow = new SessionLogoutFlow(...);
@@ -83,8 +82,8 @@ When a token is no longer needed (usually when a user chooses to sign out), it's
 >
 > The default behavior of [`revoke()`](/api/auth-foundation/Credential/classes/Credential#revoke) will revoke both tokens (resulting in two network requests).
 
-<!-- > [!TIP]
-> An invalidated access token can still be used to authenticate against a __Resource Server__ unless the server verifies incoming tokens against the Authorization Server via [introspect](/api/auth-foundation/OAuth2/classes/OAuth2Client#introspect). // TODO: finish this thought -->
+> [!TIP]
+> An invalidated access token can still be used to authenticate against a __Resource Server__ unless the server verifies incoming tokens against the Authorization Server via [introspect](/api/auth-foundation/OAuth2/classes/OAuth2Client#introspect).A __Resource Server__ that only checks a JWT's signature and expiration has no way to learn a token was revoked — it will keep accepting it until it naturally expires. See [Concepts: Sessions](../concepts/sessions.md#terminating-token-based-sessions) for the tradeoffs between these two validation strategies.
 
 ### When to use `remove` {#use-remove}
 
@@ -151,3 +150,6 @@ const serviceCredentials = await Credential.find(
 
 ### `class` [`Credential`](/api/auth-foundation/Credential/classes/Credential)
 ###### Convenience object that provides methods and properties for using a user’s authentication tokens.
+
+### `abstract class` [`TokenOrchestrator`](/docs/guides/TokenOrchestrator/)
+###### Bridging the gap between user credentials and your application code.

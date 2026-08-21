@@ -6,14 +6,16 @@ import {
   DPoPSigningAuthorityImpl
 } from '../oauth2/dpop/index.ts';
 
-
+/** @internal */
 const TimeCoordinator = new DefaultTimeCoordinator();
 export { TimeCoordinator };     // exporting directly because it's likely other platforms will leverage this impl
 
+/** @internal */
 const DPoPSigningAuthority = new DPoPSigningAuthorityImpl(
   new DPoPStorage.MemoryStore()
 );
 
+/** @internal */
 const DefaultDPoPNonceCache = new DPoPNonceCache.InMemoryCache();
 
 

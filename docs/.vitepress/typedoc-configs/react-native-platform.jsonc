@@ -1,0 +1,46 @@
+{
+  "extends": "./typedoc.mjs",
+  "entryPoints": [
+    "../../../packages/react-native-platform/src"
+  ],
+  "entryPointStrategy": "expand",
+  "out": "../../api/react-native-platform",
+  "excludeReferences": true,
+  "sidebar": {
+    "autoConfiguration": true
+  },
+  "useTsLinkResolution": true,
+  "excludeScopesInPaths": true,
+  "externalSymbolLinkMappings": {
+    "@okta/auth-foundation": {
+      "PlatformDependencies": "/api/auth-foundation/Platform/interfaces/PlatformDependencies/",
+      "Credential": "/api/auth-foundation/Credential/",
+      "Token": "/api/auth-foundation/Token/",
+      "TokenOrchestrator": "/api/auth-foundation/TokenOrchestrator/",
+      "*": "/api/auth-foundation"
+    },
+    "AuthFoundation": {
+      "Platform": "/api/auth-foundation/Platform/",
+      "PlatformDependencies": "/api/auth-foundation/Platform/interfaces/PlatformDependencies/",
+      "Credential": "/api/auth-foundation/Credential/",
+      "Token": "/api/auth-foundation/Token/",
+      "TokenOrchestrator": "/api/auth-foundation/TokenOrchestrator/",
+      "*": "/api/auth-foundation"
+    },
+    "@okta/oauth2-flows": {
+      "AuthorizationCodeFlow": "/api/oauth2-flows/AuthorizationCodeFlow/",
+      "AuthorizationCodeFlow.RedirectValues": "/api/oauth2-flows/AuthorizationCodeFlow/interfaces/RedirectValues/",
+      "SessionLogoutFlow": "/api/oauth2-flows/SessionLogoutFlow/",
+      "*": "/api/oauth2-flows"
+    },
+    "OAuth2Flows": {
+      "AuthorizationCodeFlow": "/api/oauth2-flows/AuthorizationCodeFlow/",
+      "AuthorizationCodeFlow.RedirectValues": "/api/oauth2-flows/AuthorizationCodeFlow/interfaces/RedirectValues/",
+      "SessionLogoutFlow": "/api/oauth2-flows/SessionLogoutFlow/",
+      "*": "/api/oauth2-flows"
+    },
+    "@okta/react-native-webcrypto-bridge": {
+      "*": "/api/auth-foundation"
+    }
+  }
+}

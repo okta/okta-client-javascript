@@ -1,20 +1,28 @@
 {
-  "extends": "./typedoc.jsonc",
+  "extends": "./typedoc.mjs",
   "entryPoints": [
     "../../../packages/oauth2-flows/src"
   ],
   "entryPointStrategy": "expand",
-  // "entryPoints": [
-  //   "../../../packages/oauth2-flows/src/index.ts"
-  // ],
-  // "router": "member",
-  // "plugin": ["../plugins/mergeNamespace.mjs"],
-
   "out": "../../api/oauth2-flows",
   "excludeReferences": true,
   "sidebar": {
     "autoConfiguration": false
   },
   "useTsLinkResolution": true,
-  "excludeScopesInPaths": true
+  "excludeScopesInPaths": true,
+  "externalSymbolLinkMappings": {
+    "@okta/auth-foundation": {
+      "*": "/api/auth-foundation"
+    },
+    "AuthFoundation": {
+      "Core.EventEmitter": "/api/auth-foundation/Core/classes/EventEmitter/",
+      "Core.EventEmitter.on": "/api/auth-foundation/Core/classes/EventEmitter/#on",
+      "Core.EventEmitter.off": "/api/auth-foundation/Core/classes/EventEmitter/#off",
+      "OAuth2.OAuth2Client": "/api/auth-foundation/OAuth2/OAuth2Client/",
+      "OAuth2.OAuth2Client.Configuration.ConfigurationParams": "/api/auth-foundation/OAuth2/interfaces/ConfigurationParams",
+      "Networking.APIClient": "/api/auth-foundation/Networking/APIClient",
+      "*": "/api/auth-foundation"
+    }
+  }
 }

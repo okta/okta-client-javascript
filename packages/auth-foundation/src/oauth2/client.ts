@@ -1,5 +1,21 @@
 /**
  * @module OAuth2
+ * 
+ * @groupDescription DPoP
+ * Defined in {@link https://datatracker.ietf.org/doc/html/rfc9449 | RFC 9449}, Demonstrating Proof of Possession (DPoP)
+ * is a **significant** security improvement which binds OAuth2 tokens to a private/public key pair. The private key is only
+ * accessible to the requesting client. Any resource server (or `refresh_token` grant) requests made with bound tokens are
+ * required to be signed by the private key. Any requests which attempt to use bound tokens without a valid signature will be
+ * rejected. This results in a significantly improved security posture against token theft-based attacks, as tokens are nearly
+ * useless without access to the private key they are bound to.
+ * 
+ * @groupDescription PKCE
+ * Defined in {@link https://datatracker.ietf.org/doc/html/rfc7636 | RFC 7636}, Proof Key for Code Exchange (PKCE) helps protect
+ * authorization codes (returned as the query paramter `code`) when performing `Authorization Code Flow`. 
+ * The client generates a cryptographically-random string and hashes it (the challenge). Both the challenge andhashing algorithm are 
+ * provided to the authorization server as parameters to `/authorize`. When the client receives the `code` from the authorization server, 
+ * it must provide a `code_verifier`, the orginial pre-hashed string when the `code` is exchanged for tokens. The token exchange will fail 
+ * if an incorrect verifier is provided.
  */
 
 /* eslint max-depth: [2, 4] */
@@ -35,15 +51,16 @@ import { Platform } from '../platform/Platform.ts';
 
 /**
  * @group OAuth2Client
+ * @typeParam E - Map of all events fired from {@link APIClient.emitter}
  * @noInheritDoc
  */
 export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> extends APIClient<E> {
   /**
-   * @group Customizations
+   * @group Validators
    */
   public static readonly idTokenValidator: IDTokenValidator = DefaultIDTokenValidator;
   /**
-   * @group Customizations
+   * @group Validators
    */
   public static readonly accessTokenValidator: TokenHashValidator = DefaultTokenHashValidator('accessToken');
 
@@ -54,7 +71,15 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   /** @internal */
   protected readonly queue: PromiseQueue = new PromiseQueue();
 
+  /**
+   * Possible events: {@link OAuth2Client.Events}
+   */
   readonly emitter: EventEmitter<E> = new EventEmitter();
+  /**
+   * Configuration of client
+   * 
+   * @remarks 
+   */
   readonly configuration: OAuth2Client.Configuration;
 
   constructor (params: ConfigurationParams | OAuth2Client.Configuration) {
@@ -97,6 +122,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     return this.signTokenRequestWithDPoP(request);
   }
 
+  /** @internal */
   protected async signTokenRequestWithDPoP (request: APIRequest, nonce?: string): Promise<void> {
     const { dpopPairId } = request.context;
     // dpop nonce may not be available for this request (undefined), this is expected
@@ -104,6 +130,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     await Platform.DPoPSigningAuthority.sign(request, { keyPairId: dpopPairId, nonce: dpopNonce });
   }
 
+  /** @internal */
   protected async processResponse(response: Response, request: APIRequest): Promise<void> {
     await super.processResponse(response, request);
 
@@ -146,7 +173,10 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /**
-   * Retrieves the Authorization Server's OpenID configuration
+   * Retrieves the uthorization server's OpenID configuration
+   * 
+   * @see
+   * {@link https://datatracker.ietf.org/doc/html/rfc8414#section-3 | RFC 8414: Obtaining Authorization Server Metadata}
    */
   public async openIdConfiguration (options: OAuth2Client.GetJsonOptions = {}): Promise<OpenIdConfiguration> {
     const url = this.configuration.discoveryURL;
@@ -159,7 +189,10 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /**
-   * Retrieves the Authorization Server's {@link Core.JWKS | JWKS} key configuration
+   * Retrieves authorization server's `jwks_uri` endpoint.
+   * Resulting {@link Core.JWKS | JWKS} are used to perform `id_token` validation
+   * 
+   * @see {@link https://datatracker.ietf.org/doc/html/rfc8414#section-2 | RFC 8414 - Authorization Server Metadata}
    */
   public async jwks (options: OAuth2Client.GetJsonOptions = {}): Promise<JWKS> {
     const openIdConfig = await this.openIdConfiguration(options);
@@ -222,8 +255,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
       scopes: (json.scope ?? this.configuration.scopes).split(' '),
       ...(acrValues && { acrValues }),
       ...(maxAge && { maxAge }),
-      // TODO: client info
-      // clientSettings: tokenRequest.clientConfiguration.serialize()
+      clientSettings: this.configuration.getOptions()
     };
 
     if (this.configuration.dpop && dpopPairId) {
@@ -274,7 +306,9 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
       // Will throw if invalid
       OAuth2Client.idTokenValidator.validate(token.idToken, new URL(issuer), this.configuration.clientId, {
         // eslint-disable-next-line camelcase
-        supportedAlgs: id_token_signing_alg_values_supported, ...context
+        supportedAlgs: id_token_signing_alg_values_supported,
+        allowHTTP: this.configuration.allowHTTP,
+        ...context
       });
 
       await OAuth2Client.accessTokenValidator.validate(token.accessToken, token.idToken);
@@ -307,7 +341,11 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /**
-   * Attempts to exchange, and verify, a token from the provided request
+   * Attempts a `token_endpoint` request. If the request is sucessful, the resulting tokens are validated
+   * 
+   * @see
+   * * {@link https://datatracker.ietf.org/doc/html/rfc8414#section-2 | RFC 8414 - Authorization Server Metadata}
+   * * {@link https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation | OIDC 1.0 - ID Token Validation}
    */
   public async exchange (request: Token.TokenRequest): Promise<Token | OAuth2ErrorResponse> {
     const context: OAuth2Client.TokenRequestContext = {};
@@ -329,7 +367,12 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /**
-   * Attempts to refresh the provided token, using the {@link Token.Token.refreshToken | refreshToken} if it is available
+   * Attempts to refresh the provided token, using the {@link Token.refreshToken | refreshToken}
+   * 
+   * @remarks
+   * Requires `offline_access` to a scope in the orginial authentication request
+   * 
+   * @see {@link https://datatracker.ietf.org/doc/html/rfc6749#section-6 | RFC 6749 - Refreshing an Access Token}
    */
   public async refresh (token: Token, scopes?: string[]): Promise<Token | OAuth2ErrorResponse> {
     if (!token.refreshToken) {
@@ -367,14 +410,11 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /** @internal */
-  // TODO: use clientSettings
   /* eslint max-statements: [2, 28] */
   protected async performRefresh (token: Token, scopes?: string[]) {
     if (!token.refreshToken) {
       return { error: `Missing token: refreshToken` };
     }
-
-    // TODO: use clientSettings
 
     this.emitter.emit('token_will_refresh', { token });
 
@@ -444,7 +484,14 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /**
-   * Attempts to revoke the provided token
+   * Attempts a `revocation_endpoint` request with the provided {@link Token}
+   * @param token - The token to be revoked
+   * @param type - Possible values:<br/>
+   *   * `'ALL'` - revokes both the `access_token` and `refresh_token`.<br/>
+   *   * `'ACCESS'` - revokes **only** the `access_token`.<br/>
+   *   * `'REFRESH'` - revokes **only** the `refresh_token`.
+   * 
+   * @see {@link https://datatracker.ietf.org/doc/html/rfc7009 | RFC 7009 - OAuth 2.0 Token Revocation }
    */
   public async revoke (token: Token, type: Token.RevokeType): Promise<void | OAuth2ErrorResponse> {
     if (type === 'ALL') {
@@ -510,7 +557,9 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /**
-   * Introspects the provided token information
+   * Attempts an `introspection_endpoint` request with the provided {@link Token}
+   * 
+   * @see {@link https://datatracker.ietf.org/doc/html/rfc7662 | RFC 7662 - OAuth 2.0 Token Introspection }
    */
   public async introspect (token: Token, kind: Token.Kind): Promise<Token.IntrospectResponse | OAuth2ErrorResponse> {
     const openIdConfiguration = await this.openIdConfiguration();
@@ -533,7 +582,13 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /**
-   * Fetches the {@link UserInfo} associated with the provided token
+   * Attempts an `userinfo_endpoint` request with the provided {@link Token}
+   * 
+   * @remarks
+   * The user profile returned by this method will vary based on user's profle data and organization settings
+   * @inlineType UserInfo
+   * 
+   * @see {@link https://openid.net/specs/openid-connect-core-1_0.html#UserInfo | OIDC 1.0 - UserInfo Endpoint}
    */
   public async userInfo (token: Token): Promise<UserInfo | OAuth2ErrorResponse> {
     const openIdConfiguration = await this.openIdConfiguration();
@@ -559,8 +614,23 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
  * @group OAuth2Client
  */
 export namespace OAuth2Client {
-  export class Configuration extends ConfigurationConstructor {}
+  /** @reexport */
+  export const Configuration = ConfigurationConstructor;
+  export type Configuration = InstanceType<typeof ConfigurationConstructor>;
 
+  /**
+   * @interface
+   * Map of events fired from {@link OAuth2Client.emitter}
+   * 
+   * @example
+   * ```ts
+   * // key = Event name
+   * // value = Event Type
+   * client.emitter.on('will_send', ({ request }) => {
+   *   console.log(request.url.href);
+   * });
+   * ```
+   */
   export type Events = {
     /**
      * Triggered when a token refresh attempt begins
@@ -584,6 +654,15 @@ export namespace OAuth2Client {
     skipCache?: boolean;
   };
 
+  /**
+   * When a client has the incorrect time, all DPoP JWTs signed by the client will be rejected by the
+   * authorization or resource server because the JWT's claims cannot be validated. This method checks
+   * server responses for this specific error condition.
+   * 
+   * @remarks
+   * This method has only been tested against Okta authorization servers. Different IDPs may use a
+   * different `error_description`.
+   */
   export function isDPoPProofClockSkewError (error: OAuth2ErrorResponse) {
     return error.error === 'invalid_dpop_proof' && (
       error.error_description === 'The DPoP proof JWT is issued in the future.' ||

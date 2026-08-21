@@ -16,23 +16,28 @@ export type { DPoPHeaders, DPoPClaims, DPoPProofParams };
 
 
 /**
+ * A Platform-level singleton for performing `DPoP` operations. The {@link DPoPSigningAuthority} is
+ * reasonable for mangaging `DPoP` key pairs and generate `DPoP` proofs for outgoing {@link !Request}s
  * @group DPoP
- * 
  */
 export interface DPoPSigningAuthority {
   createDPoPKeyPair: () => Promise<string>;
   deleteDPoPKeyPair: (keyPairId: string) => Promise<void>;
   clearDPoPKeyPairs: () => Promise<void>;
+  /**
+   * Generates a `DPoP` proof for the provided {@link !Request} and writes the `dpop` request header.
+   * 
+   * @see {@link https://datatracker.ietf.org/doc/html/rfc9449#section-4 | RFC 9449 - DPoP Proof JWTs}
+   */
   sign: (request: Request, params: Omit<DPoPProofParams, 'request'>) => Promise<Request>;
 }
 
 /**
- * @internal
- * @group DPoP
  * Default implementation of a DPoP Signing Authority.
  * Signs outgoing network requests with a dpop proof (private key JWT) as well as
  * creates, stores and retrieves the Crypto Key Pairs necessary for the signing operation
- *
+ * @group DPoP
+ * @internal
  */
 export class DPoPSigningAuthorityImpl implements DPoPSigningAuthority {
   constructor (private readonly store: DPoPStorage) {}
@@ -133,7 +138,7 @@ export class DPoPSigningAuthorityImpl implements DPoPSigningAuthority {
    * Signs an outgoing network requests with a DPoP proof
    * @param request - outgoing network request to be sign with a DPoP proof
    * @param params - the required component necessary to generate the DPoP proof
-   * @returns 
+   * @returns The provided {@link !Request} with an append `dpop` header
    */
   async sign (request: Request, params: Omit<DPoPProofParams, 'request'>) {
     const proof = await this.generateDPoPProof({ request, ...params });

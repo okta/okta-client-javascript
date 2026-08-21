@@ -9,20 +9,55 @@ import { JWTError } from '../errors/index.ts';
 import { buf, b64u } from '../crypto/index.ts';
 
 /**
+ * Defines properties of a JSON Web Key
  * @group JWT
+ * 
+ * @remarks
+ * Currently only `RSA`/`RS256` are supported.
+ * 
+ * @see
+ * * {@link https://datatracker.ietf.org/doc/html/rfc7517#section-4 | RFC 7517 - JSON Web Key (JWK) Format}
  */
 export interface JWK extends JsonWebKey {
+  /**
+   * Key Type
+   * @see {@link https://datatracker.ietf.org/doc/html/rfc7517#section-4.1 | RFC 7517 - "kty" (Key Type) Parameter}
+   */
+  kty: 'RSA'
+  /**
+   * Algorithm
+   * @see {@link https://datatracker.ietf.org/doc/html/rfc7517#section-4.4 | RFC 7517 - "alg" (Algorithm) Parameter}
+   */
   alg: JWK.Algorithm;
+  /**
+   * Key ID
+   * @see {@link https://datatracker.ietf.org/doc/html/rfc7517#section-4.5 | RFC 7517 - "kid" (Key ID) Parameter}
+   */
   kid: string;
+  /**
+   * "Use" (public key use)
+   * @remarks
+   * According to RFC 7517, `sig` and `enc` are defined, but any value may be used.
+   * @see {@link https://datatracker.ietf.org/doc/html/rfc7517#section-4.2 | RFC 7517 - "use" (Public Key Use) Parameter}
+   */
+  use?: 'sig' | 'enc' | string;
+
 }
 
 /**
+ * Alias for `JWK[]`.
  * @group JWT
  */
 export type JWKS = JWK[];
 
 /**
+ * Verifies the signature of a {@link JWT} signed by a {@link JWK}.
+ * @remarks
+ * Accepts a {@link JWKS} (aka `JWK[]`) to ease use with the results of a `jwks_uri` request.
  * @group JWT
+ * @see
+ * * {@link https://datatracker.ietf.org/doc/html/rfc7519| RFC 7519 - JSON Web Token (JWT)}
+ * * {@link https://datatracker.ietf.org/doc/html/rfc7517| RFC 7517 - JSON Web Key (JWK)}
  */
 export type JWKValidator = {
   validate: (token: JWT, keySet: JWKS) => Promise<boolean>;
@@ -64,6 +99,7 @@ export const DefaultJWKValidator: JWKValidator = {
 };
 
 /**
+ * {@inheritDoc JWK}
  * @group JWT
  */
 export namespace JWK {

@@ -1,8 +1,15 @@
+/**
+ * @packageDocumentation
+ * @internal
+ */
+
 import type { JsonRecord } from '@okta/auth-foundation/core';
 import type { TransactionStorage } from '@okta/oauth2-flows';
 import { LocalStorageCache } from '../utils/LocalStorageCache.ts';
 
-
+/**
+ * @internal
+ */
 export class BrowserTransactionStorage implements TransactionStorage {
   // increment this value if breaking changes to the JSON structure is required
   // allows the opportunity for transformers to be implemented

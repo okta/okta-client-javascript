@@ -1,6 +1,8 @@
 /**
- * @module
- * @mergeModuleWith Platform
+ * @packageDocumentation
+ * @internal
+ * 
+ * Does not differ enough from base class to require further documentation
  */
 
 import {
@@ -17,7 +19,11 @@ import { SynchronizedResult } from '../utils/SynchronizedResult.ts';
 /**
  * Browser-specific implementation of {@link OAuth2Client}
  * 
+ * @remarks
+ * Utilizies {@link SynchronizedResult} to prevent race conditions when using refresh tokens.
+ * 
  * @group OAuth2Client
+ * @internal
  */
 export class OAuth2Client extends OAuth2ClientBase {
 

@@ -2,7 +2,10 @@ import type { BroadcastChannelLike } from '../types/index.ts';
 import { shortID } from '../crypto/index.ts';
 import { AuthSdkError } from '../errors/AuthSdkError.ts';
 
-/** @useDeclaredType */
+/** 
+ * @useDeclaredType
+ * @inline
+ */
 type TypeMap = Record<string, any>;
 
 /** @internal */

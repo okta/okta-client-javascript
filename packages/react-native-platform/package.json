@@ -17,7 +17,6 @@
     "./LICENSE",
     "./dist",
     "./ios/Sources",
-    "./ios/Package.swift",
     "./android",
     "./cpp",
     "*.md",
@@ -29,6 +28,14 @@
     ".": {
       "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js"
+    },
+    "./core": {
+      "types": "./dist/types/core.d.ts",
+      "import": "./dist/esm/core.js"
+    },
+    "./flows": {
+      "types": "./dist/types/flows.d.ts",
+      "import": "./dist/esm/flows.js"
     },
     "./package.json": "./package.json"
   },
@@ -52,13 +59,17 @@
     "@okta/auth-foundation": "*",
     "@okta/oauth2-flows": "*"
   },
+  "peerDependenciesMeta": {
+    "@okta/oauth2-flows": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@repo/eslint-config": "*",
     "@repo/rollup-config": "*",
     "@repo/typescript-config": "*",
     "@okta/auth-foundation": "*",
     "@okta/oauth2-flows": "*",
-    "@okta/react-native-webcrypto-bridge": "*",
     "@types/react": "^19.2.14",
     "eslint": "^8.56.0",
     "jest": "^29.7.0",

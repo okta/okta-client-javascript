@@ -6,6 +6,7 @@
 import { DPoPError } from '../../errors/index.ts';
 
 /**
+ * A simple storage interface for `DPoP` key pairs
  * @group DPoP
  */
 export interface DPoPStorage {

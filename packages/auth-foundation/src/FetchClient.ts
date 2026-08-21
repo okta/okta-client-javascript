@@ -10,11 +10,17 @@ import { pause } from './utils/index.ts';
 
 
 /**
- * Wrapper around [fetch](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) to perform authenticated requests
- * to a resource server
- *
- * The provided {@link TokenOrchestrator} is used to retrieve {@link Token}s which match the criteria passed in via
- * {@link TokenOrchestrator.AuthorizeParams}, like `issuer`, `client` and `scopes`. Once a valid {@link Token} is found, the request is made
+ * Wrapper around {@link !fetch} to perform authenticated requests to a resource server. The provided {@link TokenOrchestrator}
+ * is used to source {@link Token}s to sign the outgoing requests.
+ * 
+ * Out-of-the-box Features:
+ * * `Bearer` and `DPoP` authentication
+ * * Step-up authentication retry
+ * * Automatic `401` and `429` retry
+ * 
+ * @typeParam E - Map of all events fired from `FetchClient.emitter`
+ * 
+ * @noInheritDoc
  */
 export class FetchClient<E extends APIClient.Events = APIClient.Events> extends APIClient<E> {
 
@@ -26,12 +32,17 @@ export class FetchClient<E extends APIClient.Events = APIClient.Events> extends 
   }
 
   /**
-   * default options
+   * Default options provided to each request
    */
   defaultRequestOptions: APIClient.RequestOptions = { authorizeRequest: true };
 
-  // Resource servers return a 401 with www-authenticate and dpop-nonce headers
-  // https://datatracker.ietf.org/doc/html/rfc9449#section-9
+
+  /**
+   * Resource servers return a 401 with www-authenticate and dpop-nonce headers
+   * https://datatracker.ietf.org/doc/html/rfc9449#section-9
+   * 
+   * @internal
+   */
   protected async checkForDPoPNonceErrorResponse (response: Response): Promise<string | undefined> {
     const wwwAuthenticate = response.headers.get('www-authenticate');
     if (response.status === 401 && wwwAuthenticate) {
@@ -46,11 +57,13 @@ export class FetchClient<E extends APIClient.Events = APIClient.Events> extends 
     }
   }
 
+  /** @internal */
   protected async prepareDPoPNonceRetry(request: APIRequest, nonce: string): Promise<void> {
     request.context.dpopNonce = nonce;
     // super.send() will sign call .authorize()
   }
 
+  /** @internal */
   protected async prepareAcrStepUpRetry (response: Response, request: APIRequest, error: WWWAuth.WWWAuthenticateError) {
     const params = {
       ...(request.context ?? {}),
@@ -61,6 +74,7 @@ export class FetchClient<E extends APIClient.Events = APIClient.Events> extends 
     Object.assign(request.context, params);
   }
 
+  /** @internal */
   protected async processErrorResponse (response: Response, request: APIRequest): Promise<Response> {
     const res = await super.processErrorResponse(response, request);
     if (response !== res) {
@@ -85,6 +99,7 @@ export class FetchClient<E extends APIClient.Events = APIClient.Events> extends 
     return response;
   }
 
+  /** @internal */
   protected async prepare401Retry (response: Response, request: APIRequest) {
     // acr_value step up retry
     const wwwAuthError = WWWAuth.parse(response);
@@ -95,15 +110,20 @@ export class FetchClient<E extends APIClient.Events = APIClient.Events> extends 
     // super.send() will sign call .authorize()
   }
 
+  /** @internal */
   protected async prepare429Retry (response: Response, request: APIRequest) {
     await pause(this.getRetryDelay(response, request));
   }
 
+  /** @internal */
   protected async authorize (request: APIRequest): Promise<void> {
     const { authParams, rest: { dpopNonce } } = TokenOrchestrator.extractAuthParams(request.context);
     await this.orchestrator.authorize(request, {...authParams, dpopNonce });
   }
 
+  /**
+   * Delegates request signing to {@link TokenOrchestrator.authorize}, then sends requests via the {@link !fetch} provided.
+   */
   public async fetch (
     input: string | URL | Request,
     init: TokenOrchestrator.AuthorizeParams & RequestInit & Partial<APIClient.RequestOptions> = {}

@@ -48,6 +48,8 @@ export class MyFetchClient extends FetchClient {
 
 ## See Also
 
-### `abstract class` [`APIClient`](/api/auth-foundation/Core/classes/APIClient)
-### `abstract class` [`TokenOrchestrator`](/api/auth-foundation/TokenOrchestrator/classes/TokenOrchestrator)
-##### Bridging the gap between user credentials and your application code
+### `class` [`APIClient`](/docs/guides/FetchClient)
+##### A `fetch` wrapper to make authorized requests.
+
+### `abstract class` [`TokenOrchestrator`](/docs/guides/TokenOrchestrator/)
+##### Bridging the gap between user credentials and your application code.

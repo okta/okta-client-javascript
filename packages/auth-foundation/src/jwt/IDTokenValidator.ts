@@ -13,9 +13,12 @@ import { Platform } from '../platform/Platform.ts';
 
 
 /**
+ * Contextual data, usually from the `/authorize` request, which resulted in an ID token
+ * needed to validate said `ID Token`
  * @group JWT
  */
 export interface IDTokenValidatorContext {
+  allowHTTP?: boolean;
   nonce?: string;
   maxAge?: number;
   acrValues?: AcrValues;
@@ -23,20 +26,60 @@ export interface IDTokenValidatorContext {
 }
 
 /**
+ * Performs ID token validation, conforming to {@link https://openid.net/specs/openid-connect-core-1_0.html | OIDC Spec}
+ * 
+ * A default implementation is provided by this library. To override, set `OAuth2Client.idTokenValidator`
+ * ```ts
+ * const customValidator: IDTokenValidator = { ... };
+ * OAuth2Client.idTokenValidator = customValidator;
+ * ```
+ * 
+ * @see
+ * * {@link https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation | OIDC Spec: ID Token Validation}
+ * 
  * @group JWT
  */
 export interface IDTokenValidator {
+  /** Defines a grace period for when performing time-based validations */
   issuedAtGraceInterval: number;
+  /**
+   * By convention, a list of all validation checks performed within {@link IDTokenValidator.validate}.
+   * 
+   * See {@link IDTokenValidator.validate} for more details.
+   */
   checks: IDTokenValidator.ValidationCheck[];
 
+  /**
+   * Validates ID tokens by performing a series of checks, listed by name in {@link IDTokenValidator.checks}
+   * 
+   * @param token - The ID token to be validated
+   * @param issuer - The issuer (URL) from which the ID token was issued from
+   * @param clientId - The `client_id` from which the ID token was issued from
+   * @param context - Additional context needed to validate the ID token
+   * @throws {@link Core.JWTError | JWTError} if a validation check fails
+   * 
+   * @remarks
+   * By design, {@link IDTokenValidator.checks} is a list of all validation checks performed within {@link IDTokenValidator.validate}.
+   * This is done to simplify disabling a specific check (as seen the example below). This is not a requirement however. 
+   * If a custom {@link IDTokenValidator} is provided, the `validate` does not need to utilize this pattern.
+   * 
+   * @example
+   * How to disable a specific validation check
+   * ```ts
+   * const currentChecks = OAuth2Client.idTokenValidator.checks;
+   * OAuth2Client.idTokenValidator.checks = currentChecks.filter(check !== 'expirationTime');
+   * // the 'expirationTime' validation check will now be skipped
+   * ```
+   * 
+   * @see
+   * * {@link https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation | OIDC Spec: ID Token Validation}
+   */
   validate: (token: JWT, issuer: URL, clientId: string, context?: IDTokenValidatorContext) => void;
 }
 
 /**
+ * {@inheritDoc IDTokenValidator}
  * @group JWT
- *
- * @remarks
- * https://openid.net/specs/openid-connect-core-1_0-final.html#IDToken
  */
 export namespace IDTokenValidator {
 
@@ -82,6 +125,9 @@ export const DefaultIDTokenValidator: IDTokenValidator = {
           throw new JWTError('invalid audience (aud) claim');
 
         case 'scheme':
+          if (context.allowHTTP) {
+            break;
+          }
           if (jwt.issuer) {
             const tokenIssuer = new URL(jwt.issuer);
             if (tokenIssuer.protocol === 'https:') {
