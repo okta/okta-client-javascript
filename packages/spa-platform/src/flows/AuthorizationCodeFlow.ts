@@ -70,6 +70,10 @@ AuthTransaction.storage = new BrowserTransactionStorage();
  */
 export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
 
+  resume (redirectUri: string | URL | URLSearchParams = window.location.href)  {
+    return super.resume(redirectUri);
+  }
+
   /**
    * Performs a browser full-page redirect to the `Authorization Server` `/authorize` endpoint.
    * Once authentication is successful, the user will be redirected back to the provided `redirectUri`

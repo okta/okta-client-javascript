@@ -3,8 +3,8 @@ prev:
   text: Authorization Code Flow
   link: /docs/references/authorization_code_flow
 next:
-  text: Sessions
-  link: /docs/concepts/sessions
+  text: Native to Web SSO
+  link: /docs/references/native_to_web_sso
 ---
 
 # RP-Initiated Logout

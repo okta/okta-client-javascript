@@ -110,6 +110,10 @@ export default withMermaid(
                 text: 'RP-Initiated (Session) Logout',
                 link: '/docs/references/session_logout_flow.md'
               },
+              {
+                text: 'Native to Web SSO',
+                link: '/docs/references/native_to_web_sso.md'
+              },
             ]
           },
         ],
