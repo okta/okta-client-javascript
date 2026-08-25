@@ -267,6 +267,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
       expiresIn: json.expires_in,
       accessToken: json.access_token,
       refreshToken: json.refresh_token,
+      issuedTokenType: json.issued_token_type,
       scopes: json.scope,
       context: tokenContext
     };
@@ -289,6 +290,13 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     keySet: JWKS,
     token: Token
   ): Promise<Token | OAuth2ErrorResponse> {
+    // Token Exchange (RFC 8693) responses will return a property "access_token", but are not required 
+    // to be OAuth2 tokens ("access_token" is used for historical reasons). Therefore bypass token
+    // validation, as it should only be performed on OAuth2 tokens.
+    if (token.tokenType === 'N_A') {
+      return token;
+    }
+
     if (this.configuration.dpop && token.tokenType !== 'DPoP') {
       throw new TokenError(`'${token.tokenType}' token received when DPoP expected`);
     }

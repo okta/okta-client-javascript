@@ -94,17 +94,17 @@ export type OAuth2Params = {
 
 /**
  * Possible values of `grant_type` for a `/token` request
- * 
+ *
  * @group Types
  */
-export type GrantType = 'authorization_code' | 'refresh_token';
+export type GrantType = 'authorization_code' | 'refresh_token' | 'urn:ietf:params:oauth:grant-type:token-exchange';
 
 /**
  * Possible values of `token_type` from a `/token` response
  * 
  * @group Types
  */
-export type TokenType = 'Bearer' | 'DPoP';
+export type TokenType = 'Bearer' | 'DPoP' | 'N_A';    // N_A is returned in interclient sso exchanges
 
 /**
  * Possible values of {@link OAuth2.Configuration.authentication} property.
