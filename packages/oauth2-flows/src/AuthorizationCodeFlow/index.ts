@@ -25,6 +25,7 @@ import {
   AuthenticationFlowError
 } from '../AuthenticationFlow.ts';
 import { AuthTransaction } from '../AuthTransaction.ts';
+import { parseOAuth2Callback } from '../utils/parseOAuth2Callback.ts';
 
 
 /**
@@ -103,34 +104,6 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
     super.reset();
     this.context = null;
     this.authorizeUrl = null;
-  }
-
-  /** @internal */
-  protected parseAuthorizationCode (url: URL | URLSearchParams): AuthorizationCodeFlow.RedirectValues | OAuth2ErrorResponse {
-    const params = url instanceof URL ? url.searchParams : url;
-
-    const error = getSearchParam(params, 'error');
-    if (error) {
-      return {
-        error,
-        errorDescription: getSearchParam(params, 'error_description'),
-        errorUri: getSearchParam(params, 'error_uri'),
-      };
-    }
-
-    const code = getSearchParam(params, 'code');
-    const state = getSearchParam(params, 'state');
-
-    if (!code) {
-      throw new AuthenticationFlowError('Failed to parse `code` from redirect url');
-    }
-    if (!state) {
-      throw new AuthenticationFlowError('Failed to parse `state` from redirect url');
-    }
-
-    // TODO: compare to expected state, can this be done?
-
-    return { code, state };
   }
 
   /** @internal */
@@ -257,7 +230,7 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
     try {
       const callbackUrl = typeof redirectUri === 'string' ? new URL(redirectUri) : redirectUri;
 
-      const values = this.parseAuthorizationCode(callbackUrl);
+      const values = parseOAuth2Callback(callbackUrl);
       if (isOAuth2ErrorResponse(values)) {
         throw new OAuth2Error(values);
       }
