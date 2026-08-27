@@ -1,4 +1,5 @@
 import {
+  type Token,
   Credential,
   OAuth2Client,
   clearDPoPKeyPairs,
@@ -6,7 +7,11 @@ import {
   type JsonRecord,
   isOAuth2ErrorResponse,
 } from '@okta/spa-platform';
-import { AuthorizationCodeFlow, SessionLogoutFlow } from '@okta/spa-platform/flows';
+import {
+  AuthorizationCodeFlow,
+  SessionLogoutFlow,
+  InterclientAccessExchangeFlow
+} from '@okta/spa-platform/flows';
 
 
 const ADMIN_SPA_REFRESH_TOKEN_TAG = 'admin-spa:mordor-token';
@@ -56,7 +61,9 @@ export async function handleAuthorizationCodeFlowResponse () {
 
     await Credential.store(token, [ADMIN_SPA_REFRESH_TOKEN_TAG]);
 
-    return context.originalUri;
+    // `.path` handles InterclientAccessExchangeFlow
+    // `.originalUri` handles standard web auth flow
+    return context.path ?? context.originalUri;
   }
   catch (err) {
     console.log(err);
@@ -86,6 +93,14 @@ export async function handleAcrStepUp (acrValues: AcrValues, maxAge: number = 1)
 
   // store the new morder token
   return await Credential.store(token, [ADMIN_SPA_REFRESH_TOKEN_TAG]);
+}
+
+const interclientAccessFlow = new InterclientAccessExchangeFlow(client, { redirectUri: `${window.location.origin}/native/sso` });
+
+// Bootstrap leg — called when the WebView first lands on `/native/sso?token=...&path=...`.
+// Redirects to the Authorization Server and never resolves (see `PerformNativeHandoff`).
+export async function performInterclientHandoff (interclientToken: string, path?: string) {
+  return InterclientAccessExchangeFlow.PerformNativeHandoff(interclientAccessFlow, { interclientToken, path });
 }
 
 export const signOutFlow = new SessionLogoutFlow(client, {
