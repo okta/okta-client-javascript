@@ -17,8 +17,16 @@ export class AuthSdkError extends Error {
    */
   context: JsonRecord = {};
 
-  constructor (message?: string, options?: ErrorOptions & { context?: JsonRecord }) {
+  /**
+   * A logical grouping associated with specific errors
+   */
+  code?: string;
+
+  constructor (message?: string, options?: ErrorOptions & { context?: JsonRecord, code?: string }) {
     super(message, options);
     this.context = options?.context ?? {};
+    if (options?.code) {
+      this.code = options.code;
+    }
   }
 }

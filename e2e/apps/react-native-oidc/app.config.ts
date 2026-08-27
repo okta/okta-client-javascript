@@ -26,7 +26,8 @@ export default ({ config }: ConfigContext) => ({
   },
   newArchEnabled: true,
   "android": {
-    "package": "com.anonymous.reporeactnativeoidc"
+    "package": "com.anonymous.reporeactnativeoidc",
+    "usesCleartextTraffic": true
   },
   "ios": {
     "bundleIdentifier": "com.anonymous.reporeactnativeoidc"

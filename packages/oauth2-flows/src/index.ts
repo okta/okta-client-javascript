@@ -19,4 +19,3 @@ export * from './AuthorizationCodeFlow/index.ts';
 export * from './SessionLogoutFlow/index.ts';
 export * from './TokenExchangeFlow/index.ts';
 export * from './AuthTransaction.ts';
-export * from './utils/index.ts';

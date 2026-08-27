@@ -1,9 +1,11 @@
 import {
+  type Token,
   Credential,
   OAuth2Client,
   clearDPoPKeyPairs,
   AuthorizationCodeFlow,
   SessionLogoutFlow,
+  InterclientAccessExchangeFlow,
   type AcrValues,
   type JsonRecord,
   isOAuth2ErrorResponse,
@@ -57,7 +59,9 @@ export async function handleAuthorizationCodeFlowResponse () {
 
     await Credential.store(token, [ADMIN_SPA_REFRESH_TOKEN_TAG]);
 
-    return context.originalUri;
+    // `.path` handles InterclientAccessExchangeFlow
+    // `.originalUri` handles standard web auth flow
+    return context.path ?? context.originalUri;
   }
   catch (err) {
     console.log(err);
@@ -87,6 +91,14 @@ export async function handleAcrStepUp (acrValues: AcrValues, maxAge: number = 1)
 
   // store the new morder token
   return await Credential.store(token, [ADMIN_SPA_REFRESH_TOKEN_TAG]);
+}
+
+const interclientAccessFlow = new InterclientAccessExchangeFlow(client, { redirectUri: `${window.location.origin}/native/sso` });
+
+// Bootstrap leg — called when the WebView first lands on `/native/sso?token=...&path=...`.
+// Redirects to the Authorization Server and never resolves (see `PerformNativeHandoff`).
+export async function performInterclientHandoff (interclientToken: string, path?: string) {
+  return InterclientAccessExchangeFlow.PerformNativeHandoff(interclientAccessFlow, { interclientToken, path });
 }
 
 export const signOutFlow = new SessionLogoutFlow(client, {

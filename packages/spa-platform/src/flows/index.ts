@@ -19,4 +19,4 @@
 
 export * from './AuthorizationCodeFlow.ts';
 export * from './SessionLogoutFlow.ts';
-export * from './InterclientAccessFlow.ts';
+export * from './InterclientAccessExchangeFlow.ts';
