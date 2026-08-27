@@ -5,6 +5,7 @@ import { App } from './App';
 import { AppShell } from '@/component/AppShell';
 import { LoginCallback } from '@/component/LoginCallback';
 import { LogoutCallback } from '@/component/LogoutCallback';
+import { InterclientAccessCallback } from '@/component/InterclientAccessCallback';
 import { Messages } from '@/component/Messages';
 import { Embedded } from '@/component/Embedded';
 
@@ -25,6 +26,10 @@ export const router = createBrowserRouter([
       {
         path: '/logout',
         element: <LogoutCallback />
+      },
+      {
+        path: '/native/sso',
+        element: <InterclientAccessCallback />
       },
       {
         path: '/',
