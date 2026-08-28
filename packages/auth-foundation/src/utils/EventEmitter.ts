@@ -8,6 +8,8 @@ type EventMap = {
 };
 type EventListener<T> = T extends void ? () => void : (event: T) => void;
 
+type EventListenerOptions = { signal: AbortSignal }
+
 /**
  * @group EventEmitter
  */
@@ -21,12 +23,27 @@ export interface Emitter<E extends EventMap> {
  */
 export class EventEmitter<Events extends EventMap> {
   listeners: { [K in keyof Events]?: Array<EventListener<Events[K]>> } = {};
+  signals: WeakMap<Function, { signal: AbortSignal, abortHandler: () => void }> = new WeakMap();
 
-  on<K extends keyof Events>(eventName: K, handler: EventListener<Events[K]>): this {
+  on<K extends keyof Events>(
+    eventName: K,
+    handler: EventListener<Events[K]>,
+    options: Partial<EventListenerOptions> = {}
+  ): this {
+    const { signal } = options;
+
     if (!this.listeners[eventName]) {
       this.listeners[eventName] = [];
     }
     this.listeners[eventName]!.push(handler);
+
+    if (signal && !signal?.aborted) {
+      const abortHandler = () => {
+        this.off(eventName, handler);
+      };
+      signal.addEventListener('abort', abortHandler, { once: true });
+      this.signals.set(handler, { signal, abortHandler });
+    }
 
     return this;
   }
@@ -37,12 +54,23 @@ export class EventEmitter<Events extends EventMap> {
     }
 
     if (!handler) {
+      this.listeners[eventName]?.forEach(h => this.detachSignal(h));
       delete this.listeners[eventName];
       return this;
     }
 
+    this.detachSignal(handler);
     this.listeners[eventName] = this.listeners[eventName]?.filter(l => l !== handler);
     return this;
+  }
+
+  /** @internal removes the `AbortSignal` registration (if any) associated with `handler` */
+  protected detachSignal (handler: EventListener<any>): void {
+    const entry = this.signals.get(handler);
+    if (entry) {
+      entry.signal.removeEventListener('abort', entry.abortHandler);
+      this.signals.delete(handler);
+    }
   }
 
   emit<K extends keyof Events>(eventName: K, data: Events[K]): void;
@@ -81,5 +109,10 @@ export class EventEmitter<Events extends EventMap> {
       }) as EventListener<FromEvents[typeof event]>;    // casting required because `EventListener` also accepts `void`
       emitter.on(event, handler);
     }
+  }
+
+  clear (): this {
+    (Object.keys(this.listeners) as (keyof Events)[]).forEach(eventName => this.off(eventName));
+    return this;
   }
 }

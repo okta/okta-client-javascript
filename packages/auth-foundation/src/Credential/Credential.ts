@@ -49,7 +49,12 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
 
     // unbinds listeners of previous coordinator
     ( [
-        'credential_added', 'credential_removed', 'credential_refreshed', 'default_changed', 'cleared'
+        'credential_added',
+        'credential_removed',
+        'credential_refreshed',
+        'default_changed',
+        'cleared',
+        'metadata_updated'
       ] satisfies (keyof CredentialCoordinatorEvents)[]
     ).forEach((evt) => previousCoordinator.emitter.off(evt));
 
@@ -62,6 +67,10 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
 
     this.coordinator.emitter.on('credential_removed', ({ id }) => {
       this.emitter.emit('credential_removed', { id });
+    });
+
+    this.coordinator.emitter.on('metadata_updated', async ({ id, metadata }) => {
+      this.emitter.emit('tags_updated', { id, tags: metadata?.tags ?? [] });
     });
   }
 
@@ -86,6 +95,9 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
 
   /** @internal */
   protected _userInfo: UserInfo | undefined;
+
+  /** @internal */
+  #controller = new AbortController();
 
   /**
    * @remarks
@@ -322,6 +334,14 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   /////// public instances methods ///////
 
   /**
+   * Cleans up resourece associated with the Credential instance to prevent leaks.
+   */
+  public dispose () {
+    this.oauth2.dispose();
+    this.#controller.abort('dispose');
+  }
+
+  /**
    * Updates tags associated with {@link Credential}
    * 
    * @remarks
@@ -383,14 +403,7 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
     this.oauth2.emitter.on('token_did_refresh', ({ token }) => {
       if (Token.isEqual(token, this.token)) { return; }
       this.token = token;
-    });
-
-    // bind listener to Derived class instance
-    this.coordinator.emitter.on('metadata_updated', async ({ id, metadata }) => {
-      if (this.id === id) {
-        Credential.emitter.emit('tags_updated', { id, tags: metadata?.tags ?? [] });
-      }
-    });
+    }, { signal: this.#controller.signal });
   }
 
   // oauth2 methods

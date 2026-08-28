@@ -146,6 +146,14 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /**
+   * Cleans up resourece associated with the client instance to prevent leaks.
+   */
+  public dispose () {
+    super.dispose();
+    this.#httpCache.clear();
+  }
+
+  /**
    * Retrieves the Authorization Server's OpenID configuration
    */
   public async openIdConfiguration (options: OAuth2Client.GetJsonOptions = {}): Promise<OpenIdConfiguration> {

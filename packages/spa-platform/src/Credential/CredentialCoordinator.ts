@@ -30,7 +30,7 @@ import { isFirefox } from '../utils/UserAgent.ts';
 function log (...args: any[]) {}
 
 
-type BroadcastMessage = { eventName: string, id: string, source: string, value: JsonRecord };
+type BroadcastMessage = { eventName: string, id: string, source: string };
 
 /**
  * Browser-specific implementation of {@link CredentialCoordinator}
@@ -50,8 +50,7 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
     this.registerTabListeners();
 
     this.emitter.on('credential_refreshed', ({ credential }) => {
-      const { token } = credential;
-      this.broadcast('credential_refreshed', { id: token.id, value: token.toJSON() });
+      this.broadcast('credential_refreshed', { id: credential.id });
     });
   }
 
@@ -73,7 +72,7 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
     super.tokenStorage = tokenStorage;
 
     this.tokenStorage.emitter.on('token_added', ({ token }) => {
-      this.broadcast('credential_added', { id: token.id, value: token.toJSON() });
+      this.broadcast('credential_added', { id: token.id });
     });
 
     this.tokenStorage.emitter.on('token_removed', ({ id }) => {
@@ -112,7 +111,7 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
         await pause(50);
       }
 
-      const { eventName, id, value, source } = event.data as BroadcastMessage;
+      const { eventName, id, source } = event.data as BroadcastMessage;
       log('tab sync event: ', { eventName, source });
       if (source == this.id) {
         return;   // do not listen to messages broadcasted by this instance
@@ -136,44 +135,47 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
           this.emitter.emit('metadata_updated', { storage: this.tokenStorage, id, metadata });
         }
       }
+      else if (eventName === 'credential_removed') {
+        log('removal');
+        this.credentialDataSource.remove(id);
+
+        // // removal messages never carried a token body; `id` is all `hasCredential` actually reads
+        // const token = new Token({ id } as TokenInit);
+        // if (this.credentialDataSource.hasCredential(token)) {
+        //   this.credentialDataSource.remove(id);
+        // }
+        // else {
+        //   // TODO: is this needed?
+        //   // ensures removal event is broadcast, regardless of the DataSource knowledge of the Credential
+        //   this.emitter.emit('credential_removed', { dataSource: this.credentialDataSource, id });
+        // }
+      }
       else {
-        // TODO: confirm client info
-        const token = new Token({ ...value, id } as TokenInit);
-
-        if (eventName === 'credential_removed') {
-          log('removal');
-          if (this.credentialDataSource.hasCredential(token)) {
-            this.credentialDataSource.remove(id);
-          }
-          else {
-            // TODO: is this needed?
-            // ensures removal event is broadcast, regardless of the DataSource knowledge of the Credential
-            this.emitter.emit('credential_removed', { dataSource: this.credentialDataSource, id });
-          }
+        const token = await this.tokenStorage.get(id);
+        if (!token) {
+          return;
         }
-        else {
-          const credential = this.credentialDataSource.credentialFor(token);
 
-          if (eventName === 'credential_added') {
-            log('added');
-            // credentialDataSource.credentialFor() call above handles updating credDataSrc
+        const credential = this.credentialDataSource.credentialFor(token);
+
+        if (eventName === 'credential_added') {
+          log('added');
+          // credentialDataSource.credentialFor() call above handles updating credDataSrc
+        }
+        else if (eventName === 'credential_refreshed') {
+          log('refresh');
+
+          // when a Credential is updated in a separate tab, the Token read from storage
+          // may differ from cred.token via DataSource, so the update should continue.
+          // If the tokens are equal, this means this DataSource has already updated the token to the new value
+          if (Token.isEqual(token, credential.token)) {
+            log('token has already been updated');
+            return;
           }
-          else if (eventName === 'credential_refreshed') {
-            log('refresh');
 
-            // when a Credential is updated in a separate tab, the Token passed via the broadcast
-            // may differ from cred.token via DataSource, so the update should continue.
-            // If the tokens are equal, this means this DataSource has already updated the token to the new value
-            // eslint-disable-next-line max-depth
-            if (Token.isEqual(token, credential.token)) {
-              log('token has already been updated');
-              return;
-            }
-
-            // @ts-expect-error - Credential `set token()` is a private setter to avoid exposing this to the public API
-            credential.token = token;
-            this.emitter.emit('credential_refreshed', { credential });
-          }
+          // @ts-expect-error - Credential `set token()` is a private setter to avoid exposing this to the public API
+          credential.token = token;
+          this.emitter.emit('credential_refreshed', { credential });
         }
       }
 

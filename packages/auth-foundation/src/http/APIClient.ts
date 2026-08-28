@@ -57,6 +57,14 @@ export abstract class APIClient<E extends APIClient.Events = APIClient.Events> {
   }
 
   /**
+   * Cleans up resourece associated with the client instance to prevent leaks.
+   */
+  public dispose () {
+    this.emitter.clear();
+    this.interceptors.splice(0, this.interceptors.length);  // clears array in place
+  }
+
+  /**
    * Registers an {@link APIClient.RequestInterceptor} on the {@link APIClient}
    * 
    * @example

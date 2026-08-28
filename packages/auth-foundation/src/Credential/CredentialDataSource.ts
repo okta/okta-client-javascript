@@ -101,12 +101,14 @@ export class DefaultCredentialDataSource implements CredentialDataSource {
     const id = typeof cred === 'string' ? cred : cred.id;
     if (this.credentials.has(id)) {
       const cred = this.credentials.get(id)!;
+      cred.dispose();
       this.credentials.delete(id);
       this.emitter.emit('credential_removed', { dataSource: this, id: cred.id });
     }
   }
 
   public clear () {
+    this.credentials.forEach(cred => cred.dispose());
     this.credentials.clear();
   }
 
