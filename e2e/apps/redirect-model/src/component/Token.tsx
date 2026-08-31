@@ -12,22 +12,27 @@ export function Token ({ credential }: { credential: Credential }) {
     Credential.on('credential_refreshed', handler);
 
     const tagsHandler = ({ id, tags }) => {
+      console.log('tags updated: ', id, tags);
       if (id === credential.id) {
+        console.log('setTags called')
         setTags(tags);
       }
     }
     Credential.on('tags_updated', tagsHandler);
 
+    setToken(credential.token);
+    setTags(credential.tags);
+
     return () => {
       Credential.off('credential_refreshed', handler);
       Credential.off('tags_updated', tagsHandler);
     };
-  }, [setToken]);
+  }, [credential, setToken, setTags]);
 
-  useEffect(() => {
-    setToken(credential.token);
-    setTags(credential.tags);
-  }, [credential]);
+  // useEffect(() => {
+  //   setToken(credential.token);
+  //   setTags(credential.tags);
+  // }, [credential]);
 
   const remove = async () => {
     await credential.remove();
