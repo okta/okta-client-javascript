@@ -7,7 +7,6 @@ describe('EventEmitter', () => {
     const listener2 = jest.fn();
 
     // emit event with no registered handlers at all
-    // @ts-expect-error `.emit` is protected method
     emitter.emit('bar', { foo: 'foo '});
 
     // register handlers
@@ -15,13 +14,11 @@ describe('EventEmitter', () => {
     emitter.on('foo', listener2);
 
     // emit event with no handlers registered for specific event
-    // @ts-expect-error `.emit` is protected method
     emitter.emit('bar', { foo: 'foo '});
     expect(listener1).not.toHaveBeenCalled();
     expect(listener2).not.toHaveBeenCalled();
 
     // emit event with registered handlers
-    // @ts-expect-error `.emit` is protected method
     emitter.emit('foo', { bar: 'bar' });
     expect(listener1).toHaveBeenCalledWith({ bar: 'bar' });
     expect(listener2).toHaveBeenCalledWith({ bar: 'bar' });
@@ -32,7 +29,6 @@ describe('EventEmitter', () => {
     listener2.mockClear();
 
     // emit event again (with a single registered handler)
-    // @ts-expect-error `.emit` is protected method
     emitter.emit('foo', { baz: 'baz' });
     expect(listener1).not.toHaveBeenCalled();
     expect(listener2).toHaveBeenCalledWith({ baz: 'baz' });
@@ -41,7 +37,6 @@ describe('EventEmitter', () => {
     emitter.on('foo', listener1);
     listener1.mockClear();
     listener2.mockClear();
-    // @ts-expect-error `.emit` is protected method
     emitter.emit('foo', { bar: 'bar' });
     expect(listener1).toHaveBeenCalledWith({ bar: 'bar' });
     expect(listener2).toHaveBeenCalledWith({ bar: 'bar' });
@@ -50,7 +45,6 @@ describe('EventEmitter', () => {
     listener1.mockClear();
     listener2.mockClear();
     emitter.off('foo');
-    // @ts-expect-error `.emit` is protected method
     emitter.emit('foo', { bar: 'bar' });
     expect(listener1).not.toHaveBeenCalled();
     expect(listener2).not.toHaveBeenCalled();
@@ -64,11 +58,9 @@ describe('EventEmitter', () => {
     outer.on('test_event', listener);
     outer.relay(inner, ['test_event']);
 
-    // @ts-expect-error `.emit` is protected method
     inner.emit('foo', { bar: 'baz' });
     expect(listener).not.toHaveBeenCalled();
 
-    // @ts-expect-error `.emit` is protected method
     inner.emit('test_event', { bar: 'baz' });
     expect(listener).toHaveBeenCalledWith({ bar: 'baz' });
   });
@@ -90,9 +82,124 @@ describe('EventEmitter', () => {
     emitter.on('foo', handler1);
     emitter.on('foo', handler2);
 
-    // @ts-expect-error `.emit` is protected method
     emitter.emit('foo', { bar: 'baz' });
 
     expect(handler2).toHaveBeenCalled();
+  });
+
+  describe('AbortSignal support (`{ signal }` option on `.on()`)', () => {
+    it('removes the listener once the signal is aborted', () => {
+      const emitter = new EventEmitter();
+      const controller = new AbortController();
+      const listener = jest.fn();
+
+      emitter.on('foo', listener, { signal: controller.signal });
+        emitter.emit('foo', { bar: 'baz' });
+      expect(listener).toHaveBeenCalledTimes(1);
+
+      controller.abort();
+        emitter.emit('foo', { bar: 'baz' });
+      expect(listener).toHaveBeenCalledTimes(1);   // not called again after abort
+    });
+
+    it('removes every listener sharing the same signal when it is aborted', () => {
+      const emitter = new EventEmitter();
+      const controller = new AbortController();
+      const listener1 = jest.fn();
+      const listener2 = jest.fn();
+
+      emitter.on('foo', listener1, { signal: controller.signal });
+      emitter.on('bar', listener2, { signal: controller.signal });
+
+      controller.abort();
+
+        emitter.emit('foo', {});
+        emitter.emit('bar', {});
+      expect(listener1).not.toHaveBeenCalled();
+      expect(listener2).not.toHaveBeenCalled();
+    });
+
+    it('does not register a listener if the signal is already aborted', () => {
+      const emitter = new EventEmitter();
+      const controller = new AbortController();
+      controller.abort();
+      const listener = jest.fn();
+
+      emitter.on('foo', listener, { signal: controller.signal });
+        emitter.emit('foo', { bar: 'baz' });
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('tears down the abort listener when `.off()` is called directly, not just on abort', () => {
+      const emitter = new EventEmitter();
+      const controller = new AbortController();
+      const listener = jest.fn();
+      const removeEventListenerSpy = jest.spyOn(controller.signal, 'removeEventListener');
+
+      emitter.on('foo', listener, { signal: controller.signal });
+      emitter.off('foo', listener);
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('abort', expect.any(Function));
+
+      // aborting afterward should not throw, nor re-invoke the already-removed listener
+      expect(() => controller.abort()).not.toThrow();
+        emitter.emit('foo', {});
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('tears down signal registrations for every handler when `.off(event)` is called with no handler', () => {
+      const emitter = new EventEmitter();
+      const controller = new AbortController();
+      const listener1 = jest.fn();
+      const listener2 = jest.fn();
+      const removeEventListenerSpy = jest.spyOn(controller.signal, 'removeEventListener');
+
+      emitter.on('foo', listener1, { signal: controller.signal });
+      emitter.on('foo', listener2, { signal: controller.signal });
+
+      emitter.off('foo');
+      expect(removeEventListenerSpy).toHaveBeenCalledTimes(2);
+
+      expect(() => controller.abort()).not.toThrow();
+        emitter.emit('foo', {});
+      expect(listener1).not.toHaveBeenCalled();
+      expect(listener2).not.toHaveBeenCalled();
+    });
+
+    it('does not require a `signal` option', () => {
+      const emitter = new EventEmitter();
+      const listener = jest.fn();
+      expect(() => emitter.on('foo', listener)).not.toThrow();
+        emitter.emit('foo', {});
+      expect(listener).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('clear', () => {
+    it('removes every listener for every event', () => {
+      const emitter = new EventEmitter();
+      const foo = jest.fn();
+      const bar = jest.fn();
+      emitter.on('foo', foo);
+      emitter.on('bar', bar);
+
+      emitter.clear();
+
+        emitter.emit('foo', {});
+        emitter.emit('bar', {});
+      expect(foo).not.toHaveBeenCalled();
+      expect(bar).not.toHaveBeenCalled();
+    });
+
+    it('tears down any signal registrations for the listeners it clears', () => {
+      const emitter = new EventEmitter();
+      const controller = new AbortController();
+      const listener = jest.fn();
+      const removeEventListenerSpy = jest.spyOn(controller.signal, 'removeEventListener');
+
+      emitter.on('foo', listener, { signal: controller.signal });
+      emitter.clear();
+
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('abort', expect.any(Function));
+    });
   });
 });

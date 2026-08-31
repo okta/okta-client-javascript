@@ -137,17 +137,6 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
       else if (eventName === 'credential_removed') {
         log('removal');
         this.credentialDataSource.remove(id);
-
-        // // removal messages never carried a token body; `id` is all `hasCredential` actually reads
-        // const token = new Token({ id } as TokenInit);
-        // if (this.credentialDataSource.hasCredential(token)) {
-        //   this.credentialDataSource.remove(id);
-        // }
-        // else {
-        //   // TODO: is this needed?
-        //   // ensures removal event is broadcast, regardless of the DataSource knowledge of the Credential
-        //   this.emitter.emit('credential_removed', { dataSource: this.credentialDataSource, id });
-        // }
       }
       else {
         const token = await this.tokenStorage.get(id);

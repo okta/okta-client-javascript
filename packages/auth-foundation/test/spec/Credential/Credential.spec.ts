@@ -187,12 +187,14 @@ describe('Credential', () => {
 
         it('clear', async () => {
           expect(Credential.size).toEqual(0);
-          await Credential.store(makeTestToken());
-          await Credential.store(makeTestToken());
-          await Credential.store(makeTestToken());
+          const c1 = await Credential.store(makeTestToken());
+          const c2 = await Credential.store(makeTestToken());
+          const c3 = await Credential.store(makeTestToken());
+          const disposeSpies = [c1, c2, c3].map(c => jest.spyOn(c, 'dispose'));
           expect(Credential.size).toEqual(3);
           await Credential.clear();
           expect(Credential.size).toEqual(0);
+          disposeSpies.forEach(spy => expect(spy).toHaveBeenCalledTimes(1));
         });
 
         it('isEqual', async () => {
@@ -272,15 +274,21 @@ describe('Credential', () => {
         it('remove', async () => {
           const c1 = await Credential.store(makeTestToken());
           const c2 = await Credential.store(makeTestToken());
+          const c1DisposeSpy = jest.spyOn(c1, 'dispose');
+          const c2DisposeSpy = jest.spyOn(c2, 'dispose');
           expect(Credential.size).toEqual(2);
           await c1.remove();
           await expect(Credential.with(c1.id)).resolves.toBe(null);
           expect(Credential.size).toEqual(1);
+          expect(c1DisposeSpy).toHaveBeenCalledTimes(1);
           await c1.remove();   // remove c1 again, no ops
           expect(Credential.size).toEqual(1);
+          expect(c1DisposeSpy).toHaveBeenCalledTimes(1);   // not called again on the no-op
+          expect(c2DisposeSpy).not.toHaveBeenCalled();
           await c2.remove();
           await expect(Credential.with(c2.id)).resolves.toBe(null);
           expect(Credential.size).toEqual(0);
+          expect(c2DisposeSpy).toHaveBeenCalledTimes(1);
         });
 
         it('getAuthHeader', async () => {
