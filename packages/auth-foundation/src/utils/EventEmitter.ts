@@ -23,7 +23,7 @@ export interface Emitter<E extends EventMap> {
  */
 export class EventEmitter<Events extends EventMap> {
   listeners: { [K in keyof Events]?: Array<EventListener<Events[K]>> } = {};
-  signals: WeakMap<Function, { signal: AbortSignal, abortHandler: () => void }> = new WeakMap();
+  signals: WeakMap<(...arg: any[]) => void, { signal: AbortSignal, abortHandler: () => void }> = new WeakMap();
 
   on<K extends keyof Events>(
     eventName: K,

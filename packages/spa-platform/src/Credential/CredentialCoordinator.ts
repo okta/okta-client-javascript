@@ -7,8 +7,7 @@ import type {
   TokenStorage,
   JsonPrimitive,
   TokenStorageEvents,
-  JsonRecord,
-  TokenInit,
+  JsonRecord
 } from '@okta/auth-foundation/core';
 import {
   Token,
