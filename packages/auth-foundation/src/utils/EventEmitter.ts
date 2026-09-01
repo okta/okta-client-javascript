@@ -32,12 +32,17 @@ export class EventEmitter<Events extends EventMap> {
   ): this {
     const { signal } = options;
 
+    if (signal?.aborted) {
+      // if the provided `AbortSignal` has already been aborted, do not bind listener
+      return this;
+    }
+
     if (!this.listeners[eventName]) {
       this.listeners[eventName] = [];
     }
     this.listeners[eventName]!.push(handler);
 
-    if (signal && !signal?.aborted) {
+    if (signal) {
       const abortHandler = () => {
         this.off(eventName, handler);
       };

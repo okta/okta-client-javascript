@@ -41,8 +41,12 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
   private readonly id: string = shortID();
   private readonly channel: BroadcastChannel = new BroadcastChannel('CredentialCoordinatorImpl');
 
+  #CredentialEmitter;
+
   constructor (CredentialConstructor: (ConstructorParameters<typeof CredentialCoordinatorBase>)[0]) {
     super(CredentialConstructor);
+    // @ts-expect-error - emitter is protected
+    this.#CredentialEmitter = CredentialConstructor.emitter;
     this.tokenStorage = new BrowserTokenStorage();
     this.credentialDataSource = new DefaultCredentialDataSource(CredentialConstructor);
 
@@ -134,37 +138,41 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
           this.emitter.emit('metadata_updated', { storage: this.tokenStorage, id, metadata });
         }
       }
+      else if (eventName === 'credential_added') {
+        log('added');
+        this.#CredentialEmitter.emit('credential_added', { id });
+      }
       else if (eventName === 'credential_removed') {
         log('removal');
         this.credentialDataSource.remove(id);
       }
-      else {
+      else if (eventName === 'credential_refreshed') {
+        log('refresh');
+
+        // if the tab receiving this event does not "know" (have a corresponding `Credential` instance)
+        // for the token which refresh, skip processing this event
+        if (!this.credentialDataSource.hasCredential(id)) {
+          log('token not known to tab');
+          return;
+        }
+
         const token = await this.tokenStorage.get(id);
         if (!token) {
           return;
         }
-
         const credential = this.credentialDataSource.credentialFor(token);
 
-        if (eventName === 'credential_added') {
-          log('added');
-          // credentialDataSource.credentialFor() call above handles updating credDataSrc
+        // when a Credential is updated in a separate tab, the Token read from storage
+        // may differ from cred.token via DataSource, so the update should continue.
+        // If the tokens are equal, this means this DataSource has already updated the token to the new value
+        if (Token.isEqual(token, credential.token)) {
+          log('token has already been updated');
+          return;
         }
-        else if (eventName === 'credential_refreshed') {
-          log('refresh');
 
-          // when a Credential is updated in a separate tab, the Token read from storage
-          // may differ from cred.token via DataSource, so the update should continue.
-          // If the tokens are equal, this means this DataSource has already updated the token to the new value
-          if (Token.isEqual(token, credential.token)) {
-            log('token has already been updated');
-            return;
-          }
-
-          // @ts-expect-error - Credential `set token()` is a private setter to avoid exposing this to the public API
-          credential.token = token;
-          this.emitter.emit('credential_refreshed', { credential });
-        }
+        // @ts-expect-error - Credential `set token()` is a private setter to avoid exposing this to the public API
+        credential.token = token;
+        this.emitter.emit('credential_refreshed', { credential });
       }
 
       log('allIDs: ', this.allIDs(), 'size: ', this.credentialDataSource.size);

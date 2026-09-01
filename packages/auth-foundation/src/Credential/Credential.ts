@@ -20,7 +20,7 @@ import { CredentialError, OAuth2Error } from '../errors/index.ts';
 
 
 type CredentialEvents = {
-  'credential_added': { credential: Credential };
+  'credential_added': { id: string };
   'credential_removed': { id: string };
   'tags_updated': { id: string, tags: string[] };
 } & Omit<CredentialCoordinatorEvents, 'credential_added' | 'credential_removed'>;
@@ -62,7 +62,7 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
     this.emitter.relay(this.coordinator.emitter, ['cleared', 'default_changed', 'credential_refreshed']);
 
     this.coordinator.emitter.on('credential_added', ({ credential }) => {
-      this.emitter.emit('credential_added', { credential });
+      this.emitter.emit('credential_added', { id: credential.id });
     });
 
     this.coordinator.emitter.on('credential_removed', ({ id }) => {
@@ -334,7 +334,11 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   /////// public instances methods ///////
 
   /**
-   * Cleans up resourece associated with the Credential instance to prevent leaks.
+   * Cleans up resources associated with the Credential instance, so that it may be gargabe collected.
+   * 
+   * @remarks
+   * This method is meant to be used in conjunction with {@link CredentialDataSource.remove}. Calling this
+   * method on an active {@link Credential} may have sigificant consequences 
    */
   public dispose () {
     this.oauth2.dispose();

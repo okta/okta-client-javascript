@@ -94,11 +94,11 @@ describe('EventEmitter', () => {
       const listener = jest.fn();
 
       emitter.on('foo', listener, { signal: controller.signal });
-        emitter.emit('foo', { bar: 'baz' });
+      emitter.emit('foo', { bar: 'baz' });
       expect(listener).toHaveBeenCalledTimes(1);
 
       controller.abort();
-        emitter.emit('foo', { bar: 'baz' });
+      emitter.emit('foo', { bar: 'baz' });
       expect(listener).toHaveBeenCalledTimes(1);   // not called again after abort
     });
 
@@ -113,8 +113,8 @@ describe('EventEmitter', () => {
 
       controller.abort();
 
-        emitter.emit('foo', {});
-        emitter.emit('bar', {});
+      emitter.emit('foo', {});
+      emitter.emit('bar', {});
       expect(listener1).not.toHaveBeenCalled();
       expect(listener2).not.toHaveBeenCalled();
     });
@@ -126,7 +126,7 @@ describe('EventEmitter', () => {
       const listener = jest.fn();
 
       emitter.on('foo', listener, { signal: controller.signal });
-        emitter.emit('foo', { bar: 'baz' });
+      emitter.emit('foo', { bar: 'baz' });
       expect(listener).not.toHaveBeenCalled();
     });
 
@@ -142,7 +142,7 @@ describe('EventEmitter', () => {
 
       // aborting afterward should not throw, nor re-invoke the already-removed listener
       expect(() => controller.abort()).not.toThrow();
-        emitter.emit('foo', {});
+      emitter.emit('foo', {});
       expect(listener).not.toHaveBeenCalled();
     });
 
@@ -160,7 +160,7 @@ describe('EventEmitter', () => {
       expect(removeEventListenerSpy).toHaveBeenCalledTimes(2);
 
       expect(() => controller.abort()).not.toThrow();
-        emitter.emit('foo', {});
+      emitter.emit('foo', {});
       expect(listener1).not.toHaveBeenCalled();
       expect(listener2).not.toHaveBeenCalled();
     });
@@ -169,7 +169,7 @@ describe('EventEmitter', () => {
       const emitter = new EventEmitter();
       const listener = jest.fn();
       expect(() => emitter.on('foo', listener)).not.toThrow();
-        emitter.emit('foo', {});
+      emitter.emit('foo', {});
       expect(listener).toHaveBeenCalledTimes(1);
     });
   });
@@ -184,8 +184,8 @@ describe('EventEmitter', () => {
 
       emitter.clear();
 
-        emitter.emit('foo', {});
-        emitter.emit('bar', {});
+      emitter.emit('foo', {});
+      emitter.emit('bar', {});
       expect(foo).not.toHaveBeenCalled();
       expect(bar).not.toHaveBeenCalled();
     });

@@ -33,7 +33,7 @@ export interface CredentialDataSource {
    * Checks {@link CredentialDataSource} for an existing {@link Credential} instance which
    * represents the provided {@link Token.Token | Token}.
    */
-  hasCredential (token: Token): boolean;
+  hasCredential (id: string): boolean;
   /**
    * Checks {@link CredentialDataSource} for an existing {@link Credential} instance which
    * represents the provided {@link Token.Token | Token}. If one does not exist, a new {@link Credential}
@@ -80,8 +80,8 @@ export class DefaultCredentialDataSource implements CredentialDataSource {
     return new this.CredentialConstructor(token, client, metadata);
   }
 
-  public hasCredential (token: Token): boolean {
-    return this.credentials.has(token.id);
+  public hasCredential (id: string): boolean {
+    return this.credentials.has(id);
   }
 
   public credentialFor (token: Token, metadata?: Token.Metadata): Credential {
