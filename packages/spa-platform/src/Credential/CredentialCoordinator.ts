@@ -41,12 +41,8 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
   private readonly id: string = shortID();
   private readonly channel: BroadcastChannel = new BroadcastChannel('CredentialCoordinatorImpl');
 
-  #CredentialEmitter;
-
   constructor (CredentialConstructor: (ConstructorParameters<typeof CredentialCoordinatorBase>)[0]) {
     super(CredentialConstructor);
-    // @ts-expect-error - emitter is protected
-    this.#CredentialEmitter = CredentialConstructor.emitter;
     this.tokenStorage = new BrowserTokenStorage();
     this.credentialDataSource = new DefaultCredentialDataSource(CredentialConstructor);
 
@@ -140,11 +136,19 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
       }
       else if (eventName === 'credential_added') {
         log('added');
-        this.#CredentialEmitter.emit('credential_added', { id });
+        this.emitter.emit('credential_added', { id });
+        // NOTE: cross-tab 'credential_added' no longer defaults to adding a `Credential` instance to `dataSource`
       }
       else if (eventName === 'credential_removed') {
         log('removal');
-        this.credentialDataSource.remove(id);
+        if (this.credentialDataSource.hasCredential(id)) {
+          // if a `Credential` exists for the given token, a event will be relayed via `dataSource.emitter`
+          this.credentialDataSource.remove(id);
+        }
+        else {
+          // No event will be relayed if a `Credential` exists does not exist, emit one directly
+          this.emitter.emit('credential_removed', { id });
+        }
       }
       else if (eventName === 'credential_refreshed') {
         log('refresh');

@@ -24,12 +24,13 @@ function log (...args: any[]) {}
 
 
 export type CredentialCoordinatorEvents = {
+  'credential_added': { credential?: Credential, id: string };
+  'credential_removed': { id: string }
   'credential_expired': { credential: Credential };
   'credential_refreshed': { credential: Credential };
   'cleared': void;
 } 
-& Pick<TokenStorageEvents, 'default_changed' | 'metadata_updated' | 'token_replaced'>
-& CredentialDataSourceEvents;
+& Pick<TokenStorageEvents, 'default_changed' | 'metadata_updated' | 'token_replaced'>;
 
 /**
  * @public @interface
@@ -138,13 +139,14 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
           console.error('Failed to replace token after refresh');
         }
       });
+
+      this.emitter.emit('credential_added', { credential, id: credential.id });
     });
 
     this.credentialDataSource.emitter.on('credential_removed', ({ id }) => {
       this.clearExpireEventTimeout(id);
+      this.emitter.emit('credential_removed', { id });
     });
-
-    this.emitter.relay(this.credentialDataSource.emitter, ['credential_added', 'credential_removed']);
   }
 
   public get tokenStorage (): TokenStorage {

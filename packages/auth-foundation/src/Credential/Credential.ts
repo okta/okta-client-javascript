@@ -20,10 +20,8 @@ import { CredentialError, OAuth2Error } from '../errors/index.ts';
 
 
 type CredentialEvents = {
-  'credential_added': { id: string };
-  'credential_removed': { id: string };
   'tags_updated': { id: string, tags: string[] };
-} & Omit<CredentialCoordinatorEvents, 'credential_added' | 'credential_removed'>;
+} & CredentialCoordinatorEvents;
 
 /**
  * Wrapper around a {@link Token.Token | Token}, providing methods to interact with Tokens without the hassle of managing them
@@ -59,15 +57,9 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
     ).forEach((evt) => previousCoordinator.emitter.off(evt));
 
     // binds listeners (and event relays) from coordinator to Credential.emitter
-    this.emitter.relay(this.coordinator.emitter, ['cleared', 'default_changed', 'credential_refreshed']);
-
-    this.coordinator.emitter.on('credential_added', ({ credential }) => {
-      this.emitter.emit('credential_added', { id: credential.id });
-    });
-
-    this.coordinator.emitter.on('credential_removed', ({ id }) => {
-      this.emitter.emit('credential_removed', { id });
-    });
+    this.emitter.relay(this.coordinator.emitter, [
+      'credential_added', 'credential_removed', 'cleared', 'default_changed', 'credential_refreshed'
+    ]);
 
     this.coordinator.emitter.on('metadata_updated', async ({ id, metadata }) => {
       this.emitter.emit('tags_updated', { id, tags: metadata?.tags ?? [] });
