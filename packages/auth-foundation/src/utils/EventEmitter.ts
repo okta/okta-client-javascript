@@ -23,7 +23,9 @@ export interface Emitter<E extends EventMap> {
  */
 export class EventEmitter<Events extends EventMap> {
   listeners: { [K in keyof Events]?: Array<EventListener<Events[K]>> } = {};
-  signals: WeakMap<(...arg: any[]) => void, { signal: AbortSignal, abortHandler: () => void }> = new WeakMap();
+  // scoped per-event, since the same `handler` function reference may be registered against
+  // multiple events (or reused across `on()` calls) with different signals attached
+  signals: Map<keyof Events, WeakMap<(...arg: any[]) => void, { signal: AbortSignal, abortHandler: () => void }>> = new Map();
 
   on<K extends keyof Events>(
     eventName: K,
@@ -47,7 +49,11 @@ export class EventEmitter<Events extends EventMap> {
         this.off(eventName, handler);
       };
       signal.addEventListener('abort', abortHandler, { once: true });
-      this.signals.set(handler, { signal, abortHandler });
+
+      if (!this.signals.has(eventName)) {
+        this.signals.set(eventName, new WeakMap());
+      }
+      this.signals.get(eventName)!.set(handler, { signal, abortHandler });
     }
 
     return this;
@@ -59,22 +65,22 @@ export class EventEmitter<Events extends EventMap> {
     }
 
     if (!handler) {
-      this.listeners[eventName]?.forEach(h => this.detachSignal(h));
+      this.listeners[eventName]?.forEach(h => this.detachSignal(eventName, h));
       delete this.listeners[eventName];
       return this;
     }
 
-    this.detachSignal(handler);
+    this.detachSignal(eventName, handler);
     this.listeners[eventName] = this.listeners[eventName]?.filter(l => l !== handler);
     return this;
   }
 
-  /** @internal removes the `AbortSignal` registration (if any) associated with `handler` */
-  protected detachSignal (handler: EventListener<any>): void {
-    const entry = this.signals.get(handler);
+  /** @internal removes the `AbortSignal` registration (if any) associated with `handler` for `eventName` */
+  protected detachSignal<K extends keyof Events> (eventName: K, handler: EventListener<any>): void {
+    const entry = this.signals.get(eventName)?.get(handler);
     if (entry) {
       entry.signal.removeEventListener('abort', entry.abortHandler);
-      this.signals.delete(handler);
+      this.signals.get(eventName)!.delete(handler);
     }
   }
 

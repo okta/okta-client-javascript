@@ -172,6 +172,35 @@ describe('EventEmitter', () => {
       emitter.emit('foo', {});
       expect(listener).toHaveBeenCalledTimes(1);
     });
+
+    it('does not cross-contaminate signal cleanup when the same handler is shared across different events', () => {
+      const emitter = new EventEmitter();
+      const controllerA = new AbortController();
+      const controllerB = new AbortController();
+      const sharedHandler = jest.fn();
+      const removeEventListenerSpyA = jest.spyOn(controllerA.signal, 'removeEventListener');
+      const removeEventListenerSpyB = jest.spyOn(controllerB.signal, 'removeEventListener');
+
+      emitter.on('foo', sharedHandler, { signal: controllerA.signal });
+      emitter.on('bar', sharedHandler, { signal: controllerB.signal });
+
+      // explicitly detach only the 'foo' registration
+      emitter.off('foo', sharedHandler);
+      expect(removeEventListenerSpyA).toHaveBeenCalledWith('abort', expect.any(Function));
+      expect(removeEventListenerSpyB).not.toHaveBeenCalled();   // 'bar's own signal registration must be untouched
+
+      // 'bar' should still be live...
+      emitter.emit('bar', {});
+      expect(sharedHandler).toHaveBeenCalledTimes(1);
+
+      // ...and still correctly cleaned up when ITS OWN signal aborts
+      controllerB.abort();
+      emitter.emit('bar', {});
+      expect(sharedHandler).toHaveBeenCalledTimes(1);   // not called again
+
+      // aborting the already-detached controllerA afterward should not throw or double-invoke anything
+      expect(() => controllerA.abort()).not.toThrow();
+    });
   });
 
   describe('clear', () => {
