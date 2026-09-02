@@ -38,8 +38,8 @@ describe('Credential', () => {
 
           const token = makeTestToken();
           let cred = await Credential.store(token);
-          expect(onAdded1).toHaveBeenNthCalledWith(1, { credential: cred });
-          expect(onAdded2).toHaveBeenNthCalledWith(1, { credential: cred });
+          expect(onAdded1).toHaveBeenNthCalledWith(1, { credential: cred, id: cred.id });
+          expect(onAdded2).toHaveBeenNthCalledWith(1, { credential: cred, id: cred.id });
           expect(onRemoved1).toHaveBeenCalledTimes(0);
           expect(onRemoved2).toHaveBeenCalledTimes(0);
           await cred.remove();
@@ -58,37 +58,40 @@ describe('Credential', () => {
           expect(onRemoved2).toHaveBeenNthCalledWith(2, { id: cred.id });
         });
 
-        // regression test for the leaked `observeToken()` -> `coordinator.emitter.on('metadata_updated', ...)`
-        // subscription: every constructed Credential added one more listener to the page-lifetime coordinator
-        // emitter, and nothing ever removed it, even after `.remove()`
-        it('should not accumulate metadata_updated listeners on the coordinator emitter across store/remove cycles', async () => {
-          const emitter = (Credential as any).coordinator.emitter;
-          const baseline = emitter.listeners['metadata_updated']?.length ?? 0;
+        // OKTA-1262864
+        describe('Memory leak regression', () => {
+          // leak: every constructed Credential added one more listener to the page-lifetime coordinator emitter, and nothing ever removed it.
+          // fix/test: Now, only a single listener should be bound to `metadata_updated`, independent of the number of constructed Credentials
 
-          for (let i = 0; i < 25; i++) {
-            const cred = await Credential.store(makeTestToken());
-            await cred.remove();
-          }
+          // confirms `metadata_updated` listeners does not grow as Credentials are constructed
+          it('should not accumulate `metadata_updated` listeners on the coordinator emitter across store/remove cycles', async () => {
+            const emitter = (Credential as any).coordinator.emitter;
+            const baseline = emitter.listeners['metadata_updated']?.length ?? 0;
 
-          expect(emitter.listeners['metadata_updated']?.length ?? 0).toBe(baseline);
-        });
+            for (let i = 0; i < 25; i++) {
+              const cred = await Credential.store(makeTestToken());
+              await cred.remove();
+            }
 
-        // target behavior for the planned fix: `metadata_updated` should be bound exactly once, from the
-        // static `coordinator` setter, and cleanly rebound (not duplicated, not left dangling) on reassignment
-        it('binds exactly one metadata_updated listener via the coordinator setter, and unbinds the previous one on reassignment', () => {
-          const previousCoordinator = (Credential as any).coordinator;
-          const newCoordinator = new previousCoordinator.constructor(Credential);
+            expect(emitter.listeners['metadata_updated']?.length ?? 0).toBe(baseline);
+          });
 
-          (Credential as any).coordinator = newCoordinator;
+          // confirms the single `metadata_updated` listener is maintained when updating `coordinator` instance (coordinator setter)
+          it('binds exactly one metadata_updated listener via the coordinator setter during reassignment', () => {
+            const previousCoordinator = (Credential as any).coordinator;
+            const newCoordinator = new previousCoordinator.constructor(Credential);
 
-          try {
-            expect(previousCoordinator.emitter.listeners['metadata_updated']).toBeFalsy();
-            expect(newCoordinator.emitter.listeners['metadata_updated']?.length).toBe(1);
-          }
-          finally {
-            // restore original coordinator so later tests aren't affected
-            (Credential as any).coordinator = previousCoordinator;
-          }
+            (Credential as any).coordinator = newCoordinator;
+
+            try {
+              expect(previousCoordinator.emitter.listeners['metadata_updated']).toBeFalsy();
+              expect(newCoordinator.emitter.listeners['metadata_updated']?.length).toBe(1);
+            }
+            finally {
+              // restore original coordinator so later tests aren't affected
+              (Credential as any).coordinator = previousCoordinator;
+            }
+          });
         });
       });
   

@@ -1,4 +1,4 @@
-import { Token, CredentialError } from '@okta/auth-foundation';
+import { Token, CredentialError, randomBytes } from '@okta/auth-foundation';
 import { BrowserTokenStorage } from 'src/Credential/TokenStorage';
 import { makeTestToken, MockIndexedDBStore } from '../helpers/makeTestResource';
 
@@ -210,6 +210,9 @@ describe('BrowserTokenStorage', () => {
       });
 
       // NOTE: potentially flaky test
+      // generating test tokens via `makeTestToken(randomBytes())` seem to help with the flakiness.
+      // `token.id` is used as the "iv" in `.encrypt({ name: 'AES-GCM', iv: buf(iv) }, ...)` calls
+      // it seems 'AES-GCM' "typically expects a IV of exactly 12 bytes", the default `shortId()` was not
       it('encrypts and decrypts tokens in/out of storage', async () => {
         const expectedKey = {
           type: 'secret',
@@ -220,13 +223,13 @@ describe('BrowserTokenStorage', () => {
 
         await expect(storage.encryptionKeyStore.get(storage.encryptionKeyName)).resolves.toBe(null);
 
-        const t1 = makeTestToken();
+        const t1 = makeTestToken(randomBytes());
         await storage.add(t1);
 
         // cannot assert .instanceOf(CryptoKey) - Jest throws 'CryptoKey' not defined
         await expect(storage.encryptionKeyStore.get(storage.encryptionKeyName)).resolves.toMatchObject(expectedKey);
 
-        const t2 = makeTestToken();
+        const t2 = makeTestToken(randomBytes());
         await storage.add(t2);
 
         const t1Stored = JSON.parse(localStorage.getItem((storage as any).idToStoreKey(t1.id))!).token;
@@ -244,14 +247,14 @@ describe('BrowserTokenStorage', () => {
       });
 
       it('can gracefully handle `encryptedAtRest` flag being toggled', async () => {
-        const encryptedToken = makeTestToken();
+        const encryptedToken = makeTestToken(randomBytes());
         await storage.add(encryptedToken);
 
         await expect(storage.get(encryptedToken.id)).resolves.toEqual(encryptedToken);
         storage.encryptAtRest = false;
         await expect(storage.get(encryptedToken.id)).resolves.toEqual(encryptedToken);
 
-        const unencryptedToken = makeTestToken();
+        const unencryptedToken = makeTestToken(randomBytes());
         await storage.add(unencryptedToken);
 
         await expect(storage.get(unencryptedToken.id)).resolves.toEqual(unencryptedToken);
@@ -267,8 +270,8 @@ describe('BrowserTokenStorage', () => {
         await expect(storage.get(unencryptedToken.id)).resolves.toEqual(unencryptedToken);
       });
 
-      it('removes token from storage when decryption fails, is found', async () => {
-        const token = makeTestToken();
+      it('removes token from storage when decryption fails', async () => {
+        const token = makeTestToken(randomBytes());
         await storage.add(token);
 
         await expect(storage.allIDs()).resolves.toEqual([token.id]);

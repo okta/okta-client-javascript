@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2026-09-02
+
+### `@okta/auth-foundation`
+
+#### Added
+- Added `dispose()` to `Credential`, `OAuth2Client`, and `APIClient` to release listeners and cached resources when a credential is removed ([#39](https://github.com/okta/okta-client-javascript/pull/39))
+- Added an optional `{ signal: AbortSignal }` option to `EventEmitter.on()`, and a `clear()` method, for automatic listener cleanup ([#39](https://github.com/okta/okta-client-javascript/pull/39))
+
+#### Fixed
+- Fixed a memory leak where every constructed `Credential` added a listener to the shared `CredentialCoordinator` emitter that was never removed, retaining every `Credential` (and its `OAuth2Client`) for the lifetime of the page ([#39](https://github.com/okta/okta-client-javascript/pull/39))
+- `DefaultCredentialDataSource.remove()`/`.clear()` now dispose removed credentials instead of only removing them from the internal cache ([#39](https://github.com/okta/okta-client-javascript/pull/39))
+
+### `@okta/spa-platform`
+
+#### Fixed
+- Cross-tab credential sync no longer broadcasts full token payloads over `BroadcastChannel`; tabs now read the current value from storage, and only when they already reference the credential in question, reducing memory pressure across many open tabs ([#39](https://github.com/okta/okta-client-javascript/pull/39))
+
 ## [0.7.2] - 2026-04-09
 
 ### `@okta/spa-platform`

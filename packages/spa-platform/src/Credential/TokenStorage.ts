@@ -30,7 +30,6 @@ export class BrowserTokenStorage implements TokenStorage {
   // encryption
   encryptionKeyStore = new IndexedDBStore<CryptoKey>('StorageKeys');
   encryptionKeyName = 'EncryptionKey';
-  #encryptionKey: CryptoKey | null = null;   // caches reference to crypto key locally, to reduce frequent DB reads
 
   // configurations
   public includeClaims: boolean = true;     // when true, idToken claims are stored in token metadata to use token selection
@@ -238,7 +237,6 @@ export class BrowserTokenStorage implements TokenStorage {
     // if (this.encryptAtRest) {
       // if no tokens exist in storage, remove the encryption key therefore
       // it will be rotated once a new token is added
-      this.#encryptionKey = null;
       await this.encryptionKeyStore.remove(this.encryptionKeyName);
     }
   }
@@ -355,11 +353,6 @@ export class BrowserTokenStorage implements TokenStorage {
   }
 
   protected async getEncryptionKey (): Promise<CryptoKey> {
-    // if local key reference exists, use it
-    if (this.#encryptionKey) {
-      return this.#encryptionKey;
-    }
-
     const encryptionKey = await this.encryptionKeyStore.get(this.encryptionKeyName);
     if (!encryptionKey) {
       const newKey = await this.generateEncryptionKey();
@@ -367,8 +360,6 @@ export class BrowserTokenStorage implements TokenStorage {
       return newKey;
     }
 
-    // cache key reference locally
-    this.#encryptionKey = encryptionKey;
     return encryptionKey;
   }
 
@@ -391,7 +382,6 @@ export class BrowserTokenStorage implements TokenStorage {
     if ((await this.allIDs()).length === 0) {
       // if no tokens exist in storage, remove the encryption key therefore
       // it will be rotated once a new token is added
-      this.#encryptionKey = null;
       await this.encryptionKeyStore.remove(this.encryptionKeyName);
     }
   }
