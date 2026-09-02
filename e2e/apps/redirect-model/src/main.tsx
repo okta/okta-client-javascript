@@ -22,14 +22,6 @@ if (!rootElement) {
 
 // @ts-expect-error - This is added for e2e purposes only, not recommended for production apps
 window.Credential = Credential;
-// @ts-ignore
-window.leakTest = () => {
-  Credential.allIDs()
-  .then(ids => {
-    console.log('allIds.length: ', ids.length);
-    console.log('Coordinator Emitter Listeners', Credential.coordinator.emitter.listeners?.metadata_updated?.length);
-  });
-}
 
 const root = createRoot(rootElement);
 root.render(
