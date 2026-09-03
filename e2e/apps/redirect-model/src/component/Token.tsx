@@ -18,16 +18,14 @@ export function Token ({ credential }: { credential: Credential }) {
     }
     Credential.on('tags_updated', tagsHandler);
 
+    setToken(credential.token);
+    setTags(credential.tags);
+
     return () => {
       Credential.off('credential_refreshed', handler);
       Credential.off('tags_updated', tagsHandler);
     };
-  }, [setToken]);
-
-  useEffect(() => {
-    setToken(credential.token);
-    setTags(credential.tags);
-  }, [credential]);
+  }, [credential, setToken, setTags]);
 
   const remove = async () => {
     await credential.remove();

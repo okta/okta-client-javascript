@@ -337,6 +337,7 @@ export class BrowserTokenStorage implements TokenStorage {
   protected async handleReadError (error: unknown, id: string) {
     // remove token if json structure is malformed
     localStorage.removeItem(this.idToStoreKey(id));
+    this.emitter.emit('token_removed', { storage: this, id });
     return null;
   }
 
@@ -347,6 +348,7 @@ export class BrowserTokenStorage implements TokenStorage {
     // if token cannot be decrypted, remove it from storage
     localStorage.removeItem(this.idToStoreKey(id));
     await this.removeEncryptionKeyIfEmpty();
+    this.emitter.emit('token_removed', { storage: this, id });
     return null;
   }
 

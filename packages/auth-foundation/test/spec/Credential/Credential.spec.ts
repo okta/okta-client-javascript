@@ -38,8 +38,8 @@ describe('Credential', () => {
 
           const token = makeTestToken();
           let cred = await Credential.store(token);
-          expect(onAdded1).toHaveBeenNthCalledWith(1, { credential: cred });
-          expect(onAdded2).toHaveBeenNthCalledWith(1, { credential: cred });
+          expect(onAdded1).toHaveBeenNthCalledWith(1, { credential: cred, id: cred.id });
+          expect(onAdded2).toHaveBeenNthCalledWith(1, { credential: cred, id: cred.id });
           expect(onRemoved1).toHaveBeenCalledTimes(0);
           expect(onRemoved2).toHaveBeenCalledTimes(0);
           await cred.remove();
@@ -56,6 +56,42 @@ describe('Credential', () => {
           await cred.remove();
           expect(onRemoved1).toHaveBeenCalledTimes(1);  // was removed, should not be called again
           expect(onRemoved2).toHaveBeenNthCalledWith(2, { id: cred.id });
+        });
+
+        // OKTA-1262864
+        describe('Memory leak regression', () => {
+          // leak: every constructed Credential added one more listener to the page-lifetime coordinator emitter, and nothing ever removed it.
+          // fix/test: Now, only a single listener should be bound to `metadata_updated`, independent of the number of constructed Credentials
+
+          // confirms `metadata_updated` listeners does not grow as Credentials are constructed
+          it('should not accumulate `metadata_updated` listeners on the coordinator emitter across store/remove cycles', async () => {
+            const emitter = (Credential as any).coordinator.emitter;
+            const baseline = emitter.listeners['metadata_updated']?.length ?? 0;
+
+            for (let i = 0; i < 25; i++) {
+              const cred = await Credential.store(makeTestToken());
+              await cred.remove();
+            }
+
+            expect(emitter.listeners['metadata_updated']?.length ?? 0).toBe(baseline);
+          });
+
+          // confirms the single `metadata_updated` listener is maintained when updating `coordinator` instance (coordinator setter)
+          it('binds exactly one metadata_updated listener via the coordinator setter during reassignment', () => {
+            const previousCoordinator = (Credential as any).coordinator;
+            const newCoordinator = new previousCoordinator.constructor(Credential);
+
+            (Credential as any).coordinator = newCoordinator;
+
+            try {
+              expect(previousCoordinator.emitter.listeners['metadata_updated']).toBeFalsy();
+              expect(newCoordinator.emitter.listeners['metadata_updated']?.length).toBe(1);
+            }
+            finally {
+              // restore original coordinator so later tests aren't affected
+              (Credential as any).coordinator = previousCoordinator;
+            }
+          });
         });
       });
   
@@ -154,12 +190,14 @@ describe('Credential', () => {
 
         it('clear', async () => {
           expect(Credential.size).toEqual(0);
-          await Credential.store(makeTestToken());
-          await Credential.store(makeTestToken());
-          await Credential.store(makeTestToken());
+          const c1 = await Credential.store(makeTestToken());
+          const c2 = await Credential.store(makeTestToken());
+          const c3 = await Credential.store(makeTestToken());
+          const disposeSpies = [c1, c2, c3].map(c => jest.spyOn(c, 'dispose'));
           expect(Credential.size).toEqual(3);
           await Credential.clear();
           expect(Credential.size).toEqual(0);
+          disposeSpies.forEach(spy => expect(spy).toHaveBeenCalledTimes(1));
         });
 
         it('isEqual', async () => {
@@ -239,15 +277,21 @@ describe('Credential', () => {
         it('remove', async () => {
           const c1 = await Credential.store(makeTestToken());
           const c2 = await Credential.store(makeTestToken());
+          const c1DisposeSpy = jest.spyOn(c1, 'dispose');
+          const c2DisposeSpy = jest.spyOn(c2, 'dispose');
           expect(Credential.size).toEqual(2);
           await c1.remove();
           await expect(Credential.with(c1.id)).resolves.toBe(null);
           expect(Credential.size).toEqual(1);
+          expect(c1DisposeSpy).toHaveBeenCalledTimes(1);
           await c1.remove();   // remove c1 again, no ops
           expect(Credential.size).toEqual(1);
+          expect(c1DisposeSpy).toHaveBeenCalledTimes(1);   // not called again on the no-op
+          expect(c2DisposeSpy).not.toHaveBeenCalled();
           await c2.remove();
           await expect(Credential.with(c2.id)).resolves.toBe(null);
           expect(Credential.size).toEqual(0);
+          expect(c2DisposeSpy).toHaveBeenCalledTimes(1);
         });
 
         it('getAuthHeader', async () => {

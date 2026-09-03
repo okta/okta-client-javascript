@@ -69,20 +69,25 @@ describe('DefaultCredentialDataSource', () => {
 
     it('remove', () => {
       const { c1, dataSrc } = context;
+      const disposeSpy = jest.spyOn(c1, 'dispose');
       expect(dataSrc.size).toEqual(3);
       expect(dataSrc.hasCredential(c1)).toEqual(true);
       dataSrc.remove(c1);
       expect(dataSrc.size).toEqual(2);
       expect(dataSrc.hasCredential(c1)).toEqual(false);
+      expect(disposeSpy).toHaveBeenCalledTimes(1);
       dataSrc.remove(c1);   // removing non-existing Credential no-ops
       expect(dataSrc.size).toEqual(2);
+      expect(disposeSpy).toHaveBeenCalledTimes(1);   // not called again on the no-op
     });
 
     it('clear', () => {
-      const { dataSrc } = context;
+      const { c1, c2, c3, dataSrc } = context;
+      const disposeSpies = [c1, c2, c3].map(c => jest.spyOn(c, 'dispose'));
       expect(dataSrc.size).toEqual(3);
       dataSrc.clear();
       expect(dataSrc.size).toEqual(0);
+      disposeSpies.forEach(spy => expect(spy).toHaveBeenCalledTimes(1));
     });
 
     it('size', () => {

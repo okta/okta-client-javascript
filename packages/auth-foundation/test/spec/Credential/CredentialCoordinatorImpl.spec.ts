@@ -119,7 +119,7 @@ describe('CredentialCoordinatorImpl', () => {
       expect(cc.tokenStorage.defaultTokenId).toEqual(cred.id);
       expect(cred.tags).toEqual(['test']);
       expect(onAdded).toHaveBeenCalledTimes(1);
-      expect(onAdded).toHaveBeenCalledWith({ credential: cred, dataSource: cc.credentialDataSource });
+      expect(onAdded).toHaveBeenCalledWith({ credential: cred, id: cred.id });
     });
 
     it('with', async () => {
@@ -173,7 +173,7 @@ describe('CredentialCoordinatorImpl', () => {
       expect(cc.credentialDataSource.hasCredential(c1)).toEqual(false);
       expect(cc.size).toEqual(3);
       expect(clearExpireTimeoutSpy).toHaveBeenNthCalledWith(1, c1.id);
-      expect(onRemove).toHaveBeenNthCalledWith(1, { id: c1.id, dataSource: cc.credentialDataSource });
+      expect(onRemove).toHaveBeenNthCalledWith(1, { id: c1.id });
       expect(onDefaultChanged).toHaveBeenCalledTimes(0);
 
       await cc.remove(c2);  // remove default credenital
@@ -181,7 +181,7 @@ describe('CredentialCoordinatorImpl', () => {
       expect(cc.credentialDataSource.hasCredential(c2)).toEqual(false);
       expect(cc.size).toEqual(2);
       expect(clearExpireTimeoutSpy).toHaveBeenNthCalledWith(2, c2.id);
-      expect(onRemove).toHaveBeenNthCalledWith(2, { id: c2.id, dataSource: cc.credentialDataSource });
+      expect(onRemove).toHaveBeenNthCalledWith(2, { id: c2.id });
       expect(onDefaultChanged).toHaveBeenNthCalledWith(1, { id: null, storage: cc.tokenStorage });
     });
 

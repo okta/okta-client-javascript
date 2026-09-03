@@ -20,10 +20,8 @@ import { CredentialError, OAuth2Error } from '../errors/index.ts';
 
 
 type CredentialEvents = {
-  'credential_added': { credential: Credential };
-  'credential_removed': { id: string };
   'tags_updated': { id: string, tags: string[] };
-} & Omit<CredentialCoordinatorEvents, 'credential_added' | 'credential_removed'>;
+} & CredentialCoordinatorEvents;
 
 /**
  * Wrapper around a {@link Token.Token | Token}, providing methods to interact with Tokens without the hassle of managing them
@@ -49,19 +47,22 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
 
     // unbinds listeners of previous coordinator
     ( [
-        'credential_added', 'credential_removed', 'credential_refreshed', 'default_changed', 'cleared'
+        'credential_added',
+        'credential_removed',
+        'credential_refreshed',
+        'default_changed',
+        'cleared',
+        'metadata_updated'
       ] satisfies (keyof CredentialCoordinatorEvents)[]
     ).forEach((evt) => previousCoordinator.emitter.off(evt));
 
     // binds listeners (and event relays) from coordinator to Credential.emitter
-    this.emitter.relay(this.coordinator.emitter, ['cleared', 'default_changed', 'credential_refreshed']);
+    this.emitter.relay(this.coordinator.emitter, [
+      'credential_added', 'credential_removed', 'cleared', 'default_changed', 'credential_refreshed'
+    ]);
 
-    this.coordinator.emitter.on('credential_added', ({ credential }) => {
-      this.emitter.emit('credential_added', { credential });
-    });
-
-    this.coordinator.emitter.on('credential_removed', ({ id }) => {
-      this.emitter.emit('credential_removed', { id });
+    this.coordinator.emitter.on('metadata_updated', async ({ id, metadata }) => {
+      this.emitter.emit('tags_updated', { id, tags: metadata?.tags ?? [] });
     });
   }
 
@@ -86,6 +87,9 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
 
   /** @internal */
   protected _userInfo: UserInfo | undefined;
+
+  /** @internal */
+  #controller = new AbortController();
 
   /**
    * @remarks
@@ -322,6 +326,20 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   /////// public instances methods ///////
 
   /**
+   * Cleans up resources associated with the Credential instance, so that it may be garbage collected.
+   * 
+   * @remarks
+   * This method is meant to be used in conjunction with {@link CredentialDataSource.remove}. Calling this
+   * method on an active {@link Credential} may have significant consequences
+   * 
+   * @internal
+   */
+  public dispose () {
+    this.oauth2.dispose();
+    this.#controller.abort('dispose');
+  }
+
+  /**
    * Updates tags associated with {@link Credential}
    * 
    * @remarks
@@ -383,14 +401,7 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
     this.oauth2.emitter.on('token_did_refresh', ({ token }) => {
       if (Token.isEqual(token, this.token)) { return; }
       this.token = token;
-    });
-
-    // bind listener to Derived class instance
-    this.coordinator.emitter.on('metadata_updated', async ({ id, metadata }) => {
-      if (this.id === id) {
-        Credential.emitter.emit('tags_updated', { id, tags: metadata?.tags ?? [] });
-      }
-    });
+    }, { signal: this.#controller.signal });
   }
 
   // oauth2 methods
