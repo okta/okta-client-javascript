@@ -57,7 +57,12 @@ export abstract class APIClient<E extends APIClient.Events = APIClient.Events> {
   }
 
   /**
-   * Cleans up resourece associated with the client instance to prevent leaks.
+   * Cleans up resources associated with the client instance, so that it may be garbage collected.
+   * 
+   * > [!Warning]
+   * > **DO NOT** use this method on active clients.
+   * 
+   * @internal
    */
   public dispose () {
     this.emitter.clear();

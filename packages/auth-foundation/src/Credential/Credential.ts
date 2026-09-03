@@ -326,11 +326,13 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   /////// public instances methods ///////
 
   /**
-   * Cleans up resources associated with the Credential instance, so that it may be gargabe collected.
+   * Cleans up resources associated with the Credential instance, so that it may be garbage collected.
    * 
    * @remarks
    * This method is meant to be used in conjunction with {@link CredentialDataSource.remove}. Calling this
-   * method on an active {@link Credential} may have sigificant consequences 
+   * method on an active {@link Credential} may have significant consequences
+   * 
+   * @internal
    */
   public dispose () {
     this.oauth2.dispose();
