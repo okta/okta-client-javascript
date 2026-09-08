@@ -25,14 +25,8 @@
   "workspaces": {
     "packages": [
       "packages/*",
-      "docs",
-      "docs2",
       "tooling/*",
       "e2e/**/*"
-    ],
-    "nohoist": [
-      "@repo/okta-client-js-docs/**",
-      "**/typedoc"
     ]
   },
   "devEngines": {

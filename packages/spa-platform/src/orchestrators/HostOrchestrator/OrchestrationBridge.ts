@@ -1,3 +1,8 @@
+/**
+ * @packageDocumentation
+ * @internal
+ */
+
 import type { HostOrchestrator } from './index.ts';
 import { TaskBridge } from '@okta/auth-foundation/core';
 import { LocalBroadcastChannel } from '../../utils/LocalBroadcastChannel.ts';

@@ -13,6 +13,7 @@ import {
   isOAuth2ErrorResponse,
 } from './types/index.ts';
 import type { OAuth2Client } from './oauth2/client.ts';
+import type { OAuth2ClientOptions } from './oauth2/configuration.ts';
 import { OAuth2Error } from './errors/index.ts';
 import { validateURL } from './utils/validators.ts';
 import { shortID } from './crypto/index.ts';
@@ -44,6 +45,7 @@ export type TokenResponse = {
 /**
  * Required and optional values to construct a {@link Token} instance
  * @group Types
+ * @useDeclaredType
  */
 export type TokenInit = Omit<TokenResponse, 'idToken'> & {
   idToken?: string | JWT;
@@ -59,11 +61,9 @@ export type TokenPrimitiveInit = TokenResponse;
  * Internal representation of a OAuth2/OIDC Token.
  * Contains `accessToken`, conditionally contains `idToken` and `refreshToken`
  *
- * @group Token
- *
  * @remarks
  * Most operations can be done by {@link Credential} methods. It's recommended
- * to use those instead before reaching for a {@link Token.Token | Token} method
+ * to use those instead before reaching for a {@link Token} method
  *
  * @see
  * - Okta Documentation: {@link https://developer.okta.com/docs/reference/api/oidc/#response-properties-4 | OIDC }
@@ -163,6 +163,9 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
   }
 
   // TODO: consider with method with DPOP
+  /**
+   * Performs a token refresh using the provided `refreshToken`
+   */
   public static async from (refreshToken: string, client: OAuth2Client): Promise<Token> {
     const openIdConfiguration = await client.openIdConfiguration();
 
@@ -202,7 +205,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
   }
 
   /**
-   * Returns `true` if the {@link Token.Token | Token} is _not_ expired
+   * Returns `true` if the {@link Token:class | Token} is _not_ expired
    * 
    * @see {@link Token.isExpired}
    */
@@ -211,7 +214,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
   }
 
   /**
-   * Returns `true` if the {@link Token.Token | Token} will expire after a duration (seconds)
+   * Returns `true` if the {@link Token:class | Token} will expire after a duration (seconds)
    *
    * @see {@link Token.willBeValidIn}
    */
@@ -221,7 +224,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
   }
 
   /**
-   * Returns `true` if the {@link Token.Token | Token} will _not_ expire after a duration (seconds)
+   * Returns `true` if the {@link Token:class | Token} will _not_ expire after a duration (seconds)
    *
    * @see {@link Token.willBeExpiredIn}
    */
@@ -238,7 +241,7 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
   }
 
   /**
-   * Converts a {@link Token.Token | Token} instance to an serializable object literal representation
+   * Converts a {@link Token:class | Token} instance to an serializable object literal representation
    */
   toJSON (): JsonRecord {
     const {
@@ -271,11 +274,11 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
   }
 
   /**
-   * Used to merge separate {@link Token.Token | Token} instances together. Useful when handling token refresh as
+   * Used to merge separate {@link Token:class | Token} instances together. Useful when handling token refresh as
    * not every value is returned in a refresh request compared to the initial token request
    * 
    * @param token the "old" token instance to be merged into the "new" token
-   * @returns new {@link Token.Token | Token} instance
+   * @returns new {@link Token:class | Token} instance
    */
   merge (token: Token): Token {
     // TODO: add deviceSecret at some point (ref: Token+Internal.swift)
@@ -342,6 +345,7 @@ export namespace Token {
     dpopPairId?: string;
     acrValues?: AcrValues;
     maxAge?: TimeInterval;
+    clientSettings?: OAuth2ClientOptions;
   };
 
   // https://stackoverflow.com/a/54308812
@@ -353,6 +357,7 @@ export namespace Token {
     dpopPairId: undefined,
     acrValues: undefined,
     maxAge: undefined,
+    clientSettings: undefined
   } satisfies Record<(keyof Context), undefined>) as (keyof Context)[];
 
   /**
@@ -370,8 +375,8 @@ export namespace Token {
   }
 
   /**
-   * Non-sensitive metadata values associated with a {@link Token.Token | Token}. Used to store {@link Token.Context} and additional
-   * metadata for a given {@link Token.Token | Token}
+   * Non-sensitive metadata associated with a {@link Token:class | Token}. Used to store {@link Token.Context} and additional
+   * metadata for a given {@link Token:class | Token}
    * {@label TYPE}
    */
   export type Metadata = Context & {
@@ -380,6 +385,9 @@ export namespace Token {
     claims?: JsonRecord;
   };
 
+  /**
+   * Returns {@link Metadata:type | Token.Metadata} for a given {@link Token:class | Token}
+   */
   export function Metadata (token: Token, tags: string[] = []): Metadata {
     const metadata: Token.Metadata = {
       ...token.context,
@@ -460,6 +468,10 @@ export namespace Token {
 
   /**
    * Possible values provided to {@link OAuth2.OAuth2Client.revoke | OAuth2Client.revoke} to determine which tokens to revoke
+   * * `'ALL'` - revokes both the `access_token` and `refresh_token`.
+   * * `'ACCESS'` - revokes **only** the `access_token`.
+   * * `'REFRESH'` - revokes **only** the `refresh_token`.
+   * @inline
    */
   export type RevokeType = 'ALL' | 'ACCESS' | 'REFRESH';
 
@@ -492,6 +504,7 @@ export namespace Token {
 
   /**
    * Possible values provided to {@link OAuth2.OAuth2Client.introspect | OAuth2Client.introspect} to determine which token to introspect
+   * @inline
    */
   export type Kind = 'access_token' | 'refresh_token' | 'id_token';
 

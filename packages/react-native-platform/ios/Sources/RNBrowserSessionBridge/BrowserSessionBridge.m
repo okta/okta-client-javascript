@@ -4,6 +4,7 @@
 
 RCT_EXTERN_METHOD(openAuthSession:(NSString *)url
                   redirectScheme:(NSString *)redirectScheme
+                  options:(NSDictionary *)options
                   resolve:(RCTPromiseResolveBlock)resolve
                   reject:(RCTPromiseRejectBlock)reject)
 

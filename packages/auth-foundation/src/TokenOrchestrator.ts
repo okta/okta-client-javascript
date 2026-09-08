@@ -1,3 +1,7 @@
+/**
+ * @module TokenOrchestrator
+ */
+
 import type {
   RequestAuthorizerInit,
   JsonRecord,
@@ -8,27 +12,51 @@ import { TokenOrchestratorError } from './errors/index.ts';
 import { EventEmitter } from './utils/EventEmitter.ts';
 
 
-// TODO: doc all of this
-
 /**
- * @module TokenOrchestrator
- */
-
-
-/**
- * @abstract
+ * An abstraction layer between {@link Token} consumers and an application's internal management of {@link Token}s.
+ * Implementations of {@link TokenOrchestrator} handle fetching, refreshing, and storing tokens. There is an expectation
+ * (but not enforced by code) that tokens provided by {@link TokenOrchestrator} methods are valid (not expired).
+ * 
+ * Consumers simply call {@link TokenOrchestrator.getToken} (or {@link TokenOrchestrator.authorize}) to use tokens as needed.
+ * 
+ * @typeParam E - Map of all events fired from {@link TokenOrchestrator.emitter}
+ * 
+ * @remarks
+ * // TODO
+ * Each [Platform Library](/docs/structure#tier-3) offers {@link TokenOrchestrator} implementations relevant to the corresponding platform.
  *
- * Defines how {@link Token | Tokens} are retrieved to be consumed within an application
- *
- * @see {@link FetchClient}
+ * @see
+ * * Orchestrator Consumer Example: {@link FetchClient}
  */
 export abstract class TokenOrchestrator<E extends TokenOrchestrator.Events = TokenOrchestrator.Events> {
+  /**
+   * Possible events: {@link TokenOrchestrator.Events}
+   * 
+   * @example
+   * To add a new event within a derived class, first extend {@link TokenOrchestrator.Events}, like so:
+   * ```ts
+   * type MyOrchestratorEvents = { 'no_token': { params: any } } & TokenOrchestrator.Events;
+   * 
+   * class MyTokenOrchestrator<E extends MyOrchestratorEvents = MyOrchestratorEvents> extends TokenOrchestrator<E> {
+   *   protected async getToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null> {
+   *     const token = this.findTokenInStorage(params);     // example method
+   *     if (token === null) {
+   *       // this `.emit` call will be properly typed
+   *       this.emitter.emit('no_token', params);
+   *     }
+   *     return token;
+   *   }
+   * }
+   * ```
+   */
   protected readonly emitter: EventEmitter<E> = new EventEmitter();
 
+  /** alias for `this.emitter.on` */
   on (...args: Parameters<EventEmitter<E>['on']>) {
     return this.emitter.on(...args);
   }
 
+  /** alias for `this.emitter.off` */
   off (...args: Parameters<EventEmitter<E>['off']>) {
     return this.emitter.off(...args);
   }
@@ -47,11 +75,9 @@ export abstract class TokenOrchestrator<E extends TokenOrchestrator.Events = Tok
   public abstract invalidateToken (id: string): Promise<void>;
 
   /**
-   * Signs an outgoing {@link !Request} with an `Authorization` header via {@link Token.Token | Token} retrieved from {@link getToken}
+   * Signs an outgoing {@link !Request} with an `Authorization` header via {@link Token | Token} retrieved from {@link getToken}
    * 
    * Optionally {@link TokenOrchestrator.AuthorizeParams | AuthorizeParams} can be provided to be passed along to {@link getToken}
-   * 
-   * @see {@link FetchClient}
    */
   public async authorize (
     input: string | URL | Request,
@@ -73,6 +99,19 @@ export abstract class TokenOrchestrator<E extends TokenOrchestrator.Events = Tok
 }
 
 export namespace TokenOrchestrator {
+  /**
+   * @interface
+   * Map of events fired from {@link TokenOrchestrator.emitter}
+   * 
+   * @example
+   * ```ts
+   * // key = Event name
+   * // value = Event Type
+   * client.emitter.on('error', ({ error }) => {
+   *   console.log(error);
+   * });
+   * ```
+   */
   export type Events = {
     error: { error: Error | JsonRecord, type?: string };
   };
@@ -90,7 +129,8 @@ export namespace TokenOrchestrator {
   };
 
   // https://stackoverflow.com/a/54308812
-  // A clever way of utilizing TS to ensure this array contains all keys of `AuthorizeParams`
+  // A clever way of utilizing TS to ensure this map contains all keys of `AuthorizeParams`
+  // This produces a reference to all the keys with `AuthorizeParams` in code
   const paramKeys = {
     issuer: undefined,
     clientId: undefined,

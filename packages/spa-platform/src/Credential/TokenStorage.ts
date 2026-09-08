@@ -16,7 +16,11 @@ import { IndexedDBStore } from '../utils/IndexedDBStore.ts';
 
 
 /**
- * Default implementation of TokenStorage backend by `localStorage`
+ * Default implementation of {@link TokenStorage} backend by {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage | localStorage}
+ * 
+ * By default, all tokens will be encrypted (via `AES-GCM`) before being written to storage. {@link Token.Metadata} is stored separately an unencrypted.
+ * This enables storage queries (via {@link AuthFoundation!Credential.find | Credential.find}) to search on claims without decrypting tokens
+ * 
  * @internal
  */
 export class BrowserTokenStorage implements TokenStorage {
@@ -25,14 +29,29 @@ export class BrowserTokenStorage implements TokenStorage {
   private static version = 3;
 
   #defaultCredentialKey: string = 'okta-default';
+  /**
+   * A storage key prefix to identify entries by
+   */
   tokenPrefix: string = 'oauth-token';
 
   // encryption
+  /**
+   * A {@link IndexedDB}-based store for the storage encryption key(s)
+   */
   encryptionKeyStore = new IndexedDBStore<CryptoKey>('StorageKeys');
+  /**
+   * Key name for the encryption key within the {@link encryptionKeyStore}
+   */
   encryptionKeyName = 'EncryptionKey';
 
   // configurations
+  /**
+   * When `true`, includes `idToken` claims in stored {@link Token.Metadata}. Metadata is stored separately
+   */
   public includeClaims: boolean = true;     // when true, idToken claims are stored in token metadata to use token selection
+  /**
+   * When `true`, tokens will be encrypted (via `AES-GCM`) before being written to storage.
+   */
   public encryptAtRest: boolean = true;     // when true, tokens are encrypted before written to storage (and decrypted when retrieved)
   // TODO: [OKTA-977044] remove
   public supportLegacyStructure: boolean = false;

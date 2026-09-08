@@ -5,8 +5,8 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
-import { Credential } from '@okta/react-native-platform';
-import type { Token } from '@okta/react-native-platform';
+import { Credential, type Token } from '@okta/react-native-platform';
+
 
 type CredentialItem = {
   id: string;

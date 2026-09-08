@@ -1,11 +1,6 @@
 import Constants from 'expo-constants';
-import { Platform } from 'react-native';
-import { OAuth2Client } from '@okta/auth-foundation/core';
-import {
-  AuthorizationCodeFlow,
-  SessionLogoutFlow,
-  Credential,
-} from '@okta/react-native-platform';
+import { OAuth2Client, Credential } from '@okta/react-native-platform';
+import { AuthorizationCodeFlow } from '@okta/react-native-platform/flows';
 
 
 export const client = new OAuth2Client({
@@ -13,6 +8,7 @@ export const client = new OAuth2Client({
   clientId: Constants?.expoConfig?.extra?.env.NATIVE_CLIENT_ID,
   scopes: ['openid', 'email', 'profile', 'offline_access'],
   dpop: false,
+  allowHTTP: true
 });
 
 export const flow = new AuthorizationCodeFlow(client, {
