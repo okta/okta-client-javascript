@@ -1,3 +1,8 @@
+/**
+ * @module
+ * @mergeModuleWith Orchestrators
+ */
+
 import type { HostOrchestrator as HO } from './index.ts';
 import {
   Token,
@@ -17,6 +22,10 @@ function isErrorResponse (input: unknown): input is HO.ErrorResponse {
   return false;
 }
 
+/**
+ * Receives and fulfills delegated {@link AuthFoundation!Token | Token} requests from `HostOrchestrator.SubApp` instances
+ * @noNamespaceMerge
+ */
 export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> implements Emitter<E> {
   protected readonly emitter: EventEmitter<E> = new EventEmitter();
   id: string = shortID();
@@ -77,6 +86,7 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
     this.#bridge = null;
   }
 
+  /** @internal */
   protected async parseRequest<K extends keyof HO.RequestEvent>(request: HO.RequestEvent[K], replyFn) {
     this.emitter.emit('request_received', { request });
     const { eventName } = request;
@@ -107,6 +117,7 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
     return replyFn(response);
   }
 
+  /** @internal */
   protected handleHostActivated ({ hostId }: HO.ActivatedEvent) {
     if (hostId !== this.id) {
       console.warn('Multiple HostOrchestrators are active on this page!');
@@ -114,6 +125,7 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
     }
   }
 
+  /** @internal */
   protected async handleTokenRequest (event: HO.TokenRequest): Promise<HO.TokenResponse> {
     const { authParams } = TokenOrchestrator.extractAuthParams(event);
     const result = await this.findToken(authParams);
@@ -128,6 +140,7 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
     return { error: 'Unable to obtain token' };
   }
 
+  /** @internal */
   protected async handleAuthorizeRequest (event: HO.AuthorizeRequest): Promise<HO.AuthorizeResponse> {
     const { url, method, nonce } = event;
     const { authParams } = TokenOrchestrator.extractAuthParams(event);
@@ -169,6 +182,7 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
     return { error: 'Unable to sign request' };
   }
 
+  /** @internal */
   protected async handleProfileRequest (event: HO.TokenRequest): Promise<HO.ProfileResponse> {
     const { authParams } = TokenOrchestrator.extractAuthParams(event);
     const result = await this.findToken(authParams);
@@ -186,4 +200,8 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
   }
 
   abstract findToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null | HO.ErrorResponse>; 
+}
+
+namespace HostOrchestrator {
+  export type foo = number;
 }

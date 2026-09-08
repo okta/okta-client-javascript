@@ -1,6 +1,6 @@
 /**
  * @module
- * @mergeModuleWith TokenOrchestrators
+ * @mergeModuleWith Orchestrators
  */
 
 import {
@@ -15,25 +15,39 @@ import { SubAppOrchestrator } from './SubApp.ts';
 
 // NOTE: In this context, "request"/"response" refer to communication between the Host and Sub apps
 
-
+/**
+ * @overrideContent orchestrators/HostOrchestrator/doc.md
+ * @overridePath orchestrators/HostOrchestrator
+ */
 export namespace HostOrchestrator {
-  /**
-   * Receives and fulfills delegated {@link Platform.Token | Token} requests from {@link HostOrchestrator.SubApp} instances
-   * 
-   * @group Host
-   */
-  export abstract class Host<E extends HostEvents = HostEvents> extends HostApp<E> {}
+  // /**
+  //  * Receives and fulfills delegated {@link AuthFoundation!Token | Token} requests from {@link HostOrchestrator.SubApp} instances
+  //  * 
+  //  * @group Host
+  //  */
+  // export abstract class Host<E extends HostEvents = HostEvents> extends HostApp<E> {}
 
   /**
-   * A {@link AuthFoundation!TokenOrchestrator | TokenOrchestrator} instance which delegates all {@link Platform.Token | Token}
-   * requests to a {@link HostOrchestrator.Host}
-   * 
-   * @group SubApp
+   * @reexport
    */
-  export class SubApp<E extends SubAppEvents = SubAppEvents> extends SubAppOrchestrator<E> {}
+  export const Host: typeof HostApp = HostApp;
+  export type Host<E extends HostEvents = HostEvents> = InstanceType<typeof HostApp<E>>;
+
+  // /**
+  //  * A {@link AuthFoundation!TokenOrchestrator | TokenOrchestrator} instance which delegates all {@link AuthFoundation!Token | Token}
+  //  * requests to a {@link HostOrchestrator.Host}
+  //  * 
+  //  * @group SubApp
+  //  */
+  // export class SubApp<E extends SubAppEvents = SubAppEvents> extends SubAppOrchestrator<E> {}
+  /**
+   * @reexport
+   */
+  export const SubApp = SubAppOrchestrator;
+  export type SubApp<E extends SubAppEvents = SubAppEvents> = InstanceType<typeof SubAppOrchestrator<E>>;
 
   /**
-   * A utility class to adapt any {@link AuthFoundation!TokenOrchestrator | TokenOrchestrator} instance into a {@link HostOrchestrator.Host}
+   * A utility class to adapt any {@link AuthFoundation!TokenOrchestrator | TokenOrchestrator} instance into a {@link HostOrchestrator}
    * @group ProxyHost
    */
   export class ProxyHost<E extends HostEvents = HostEvents> extends HostOrchestrator.Host<E> {
@@ -56,6 +70,7 @@ export namespace HostOrchestrator {
   }
 
   /**
+   * 
    * @group Host
    */
   export type HostOptions = {
@@ -63,6 +78,7 @@ export namespace HostOrchestrator {
   };
 
   /**
+   * Map of events which can be emitted from {@link HostOrchestrator.emitter}
    * @group Host
    */
   export type HostEvents = {
@@ -88,6 +104,7 @@ export namespace HostOrchestrator {
 
   /**
    * @group Types
+   * @internal
    */
   export type TokenRequestEventPayloads = {
     'TOKEN': TokenRequest;
@@ -96,9 +113,11 @@ export namespace HostOrchestrator {
   };
 
   /**
-   * @group Types
    * Payload for "host_activated" events. 
    * Sent once a {@link HostOrchestrator.Host} instantiates. Used to detect multiple hosts
+   * 
+   * @group Types
+   * @internal
    */
   export type ActivatedEvent = {
     eventName: 'ACTIVATED';
@@ -108,6 +127,7 @@ export namespace HostOrchestrator {
 
   /**
    * @group Types
+   * @internal
    */
   export type PingEvent = {
     eventName: 'PING';
@@ -115,9 +135,11 @@ export namespace HostOrchestrator {
   };
 
   /**
-   * @group Types
-   * Lose typing of the request event object structure. Provides slightly more type-safety than
+   * Loose typing of the request event object structure. Provides slightly more type-safety than
    * using `any` or `unknown` like most generic messaging APIs
+   * 
+   * @group Types
+   * @internal
    */
   export type RequestEvent = ({
     [K in keyof TokenRequestEventPayloads]: { 
@@ -135,6 +157,7 @@ export namespace HostOrchestrator {
 
   /**
    * @group Types
+   * @internal
    */
   export type TokenRequest = {
     issuer?: string;
@@ -146,6 +169,7 @@ export namespace HostOrchestrator {
 
   /**
    * @group Types
+   * @internal
    */
   export type AuthorizeRequest = TokenRequest & {
     url?: string;
@@ -154,8 +178,9 @@ export namespace HostOrchestrator {
   };
 
   /**
-   * @group Types
    * Map of responses from a HostOrchestrator request event
+   * @group Types
+   * @internal
    */
   export type ResponseEvent = {
     'TOKEN': TokenResponse;
@@ -167,21 +192,25 @@ export namespace HostOrchestrator {
 
   /**
    * @group Types
+   * @internal
    */
   export type ErrorResponse = { error: string; };
 
   /**
    * @group Types
+   * @internal
    */
   export type PingResponse = { message: 'PONG' };
 
   /**
    * @group Types
+   * @internal
    */
   export type TokenResponse = { token: TokenPrimitiveInit } | ErrorResponse;
 
   /**
    * @group Types
+   * @internal
    */
   export type AuthorizeResponse = {
     tokenType: string;
@@ -191,6 +220,7 @@ export namespace HostOrchestrator {
 
   /**
    * @group Types
+   * @internal
    */
   export type ProfileResponse = { profile: JsonRecord } | ErrorResponse;
 

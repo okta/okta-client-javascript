@@ -53,13 +53,13 @@ import { AuthTransaction } from '../AuthTransaction.ts';
  * 
  * @see 
  * Okta Documentation:
- * - {@link https://developer.okta.com/docs/concepts/oauth-openid/#authorization-code-flow-with-pkce-flow | Concepts}
- * - {@link https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/#authorization-code-flow | Guide}
+ * - {@link https://developer.okta.com/docs/concepts/oauth-openid/#authorization-code-flow-with-pkce-flow | Okta: Concepts}
+ * - {@link https://developer.okta.com/docs/guides/implement-grant-type/authcode/main/#authorization-code-flow | Okta: Guide}
  * 
  * Additional References:
  * - {@link https://auth0.com/docs/get-started/authentication-and-authorization-flow/authorization-code-flow | Auth0}
  * - {@link https://oauth.net/2/grant-types/authorization-code | OAuth.net}
- * - {@link https://datatracker.ietf.org/doc/html/rfc6749#section-1.3.1 | RFC}
+ * - {@link https://datatracker.ietf.org/doc/html/rfc6749#section-1.3.1 | RFC 6749 - Authorization Code}
  */
 export class AuthorizationCodeFlow extends AuthenticationFlow {
   readonly client: OAuth2Client;
@@ -69,7 +69,9 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
   protected context: AuthorizationCodeFlow.Context | null = null;
   protected authorizeUrl: URL | null = null;
 
+  /** Constructs a new {@link OAuth2Client} internally from `options` */
   constructor (options: AuthorizationCodeFlow.InitOptions);
+  /** Uses an existing {@link OAuth2Client} instance */
   constructor (client: OAuth2Client, options: AuthorizationCodeFlow.RedirectParams);
   constructor (
     client: OAuth2Client | AuthorizationCodeFlow.InitOptions,
@@ -91,10 +93,12 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
     this.additionalParameters = additionalParameters ?? {};
   }
 
+  /** {@inheritDoc Core!AuthenticationFlow.inProgress} */
   public get isAuthenticating (): boolean {
     return this.inProgress;
   }
 
+  /** {@inheritDoc Core!AuthenticationFlow.reset} */
   reset () {
     super.reset();
     this.context = null;
@@ -238,12 +242,13 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
 
   /**
    * Continues an Authorization Code flow. Used when handling the redirect back to the `Web App` from an `Authorization Server`
-   * 
+   *
    * @remarks
    * This method will only be used with `Redirect Model`
-   * 
-   * @param redirectUri 
-   * @returns 
+   *
+   * @param redirectUri - The full redirect-back URL (or just its search params), containing either
+   * an authorization `code` and `state`, or an OAuth2 error response
+   * @returns The exchanged {@link Token} along with any `stateData` originally passed to {@link AuthorizationCodeFlow.start}
    */
   async resume (redirectUri: string | URL | URLSearchParams): Promise<AuthorizationCodeFlow.Result> {
     this.inProgress = true;
@@ -315,15 +320,35 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
 }
 
 export namespace AuthorizationCodeFlow {
+  /**
+   * Params needed when constructing an {@link AuthorizationCodeFlow} from an existing {@link OAuth2Client}
+   */
   export type RedirectParams = {
+    /** Where the Authorization Server should redirect back to once the user has authenticated */
     redirectUri: string | URL;
+    /** Additional query parameters to include on every `/authorize` request made by this flow */
     additionalParameters?: Record<string, string>;
   };
 
+  /**
+   * Options required to construct a {@link AuthorizationCodeFlow} instance
+   * @interface
+   */
   export type InitOptions = AuthenticationFlow.Options & RedirectParams;
 
+  /**
+   * Values parsed from a successful redirect back from the Authorization Server
+   */
   export interface RedirectValues {
+    /**
+     * The authorization code to be exchanged for tokens.
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.2 | RFC 6749 - Authorization Response}
+     */
     code: string;
+    /**
+     * A unique value used to correlate the `/authorize` request with its redirect back, mitigating CSRF
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.1 | RFC 6749 - Authorization Request}
+     */
     state: string;
   }
 
@@ -331,18 +356,55 @@ export namespace AuthorizationCodeFlow {
    * Values needed to initiate an Authorization Code flow
    */
   export interface Context extends AuthContext {
+    /**
+     * Where the Authorization Server should redirect back to once the user has authenticated
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc6749#section-3.1.2 | RFC 6749 - Redirection Endpoint}
+     */
     redirectUri: string;
+    /**
+     * A unique value used to correlate the `/authorize` request with its redirect back, mitigating CSRF
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc6749#section-4.1.1 | RFC 6749 - Authorization Request}
+     */
     state: string;
+    /**
+     * The {@link PKCE.Challenge} sent on the `/authorize` request; deleted from context once used
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc7636#section-4.2 | RFC 7636 - Client Creates the Code Challenge}
+     */
     pkce?: PKCE.Challenge;
+    /**
+     * The PKCE code verifier, exchanged for tokens alongside the authorization code
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc7636#section-4.1 | RFC 7636 - Client Creates the Code Verifier}
+     */
     verifier: string;
+    /**
+     * A random value used to mitigate replay attacks, verified against the resulting ID token's `nonce` claim
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc9700#section-4.5.3.2 | RFC 9700 - Countermeasures: Nonce}
+     */
     nonce?: string;
+    /**
+     * Maximum elapsed time, in seconds, since the user last authenticated. Often used in step-up authentication flows
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc9470#section-3-5.4 | RFC 9470 - Authentication Requirements Challenge}
+     */
     maxAge?: TimeInterval;
+    /**
+     * Scopes requested for this specific flow instance
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc6749#section-3.3 | RFC 6749 - Access Token Scope}
+     */
     scopes?: string[];
+    /**
+     * Requested authentication context class reference values. These values a pre-defined by the authorization server.
+     * @see {@link https://datatracker.ietf.org/doc/html/rfc9470#section-3-5.4 | RFC 9470 - Authentication Requirements Challenge}
+     */
     acrValues?: AcrValues;
   }
 
+  /**
+   * The result of successfully completing an Authorization Code flow via {@link AuthorizationCodeFlow.resume}
+   */
   export type Result = {
+    /** The exchanged {@link Token} */
     token: Token;
+    /** The `stateData` originally passed to {@link AuthorizationCodeFlow.start} */
     context: Record<string, any>;
   };
 

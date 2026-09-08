@@ -13,6 +13,7 @@
  * @param ms - length of delay in milliseconds
  * 
  * @group Utils
+ * @internal
  */
 export function pause (ms: number) {
   return new Promise((resolve) => {

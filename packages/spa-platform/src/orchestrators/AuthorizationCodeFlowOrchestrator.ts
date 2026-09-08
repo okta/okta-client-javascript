@@ -1,6 +1,6 @@
 /**
  * @module
- * @mergeModuleWith TokenOrchestrators
+ * @mergeModuleWith Orchestrators
  */
 
 import {
@@ -25,19 +25,39 @@ const defaultOptions: AuthorizationCodeFlowOrchestrator.Options = {
 };
 
 /**
- * An implementation of {@link AuthFoundation!TokenOrchestrator | TokenOrchestrator} leveraging
- * {@link https://developer.okta.com/docs/concepts/oauth-openid/#authorization-code-flow-with-pkce-flow | Authorization Code Flow }
- * @public
+ * An implementation of {@link AuthFoundation!TokenOrchestrator | TokenOrchestrator} leveraging 
+ * {@link Flows.AuthorizationCodeFlow | AuthorizationCodeFlow}
+ * 
+ * Out-of-the-box this orchestrator will handle performing [Authorzation Code flow](/docs/references/authorization_code_flow) as well
+ * as storing and refreshing tokens.
+ * 
+ * > [!IMPORTANT]
+ * > `AuthorizationCodeFlowOrchestrator` is **NOT** available from the default export since it requires `@okta/oauth2-flows`.
+ * >
+ * > Use `import { AuthorizationCodeFlowOrchestrator } from '@okta/spa-platform/flows'`.
+ * 
+ * @remarks
+ * `AuthorizationCodeFlowOrchestrator` defaults to {@link Flows!AuthorizationCodeFlow.PerformRedirect | PerformRedirect}. This requires the application
+ * handles the redirect via {@link AuthorizationCodeFlowOrchestrator.resumeFlow}.
+ * 
+ * @typeParam E - Map of all events fired from {@link TokenOrchestrator.emitter}
+ * 
+ * @see
+ * * [SPA Platform: Authorization Code Flow](/api/spa-platform/#authorization-code-flow)
+ * * {@link Flows.AuthorizationCodeFlow | AuthorizationCodeFlow}
  */
 export class AuthorizationCodeFlowOrchestrator<
   E extends AuthorizationCodeFlowOrchestrator.Events = AuthorizationCodeFlowOrchestrator.Events
 > extends TokenOrchestrator<E> {
+  /**
+   * Possible events: {@link AuthorizationCodeFlowOrchestrator.Events}
+   */
   protected readonly emitter: EventEmitter<E> = new EventEmitter();
   options: AuthorizationCodeFlowOrchestrator.Options = defaultOptions;
 
   constructor (
     public readonly flow: AuthorizationCodeFlow,
-    init: AuthorizationCodeFlowOrchestrator.Init = {}
+    init: Partial<AuthorizationCodeFlowOrchestrator.Options> = {}
   ) {
     const { avoidPrompting, emitBeforeRedirect, getOriginalUri, tags } = init;
     super();
@@ -50,7 +70,8 @@ export class AuthorizationCodeFlowOrchestrator<
   }
 
   /**
-   * Defines how to handle the authorization code redirect
+   * Defines how to handle the authorization code redirect via
+   * {@link AuthFoundation!AuthorizationCodeFlow.resume | AuthorizationCodeFlow.resume}
    *
    * throws if an OAuth2 error is returned
    */
@@ -100,6 +121,7 @@ export class AuthorizationCodeFlowOrchestrator<
 
   /**
    * Defines how to store a newly acquired token
+   * @internal
    */
   protected async storeCredential (token: Token, tags: string[] | undefined = this.options.tags): Promise<Credential> {
     return await Credential.store(token, tags);
@@ -107,6 +129,7 @@ export class AuthorizationCodeFlowOrchestrator<
 
   /**
    * Defines how to request a token from Authorization Server
+   * @internal
    */
   protected async requestToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null> {
     if (this.flow.inProgress) {
@@ -184,7 +207,11 @@ export class AuthorizationCodeFlowOrchestrator<
   }
 }
 
+/** {@inheritDoc AuthorizationCodeFlowOrchestrator} */
 export namespace AuthorizationCodeFlowOrchestrator {
+  /**
+   * Options to define behavior of {@link AuthorizationCodeFlowOrchestrator}.
+   */
   export type Options = {
     avoidPrompting: boolean;
     emitBeforeRedirect: boolean;
@@ -192,8 +219,10 @@ export namespace AuthorizationCodeFlowOrchestrator {
     tags?: string[]
   };
 
-  export type Init = Partial<Options>;
-
+  /**
+   * A map of possible events emitted by {@link AuthorizationCodeFlowOrchestrator.emitter} 
+   * @interface
+   */
   export type Events = {
     'login_prompt_required': { done: () => void, params: TokenOrchestrator.AuthorizeParams };
   } & TokenOrchestrator.Events;

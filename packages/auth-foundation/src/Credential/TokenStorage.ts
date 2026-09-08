@@ -7,8 +7,12 @@ import { Token } from '../Token.ts';
 import { EventEmitter } from '../utils/EventEmitter.ts';
 import { CredentialError } from '../errors/index.ts';
 
-
+/** @inline */
 type TokenStorageEvent = { storage: TokenStorage, id: string };
+/**
+ * Map of events fired from {@link TokenStorage.emitter}
+ * @interface
+ */
 export type TokenStorageEvents = {
   'token_added': TokenStorageEvent & { token: Token };
   'token_removed': TokenStorageEvent;
@@ -26,7 +30,8 @@ export type TokenStorageEvents = {
  * can be stored in a more accessible location and used to query which tokens are available (without prompting biometrics)
  * 
  * @remarks
- * Default implementation provided based on {@link https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage | localStorage}
+ * Default implementation provided is an in-memory solution and is **NOT** intended for production use. The [Platform Libraries](/docs/structure#tier-3) include
+ * {@link TokenStorage} implementations, which are production-ready, relevant to their specific platform.
  */
 export interface TokenStorage {
   readonly emitter: EventEmitter<TokenStorageEvents>;

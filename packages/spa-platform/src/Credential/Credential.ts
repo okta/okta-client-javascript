@@ -12,10 +12,16 @@ import { CredentialCoordinatorImpl } from './CredentialCoordinator.ts';
 
 
 /**
- * A browser-specific implementation of `@okta/auth-foundation` {@link AuthFoundation!Credential | Credential}
+ * A browser-specific extension of `@okta/auth-foundation` {@link AuthFoundation!Credential | Credential}
+ * 
+ * @remarks
+ * Uses {@link BroadcastChannel} to synchronize tokens across tabs. In testing environments, it may be
+ * required to use {@link Credential.close} to prevent open handles.
  * 
  * @group Credential
  * @noInheritDoc
+ * 
+ * @see Base Class: {@link AuthFoundation!Credential | Credential}
  */
 export class Credential extends CredentialBase implements RequestAuthorizer, JSONSerializable {
   static {
@@ -23,7 +29,7 @@ export class Credential extends CredentialBase implements RequestAuthorizer, JSO
   }
 
   /**
-   * Closes the underlying BroadcastChannel, useful for testing environments to avoid open handles
+   * Closes the underlying {@link BroadcastChannel}, useful for testing environments to avoid open handles
    *
    * @see
    * {@link https://jestjs.io/docs/cli#--detectopenhandles | jest --detectOpenHandles}

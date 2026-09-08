@@ -1,3 +1,8 @@
+/**
+ * @module
+ * @mergeModuleWith Flows
+ */
+
 import {
   type OAuth2ErrorResponse,
   isOAuth2ErrorResponse,
@@ -58,6 +63,11 @@ function bindOktaPostMessageListener ({
 // updates storage impl for AuthTransaction
 AuthTransaction.storage = new BrowserTransactionStorage();
 
+/**
+ * Browser-specific additions to {@link OAuth2Flows!AuthorizationCodeFlow | AuthorizationCodeFlow}
+ * 
+ * @noInheritDoc
+ */
 export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
 
   /**
@@ -70,7 +80,8 @@ export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
    * This method returns a `Promise` that will never fulfill; a browser redirect will occur first
    * 
    * @see
-   * {@link AuthorizationCodeFlow.resume}
+   * * {@link AuthorizationCodeFlow.resume}
+   * * [SPA Platform: PerformRedirect](/api/spa-platform/#performredirect)
    */
   static async PerformRedirect (flow: AuthorizationCodeFlow): Promise<void> {
     if (!flow.inProgress) {
@@ -135,11 +146,12 @@ export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
    * Use {@link AuthorizationCodeFlow.PerformRedirect} instead
    *
    * @returns
-   * Returns a {@link Platform.Token | Token} and the {@link AuthorizationCodeFlow.Context} used to request the token
+   * Returns a {@link AuthFoundation!Token | Token} and the {@link AuthorizationCodeFlow.Context} used to request the token
    *
    * @see
    * - {@link https://auth0.com/docs/authenticate/login/configure-silent-authentication | Silent Authentication}
    * - {@link https://developers.google.com/privacy-sandbox/cookies | Third-party Cookie Deprecation}
+   * - [SPA Platform: PerformSilently](/api/spa-platform/#performsilently)
    */
   static async PerformSilently (flow: AuthorizationCodeFlow): Promise<AuthorizationCodeFlow.Result> {
     const { authorizeUrl, context } =  await this.prepareOktaPostMessage(flow);
@@ -168,24 +180,26 @@ export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
   }
 
   /**
-   * Read carefully before use. This method (and popup pattern at large) has quite a few "gotchas"
+   * > [!IMPORTANT]
+   * > Read carefully before use. This method (and popup pattern at large) has quite a few "gotchas"
    *
    * Fulfills `/authorize` requests in a popup window. Not necessarily recommended for primary authentication flows,
-   * but can be useful for step up authentication flows.
-   *
-   * @group Authorize Methods
-   *
-   * @remarks
+   * but can be useful for step up authentication flows against a known IDP.
+   * 
+   * > [!NOTE]
+   * > The phrase "external IDP" refers to an IDP other than the configured `issuer` for a given flow. See
+   * > [Concepts: External Identity Providers](https://developer.okta.com/docs/concepts/identity-providers/) for a more detailed explanation
+   * 
    * Utilizing external IDPs in a popup window may be susceptible to the IDP's `Cross-Origin-Opener-Policy`. Depending on their policy value,
-   * the loading the IDP in a popup window may cause the popup window to create a new browsing context group (BCG), seperate from the main
+   * loading the IDP in a popup window may cause the popup window to create a new browsing context group (BCG), seperate from the main
    * browser window. The authentication flow will be unable to complete if this occurs. It's recommended to avoid using this method (and a popup
    * in general) when utilizing external IDPs.
    *
-   * {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy | Cross-Origin-Opener-Policy}
-   * {@link https://developer.mozilla.org/en-US/docs/Glossary/Browsing_context | Browsing Context Group}
-   *
+   * * {@link https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Cross-Origin-Opener-Policy | Cross-Origin-Opener-Policy}
+   * * {@link https://developer.mozilla.org/en-US/docs/Glossary/Browsing_context | Browsing Context Group}
+   * 
+   * @group Authorize Methods
    * @param flow - instance of {@link AuthorizationCodeFlow} to be used
-   *
    * @param popupWindow - Optionally, a `Window` object (representing a popup window) can be provided.
    * Providing a popup reference can be useful when control over the popup's attributes, like name and size, is required.
    *
@@ -193,11 +207,25 @@ export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
    * can block popups spawned from `async` processes. Loading the base route before navigating to `/authorize` helps reduce the likelihood
    * the popup gets blocked. To override this behavior, provide a popup reference
    *
-   * @returns {@link AuthorizationCodeFlow.PopupResult}
-   * On success, the return value will be `{ completed: true, token: {@link Platform.Token | Token}, context: {@link AuthorizationCodeFlow.Context} }`
-   * On failure, the return value will be `{ completed: false; reason: 'closed' | 'blocked' }`
+   * @returns
+   * Success response:
+   * | Property | Type | Description |
+   * | ------ | ------ | ------ |
+   * | `completed` | `true` | Indicates the flow completed successfully |
+   * | `token` | {@link AuthFoundation!Token | Token} | The resulting token from the successful flow |
+   * | `context` | `Record<string, any>` | Developer-provided (pre-auth) metadata about the token |
+   * 
+   * Unsuccessful response:
+   * | Property | Type | Description |
+   * | ------ | ------ | ------ |
+   * | `completed` | `false` | Indicates the flow **did not** complete |
+   * | `reason` | `'closed'` or `'blocked'` | Indicates the _reason_ the flow did not complete |
+   * 
    *   - `'closed'` indicates the user manually closed the popup window
    *   - `'blocked'` indicates the popup window was unable to be opened (presumably by a popup blocker or browser heustistics)
+   * 
+   * @see
+   * - [SPA Platform: PerformInPopup](/api/spa-platform/#performinpopup)
    */
   static async PerformInPopup (flow: AuthorizationCodeFlow, popupWindow?: Window): Promise<AuthorizationCodeFlow.PopupResult> {
     let popup: Window | null = null;
@@ -271,9 +299,32 @@ export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
   }
 }
 
+/** {@inheritDoc AuthorizationCodeFlow} */
 export namespace AuthorizationCodeFlow {
+  /** @reexport */
   export type RedirectValues = AuthorizationCodeFlowBase.RedirectValues;
+  /** @reexport */
   export type Result = AuthorizationCodeFlowBase.Result;
+  /** @reexport */
   export type Context = AuthorizationCodeFlowBase.Context;
+  /**
+   * The possible results from {@link AuthorizationCodeFlow.PerformInPopup}
+   * 
+   * Success response:
+   * | Property | Type | Description |
+   * | ------ | ------ | ------ |
+   * | `completed` | `true` | Indicates the flow completed successfully |
+   * | `token` | {@link AuthFoundation!Token | Token} | The resulting token from the successful flow |
+   * | `context` | `Record<string, any>` | Developer-provided (pre-auth) metadata about the token |
+   * 
+   * Unsuccessful response:
+   * | Property | Type | Description |
+   * | ------ | ------ | ------ |
+   * | `completed` | `false` | Indicates the flow **did not** complete |
+   * | `reason` | `'closed'` or `'blocked'` | Indicates the _reason_ the flow did not complete |
+   * 
+   *   - `'closed'` indicates the user manually closed the popup window
+   *   - `'blocked'` indicates the popup window was unable to be opened (presumably by a popup blocker or browser heustistics)
+   */
   export type PopupResult = (Result & { completed: true }) | { completed: false; reason: 'closed' | 'blocked' };
 }

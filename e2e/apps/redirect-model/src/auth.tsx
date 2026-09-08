@@ -18,7 +18,8 @@ export const oauthConfig: any = {
   issuer: __ISSUER__,
   clientId: USE_DPOP ? __DPOP_CLIENT_ID__ : __SPA_CLIENT_ID__,
   scopes: [...(isOIDC ? ['openid', 'profile', 'email'] : []), 'offline_access', ...customScopes],
-  dpop: USE_DPOP
+  dpop: USE_DPOP,
+  allowHTTP: true     // not recommended for production
 };
 oauthConfig.baseURL = oauthConfig.issuer;
 

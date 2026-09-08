@@ -79,6 +79,7 @@ export class Timestamp {
 }
 
 /**
+ * A sourece-of-truth for the current time. 
  * @group TimeCoordinator
  */
 export interface TimeCoordinator {
@@ -89,6 +90,7 @@ export interface TimeCoordinator {
 
 /**
  * @group TimeCoordinator
+ * @internal
  */
 export class DefaultTimeCoordinator implements TimeCoordinator {
   #skew = 0;

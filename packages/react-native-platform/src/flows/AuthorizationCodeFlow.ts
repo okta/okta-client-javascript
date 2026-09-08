@@ -1,3 +1,9 @@
+/**
+ * @module
+ * @mergeModuleWith Flows
+ */
+
+
 import { OAuth2Error } from '@okta/auth-foundation/core';
 import {
   AuthTransaction,
@@ -11,6 +17,9 @@ import {
 } from '../BrowserSession/index.ts';
 
 
+/**
+ * @noInheritDoc
+ */
 export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
 
   public static defaultBrowserSessionOptions: BrowserSessionOptions = {
@@ -19,10 +28,20 @@ export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
   };
   
   /**
-   * TODO: complete doc
-   * 
-   * defaults `ephemeralSession` to `true`. OIDC Logout cannot be completed in an React Native context
-   * because Android chrome windows require user interaction (is not a part of the current OIDC logout flow)
+   * Performs an Authorization Code flow by opening the `Authorization Server` `/authorize` endpoint
+   * in a native browser session (see {@link AuthorizationCodeFlow.defaultBrowserSessionOptions})
+   *
+   * @remarks
+   * Defaults to an ephemeral (non-persistent) browser session, unlike this library's general default
+   * of `ephemeralSession: false`. This is intentional: on React Native, an OIDC logout can't reliably
+   * clear a *persistent* browser session, since Android Chrome windows require user interaction and
+   * aren't part of the current logout flow. Signing in with an ephemeral session instead avoids
+   * leaving behind browser-level auth state that logout would otherwise be unable to clean up.
+   *
+   * @param flow - The {@link AuthorizationCodeFlow} instance to sign in with. If it isn't already
+   * {@link AuthorizationCodeFlow.isAuthenticating | in progress}, it will be started
+   * @returns A {@link AuthorizationCodeFlow.BrowserSignInResult} describing whether sign-in completed,
+   * and why it didn't if not
    */
   static async PerformBrowserSignIn (flow: AuthorizationCodeFlow): Promise<AuthorizationCodeFlow.BrowserSignInResult> {
     try {
@@ -77,13 +96,15 @@ export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
 }
 
 export namespace AuthorizationCodeFlow {
+  /** @reexport */
   export type Result = AuthorizationCodeFlowBase.Result;
   /**
-   * completed: true - happy path, returns token and request context
-   * completed: false:
-   *   - reason: 'closed' - Browser window was closed by user
-   *   - reason: 'error'  - Authorization Code flow resulted in an OAuth error response
-   *   - reason: 'failed' - Error was thrown during execution
+   * `completed: true` - happy path, returns token and request context
+   * 
+   * `completed: false`:
+   *   - `reason: 'closed'` - Browser window was closed by user
+   *   - `reason: 'error'`  - Authorization Code flow resulted in an OAuth error response
+   *   - `reason: 'failed'` - Error was thrown during execution
    */
   export type BrowserSignInResult = 
     (Result & { completed: true }) |
