@@ -211,28 +211,28 @@
   },
   {
     "text": "Token",
-    "link": "/api/auth-foundation/Token/classes/Token.md",
+    "link": "/api/auth-foundation/Token/",
     "collapsed": true,
     "items": [
       {
         "text": "Context",
-        "link": "/api/auth-foundation/Token/namespaces/Token/type-aliases/Context.md"
+        "link": "/api/auth-foundation/Token/type-aliases/Context.md"
       },
       {
         "text": "Metadata",
-        "link": "/api/auth-foundation/Token/namespaces/Token/type-aliases/Metadata.md"
+        "link": "/api/auth-foundation/Token/type-aliases/Metadata.md"
       },
       {
         "text": "RevokeType",
-        "link": "/api/auth-foundation/Token/namespaces/Token/type-aliases/RevokeType.md"
+        "link": "/api/auth-foundation/Token/type-aliases/RevokeType.md"
       },
       {
         "text": "Kind",
-        "link": "/api/auth-foundation/Token/namespaces/Token/type-aliases/Kind.md"
+        "link": "/api/auth-foundation/Token/type-aliases/Kind.md"
       }, 
       {
         "text": "IntrospectResponse",
-        "link": "/api/auth-foundation/Token/namespaces/Token/type-aliases/IntrospectResponse.md"
+        "link": "/api/auth-foundation/Token/type-aliases/IntrospectResponse.md"
       },
       {
         "text": "TokenResponse",
@@ -251,29 +251,21 @@
     "items": [
       {
         "text": "OAuth2Client",
-        "link": "/api/auth-foundation/OAuth2/classes/OAuth2Client.md",
+        "link": "/api/auth-foundation/OAuth2/OAuth2Client/",
         "collapsed": true,
         "items": [
           {
             "text": "Configuration",
-            "link": "/api/auth-foundation/OAuth2/namespaces/OAuth2Client/classes/Configuration.md",
+            "link": "/api/auth-foundation/OAuth2/classes/Configuration.md",
             "collapsed": true,
             "items": [
               {
                 "text": "ConfigurationParams",
-                "link": "/api/auth-foundation/OAuth2/type-aliases/ConfigurationParams.md"
+                "link": "/api/auth-foundation/OAuth2/interfaces/ConfigurationParams.md"
               }
             ]
           }
         ]
-      },
-      {
-        "text": "OAuth2Request",
-        "link": "/api/auth-foundation/OAuth2/classes/OAuth2Request.md"
-      },
-      {
-        "text": "UserInfo",
-        "link": "/api/auth-foundation/OAuth2/interfaces/UserInfo.md"
       },
       {
         "text": "DPoP",
@@ -307,12 +299,12 @@
       },
       {
         "text": "PKCE",
-        "link": "/api/auth-foundation/OAuth2/type-aliases/PKCE.md",
+        "link": "/api/auth-foundation/OAuth2/namespaces/PKCE/",
         "collapsed": true,
         "items": [
           {
             "text": "generate",
-            "link": "/api/auth-foundation/OAuth2/namespaces/PKCE/variables/generate.md"
+            "link": "/api/auth-foundation/OAuth2/namespaces/PKCE/functions/generate.md"
           },
           {
             "text": "Challenge",
@@ -384,11 +376,12 @@
   },
   {
     "text": "Networking",
+    "link": "/api/auth-foundation/Networking/",
     "collapsed": true,
     "items": [
       {
         "text": "APIClient",
-        "link": "/api/auth-foundation/Networking/classes/APIClient.md",
+        "link": "/api/auth-foundation/Networking/APIClient.md",
         "collapsed": true,
         "items": [
           {
@@ -444,19 +437,42 @@
     ]
   },
   {
+    "text": "Platform",
+    "link": "/api/auth-foundation/Platform/",
+    "collapsed": true,
+    "items": [
+      {
+        "text": "PlatformDependencies",
+        "link": "/api/auth-foundation/Platform/interfaces/PlatformDependencies.md"
+      },
+      {
+        "text": "PlatformRegistryError",
+        "link": "/api/auth-foundation/Platform/classes/PlatformRegistryError.md"
+      }
+    ]
+  },
+  {
     "text": "TokenOrchestrator",
-    "link": "/api/auth-foundation/TokenOrchestrator/classes/TokenOrchestrator.md",
+    "link": "/api/auth-foundation/TokenOrchestrator/",
     "collapsed": true,
     "items": [
       {
         "text": "extractAuthParams",
-        "link": "/api/auth-foundation/TokenOrchestrator/namespaces/TokenOrchestrator/functions/extractAuthParams.md"
+        "link": "/api/auth-foundation/TokenOrchestrator/functions/extractAuthParams.md"
       },
       {
         "text": "AuthorizeParams",
         "link": "/api/auth-foundation/TokenOrchestrator/namespaces/TokenOrchestrator/type-aliases/AuthorizeParams.md"
+      },
+      {
+        "text": "Events",
+        "link": "/api/auth-foundation/TokenOrchestrator/type-aliases/Events.md"
       }
     ]
+  },
+    {
+    "text": "FetchClient",
+    "link": "/api/auth-foundation/FetchClient/classes/FetchClient.md"
   },
   {
     "text": "Customizations",

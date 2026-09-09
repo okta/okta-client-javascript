@@ -73,9 +73,9 @@ export class DefaultCredentialDataSource implements CredentialDataSource {
   // moving `new Credential` to protected method to ease testing
   // it is weirdly difficult to spy on Constructors in jest
   protected createCredential (token: Token, metadata?: Token.Metadata) {
-    const { issuer, clientId, scopes, dpopPairId } = token.context;
+    const { issuer, clientId, scopes, dpopPairId, clientSettings } = token.context;
     const dpop = token.tokenType === 'DPoP' && !!dpopPairId;
-    const client = this.createOAuth2Client({ baseURL: issuer, clientId, scopes, dpop });
+    const client = this.createOAuth2Client({ baseURL: issuer, clientId, scopes, dpop, ...(clientSettings ?? {}) });
 
     return new this.CredentialConstructor(token, client, metadata);
   }

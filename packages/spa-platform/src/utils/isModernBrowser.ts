@@ -1,5 +1,6 @@
 /**
- * @module Utils
+ * @module
+ * @mergeModuleWith Platform
  */
 
 

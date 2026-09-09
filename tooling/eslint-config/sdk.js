@@ -43,7 +43,8 @@ module.exports = {
     },
     {
       files: [
-        'test/spec/**/*'
+        'test/spec/**/*',
+        'test/jest.setup.js'
       ],
       plugins: [
         'jest'

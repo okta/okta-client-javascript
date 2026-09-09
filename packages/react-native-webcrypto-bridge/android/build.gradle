@@ -1,0 +1,97 @@
+buildscript {
+    ext.kotlin_version = '2.1.0'
+    ext.android_gradle_plugin_version = '8.1.0'
+
+    repositories {
+        google()
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath "com.android.tools.build:gradle:$android_gradle_plugin_version"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+plugins {
+    id 'com.android.library'
+    id 'org.jetbrains.kotlin.android'
+    id 'com.facebook.react' apply false
+}
+
+def isNewArchitectureEnabled() {
+    return project.hasProperty("newArchEnabled") && project.newArchEnabled == "true"
+}
+
+if (isNewArchitectureEnabled()) {
+    apply plugin: 'com.facebook.react'
+}
+
+def safeExtGet(prop, fallback) {
+    rootProject.ext.has(prop) ? rootProject.ext.get(prop) : fallback
+}
+
+android {
+    namespace "com.okta.webcryptobridge"
+    compileSdkVersion safeExtGet('compileSdkVersion', 35)
+
+    defaultConfig {
+        minSdkVersion safeExtGet('minSdkVersion', 24)
+        targetSdkVersion safeExtGet('targetSdkVersion', 35)
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+
+    testOptions {
+        unitTests.includeAndroidResources = true
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += 'build/generated/source/codegen/java'
+        }
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    implementation "androidx.biometric:biometric:1.1.0"
+    implementation 'com.facebook.react:react-android:0.81.0'
+
+    // Testing dependencies
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'com.google.truth:truth:1.1.2'
+    testImplementation 'io.mockk:mockk:1.14.9'
+    testImplementation 'org.json:json:20231013'
+
+    // Integration test dependencies (Robolectric runs Android on JVM)
+    testImplementation 'org.robolectric:robolectric:4.16.1'
+    testImplementation 'androidx.test:core:1.5.0'
+}
+
+// Filter tests to only run webcryptobridge tests
+tasks.withType(Test) {
+    filter {
+        includeTestsMatching 'com.okta.webcryptobridge.*'
+    }
+}

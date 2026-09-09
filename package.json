@@ -25,25 +25,8 @@
   "workspaces": {
     "packages": [
       "packages/*",
-      "docs",
-      "docs2",
       "tooling/*",
       "e2e/**/*"
-    ],
-    "nohoist": [
-      "@repo/okta-client-js-docs/**",
-      "**/typedoc",
-      "**/expo",
-      "**/expo/**",
-      "**/expo-*",
-      "**/expo-*/**",
-      "**/@expo/**",
-      "**/@expo/**/**",
-      "**/react-native",
-      "**/react-native/**",
-      "**/@react-navigation/**",
-      "react-native-oidc/@okta/*",
-      "react-native-oidc/@okta/**"
     ]
   },
   "devEngines": {

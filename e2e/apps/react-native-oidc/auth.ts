@@ -1,68 +1,57 @@
-import { fetch as expoFetch, FetchResponse } from 'expo/fetch';
 import Constants from 'expo-constants';
-import OAuth2Client from '@okta/auth-foundation/client';
+import { OAuth2Client, Credential } from '@okta/react-native-platform';
+import { AuthorizationCodeFlow } from '@okta/react-native-platform/flows';
 
-console.log('fetch: ', fetch);
-console.log('Res.json', Response.json);
 
 export const client = new OAuth2Client({
   baseURL: Constants?.expoConfig?.extra?.env.ISSUER,
   clientId: Constants?.expoConfig?.extra?.env.NATIVE_CLIENT_ID,
-  // TODO: skip OIDC to avoid PK import errors
-  // scopes: ['openid', 'email', 'profile', 'offline_access'],
-  scopes: ['offline_access'],
+  scopes: ['openid', 'email', 'profile', 'offline_access'],
   dpop: false,
-},
-{
-  // fetchImpl: async (input: string | URL | Request, init?: RequestInit) => {
-  //   // const { body, ...rest } = { body: undefined, ...init };
-  //   // const request = input instanceof Request ? input : new Request(input, rest);
-  //   const request = input instanceof Request ? input : new Request(input, init);
-  //   // TODO: expand additional request options
-  //   const { url, method, headers } = request;
-  //   console.log('url', url);
-  //   // console.log('body', request.body, init?.body)
+  allowHTTP: true
+});
 
-  //   //console.log('typeof body', typeof body, typeof request.body);
-  //   // const response = await expoFetch(url, { method, headers, body: body === null ? undefined: body });
-  //   // const json = await response.json();
-  //   // const { status, statusText } = response;
-  //   // console.log(Response);
-  //   // return Response.json(json, { status, statusText, headers: response.headers });
+export const flow = new AuthorizationCodeFlow(client, {
+  redirectUri: Constants?.expoConfig?.extra?.env.NATIVE_REDIRECT_URI
+});
 
-  //   const response = await expoFetch(url, { method, headers });
-  //   console.log('typeof response', response instanceof Response);
-  //   if (method.toLocaleUpperCase() === 'POST') {
-  //     console.log('post request')
-  //     const body = await response.json();
-  //     console.log(body);
-  //   }
-  //   return response;
-
-  //   // const request = input instanceof Request ? input : new Request(input, init);
-  //   // if (request.body && request.body instanceof URLSearchParams) {
-  //   //   request.body = request.body.toString();
-  //   // }
-  // },
-
-
-  // NOTE: this isn't doing anything. The problem seems to be within `URLSearchParams`
-  // passing it directly to `fetch` wasn't converting the body to the correct format.
-  // directly calling `body: params.toString()` seems to be working fine for now
-  // (Fix in oauth2-flows/AuthCodeFlow/prepare)
-
-  fetchImpl: async (input: string | URL | Request, init?: RequestInit) => {
-    // const { body, ...rest } = { body: undefined, ...init };
-    // const request = input instanceof Request ? input : new Request(input, rest);
-    const request = input instanceof Request ? input : new Request(input, init);
-    console.log('request', request);
-    console.log('url: ', request.url);
-    console.log('bdoy: ', typeof request.body, request.body instanceof URLSearchParams);
-    console.log('body', request.body)
-    // const { url, body, method, headers } = request;
-    const response = await fetch(request);
-    console.log(response.body);
-    return response;
+export async function performSignIn () {
+  const result = await AuthorizationCodeFlow.PerformBrowserSignIn(flow);
+  if (result.completed) {
+    const { token } = result;
+    const credential = await Credential.store(token);
+    return credential;
   }
+
+  return null;
 }
-);
+
+export async function performSignOut () {
+  await (await Credential.getDefault())?.revoke();
+}
+
+
+// // TODO: leaving for testing OIDC logout - remove before release
+// AuthorizationCodeFlow.defaultBrowserSessionOptions.ephemeralSession = false;
+
+// const signOutFlow = new SessionLogoutFlow(client, {
+//   logoutRedirectUri: Constants?.expoConfig?.extra?.env.NATIVE_LOGOUT_REDIRECT_URI
+// });
+
+// export async function performSignOut () {
+//   const isOIDC = client.configuration.scopes.includes('openid');
+//   const defaultCredential = await Credential.getDefault();
+
+//   console.log('here', isOIDC)
+//   if (isOIDC) {
+//     const idToken = defaultCredential?.token?.idToken;
+//     console.log('here2', defaultCredential, idToken)
+//     if (defaultCredential && idToken) {
+//       const url = await signOutFlow.start(idToken.rawValue)
+//       const result = await SessionLogoutFlow.PerformBrowserLogout(url);
+//       console.log('here3', result);
+//     }
+//   }
+
+//   await defaultCredential?.revoke();
+// }

@@ -1,0 +1,23 @@
+{
+  "extends": "@repo/typescript-config/base.json",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "baseUrl": "./",
+    "outDir": "./dist/types",
+    "jsx": "react-native"
+  },
+  "lib": [
+    "dom"
+  ],
+  "files": [
+    "package.json"
+  ],
+  "include": [
+    "./src/**/*.ts",
+    "./src/**/*.tsx"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
