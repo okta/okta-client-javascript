@@ -34,7 +34,7 @@ export class IndexedDBStore<T> {
   ) {}
 
   // convenience abstraction for exposing IDBObjectStore instance
-  private keyStore (): Promise<IDBObjectStore> {
+  private keyStore (): Promise<{ store: IDBObjectStore, tx: IDBTransaction }> {
     const dbName = this.dbName;
     const storeName = this.storeName;
 
@@ -59,16 +59,16 @@ export class IndexedDBStore<T> {
             const db = req.result;
             const tx = db.transaction(storeName, 'readwrite');
 
-            tx.onerror = function () {
+            tx.addEventListener('error', () => {
               reject(tx.error!);
-            };
+            }, { once: true });
 
-            tx.oncomplete = function () {
+            tx.addEventListener('complete', () => {
               db.close();
-            };
+            }, { once: true });
 
             const store = tx.objectStore(storeName);
-            resolve(store);
+            resolve({ store, tx });
           }
           catch (err) {
             // if ObjectStore does not exist in DB Version, upgrade DB to include version
@@ -92,7 +92,7 @@ export class IndexedDBStore<T> {
 
                 // store won't be created until a transaction attempts to use it
                 const store = upgradeTx.objectStore(storeName);
-                resolve(store);
+                resolve({ store, tx: upgradeTx });
               };
             }
             else {
@@ -109,13 +109,13 @@ export class IndexedDBStore<T> {
 
   // convenience abstraction for wrapping IDBObjectStore methods in promises
   private async invokeStoreMethod (method: StoreMethod, ...args: any[]): Promise<IDBRequest> {
-    const store = await this.keyStore();
+    const { store, tx } = await this.keyStore();
     return new Promise((resolve, reject) => {
       // https://github.com/microsoft/TypeScript/issues/49700
       // https://github.com/microsoft/TypeScript/issues/49802
       // @ts-expect-error ts(2556)
       const req = store[method](...args);
-      req.onsuccess = function () {
+      tx.oncomplete = function () {
         resolve(req);
       };
       req.onerror = function () {
