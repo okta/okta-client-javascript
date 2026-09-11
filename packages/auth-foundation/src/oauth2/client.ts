@@ -146,7 +146,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /**
-   * Cleans up resourece associated with the client instance to prevent leaks.
+   * Cleans up resources associated with the client instance to prevent leaks.
    */
   public dispose () {
     super.dispose();

@@ -427,7 +427,7 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
         }
 
         this.token = response;
-        this.coordinator.emitter.emit('credential_refreshed', { credential: this });
+        // this.coordinator.emitter.emit('credential_refreshed', { credential: this });
       })
       .finally(() => {
         this._refreshPromise = null;

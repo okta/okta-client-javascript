@@ -48,7 +48,7 @@ export function Landing () {
 
     return () => {
       Credential.off('credential_added', updateHandler);
-      Credential.off('credential_removed', updateHandler);
+      Credential.off('credential_removed', removeHandler);
       Credential.off('cleared', updateHandler);
       Credential.off('default_changed', defaultHandler);
     };
