@@ -9,7 +9,6 @@ import {
   type TokenInit,
   OAuth2ErrorResponse,
   isOAuth2ErrorResponse,
-  OAuth2Error,
 } from '@okta/auth-foundation/core';
 import { SynchronizedResult } from '../utils/SynchronizedResult.ts';
 
@@ -21,18 +20,17 @@ import { SynchronizedResult } from '../utils/SynchronizedResult.ts';
  */
 export class OAuth2Client extends OAuth2ClientBase {
 
-  protected prepareRefreshRequest (token: Token, scopes?: string[]): Promise<Token | OAuth2ErrorResponse> {
-    if (!token.refreshToken) {
-      throw new OAuth2Error(`Missing token: refreshToken`);
-    }
-
+  protected sendRefreshRequest (
+    request: Token.RefreshRequest,
+    context: OAuth2ClientBase.TokenRequestContext
+  ): Promise<OAuth2ErrorResponse | Token> {
     const synchronizer = new SynchronizedResult<Token | OAuth2ErrorResponse, TokenInit | OAuth2ErrorResponse>(
-      `refresh:${token.refreshToken}`,
-      this.performRefresh.bind(this, token, scopes),
+      `refresh:${request.refreshToken}`,
+      super.sendRefreshRequest.bind(this, request, context),
       {
         seralizer: (response: Token | OAuth2ErrorResponse) => isOAuth2ErrorResponse(response) ? response : response.toJSON() as TokenInit,
         deseralizer: (response: TokenInit | OAuth2ErrorResponse) =>
-          isOAuth2ErrorResponse(response) ? response : new Token({ id: token.id, ...response }),
+          isOAuth2ErrorResponse(response) ? response : new Token({ id: request.id, ...response }),
       }
     );
 
