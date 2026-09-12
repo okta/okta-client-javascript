@@ -371,6 +371,8 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
 
   /** @internal */
   protected async sendRefreshRequest (request: Token.RefreshRequest, context: OAuth2Client.TokenRequestContext) {
+    // await (new Promise((resolve) => { setTimeout(resolve, 15000)}));
+    // console.log('sending token request')
     return this.sendTokenRequest(request, context);
   }
 
