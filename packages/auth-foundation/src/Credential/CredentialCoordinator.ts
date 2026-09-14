@@ -127,7 +127,7 @@ export class CredentialCoordinatorImpl implements CredentialCoordinator {
         this.addExpireEventTimeout(credential);
       }
       credential.oauth2.emitter.on('token_did_refresh', async ({ token }) => {
-        if (!token || credential.id !== token.id || Token.isEqual(credential.token, token)) {
+        if (!token || credential.id !== token.id) {
           return;
         }
         try {
