@@ -75,6 +75,36 @@ const performSignIn = async (shouldBounceRedirect = false) => {
   await RedirectModelApp.waitForLoad();
 };
 
+// Delays every outgoing POST /v1/token request (on every current AND future tab) by `delayMs`
+// before it's actually sent. Used to deterministically reproduce "tab closes before its /token
+// request ever reaches the Authorization Server" -- without this, closing a tab mid-refresh races
+// against the real network call, and if the request happens to reach the AS before the tab is torn
+// down, the (single-use) refresh token gets invalidated server-side, which is a separate, unrelated
+// failure mode from what this test is trying to exercise.
+const delayTokenRequests = async (delayMs = 5000) => {
+  const puppeteerBrowser = await browser.getPuppeteer();
+
+  const attach = async (page) => {
+    await page.setRequestInterception(true);
+    page.on('request', (request) => {
+      if (request.method() === 'POST' && request.url().includes('/v1/token')) {
+        setTimeout(() => request.continue(), delayMs);
+      }
+      else {
+        request.continue();
+      }
+    });
+  };
+
+  await Promise.all((await puppeteerBrowser.pages()).map(attach));
+  puppeteerBrowser.on('targetcreated', async (target) => {
+    const page = await target.page();
+    if (page) {
+      await attach(page);
+    }
+  });
+};
+
 const bootstrap = async (path = '/') => {
   await browser.url(path);
   await RedirectModelApp.waitForLoad();
@@ -247,6 +277,10 @@ describe('Cross Tab Sync' , () => {
     const tab3 = await open('/', true);
     await RedirectModelApp.withTagLink.click();
     await assertSecuredPage();
+
+    // delay outgoing /v1/token requests so closing tab3 always aborts its request client-side,
+    // before it can ever reach the AS and invalidate the (single-use) refresh token
+    await delayTokenRequests(2000);
 
     // Trigger token refresh
     await RedirectModelApp.refreshBtn.click();    // tab 3

@@ -1,0 +1,17 @@
+version: 2.1
+
+# Placeholder pipeline: this branch predates the real CircleCI config being added on another,
+# not-yet-merged branch. This just gives CircleCI a valid config to parse so the pipeline
+# succeeds instead of failing on a missing/empty config.yml. Replace once merged with the
+# branch that introduces the real pipeline definition.
+jobs:
+  noop:
+    docker:
+      - image: cimg/base:current
+    steps:
+      - run: echo "No-op CI config - real pipeline will be introduced when merged from its source branch."
+
+workflows:
+  noop-workflow:
+    jobs:
+      - noop

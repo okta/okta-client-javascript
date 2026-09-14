@@ -34,6 +34,7 @@ export interface CredentialDataSource {
    * represents the provided {@link Token.Token | Token}.
    */
   hasCredential (token: Token): boolean;
+  hasCredential (id: string): boolean;
   /**
    * Checks {@link CredentialDataSource} for an existing {@link Credential} instance which
    * represents the provided {@link Token.Token | Token}. If one does not exist, a new {@link Credential}
@@ -80,8 +81,8 @@ export class DefaultCredentialDataSource implements CredentialDataSource {
     return new this.CredentialConstructor(token, client, metadata);
   }
 
-  public hasCredential (token: Token): boolean {
-    return this.credentials.has(token.id);
+  public hasCredential (key: string | Token): boolean {
+    return this.credentials.has(typeof key === 'string' ? key : key.id);
   }
 
   public credentialFor (token: Token, metadata?: Token.Metadata): Credential {
@@ -101,12 +102,14 @@ export class DefaultCredentialDataSource implements CredentialDataSource {
     const id = typeof cred === 'string' ? cred : cred.id;
     if (this.credentials.has(id)) {
       const cred = this.credentials.get(id)!;
+      cred.dispose();
       this.credentials.delete(id);
       this.emitter.emit('credential_removed', { dataSource: this, id: cred.id });
     }
   }
 
   public clear () {
+    this.credentials.forEach(cred => cred.dispose());
     this.credentials.clear();
   }
 

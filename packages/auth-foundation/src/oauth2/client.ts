@@ -146,6 +146,14 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /**
+   * Cleans up resources associated with the client instance to prevent leaks.
+   */
+  public dispose () {
+    super.dispose();
+    this.#httpCache.clear();
+  }
+
+  /**
    * Retrieves the Authorization Server's OpenID configuration
    */
   public async openIdConfiguration (options: OAuth2Client.GetJsonOptions = {}): Promise<OpenIdConfiguration> {
@@ -349,7 +357,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
       }
     }
 
-    const tokenRequest = this.queue.push(this.prepareRefreshRequest.bind(this, token, scopes));
+    const tokenRequest = this.queue.push(this.performRefresh.bind(this, token, scopes));
     tokenRequest.finally(() => {
       // clean up pendingRefresh map
       if (token.refreshToken) {
@@ -362,8 +370,10 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   }
 
   /** @internal */
-  protected prepareRefreshRequest (token: Token, scopes?: string[]): Promise<Token | OAuth2ErrorResponse> {
-    return this.performRefresh(token, scopes);
+  protected async sendRefreshRequest (request: Token.RefreshRequest, context: OAuth2Client.TokenRequestContext) {
+    // await (new Promise((resolve) => { setTimeout(resolve, 15000)}));
+    // console.log('sending token request')
+    return this.sendTokenRequest(request, context);
   }
 
   /** @internal */
@@ -375,8 +385,6 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     }
 
     // TODO: use clientSettings
-
-    this.emitter.emit('token_will_refresh', { token });
 
     const openIdConfiguration = await this.openIdConfiguration();
     const refreshParams: Token.RefreshRequestParams = {
@@ -400,9 +408,11 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
       context.dpopPairId = token.context.dpopPairId;
     }
 
+    this.emitter.emit('token_will_refresh', { token });
+
     const [keySet, response] = await Promise.all([
       this.jwks(),
-      this.sendTokenRequest(request, context)
+      this.sendRefreshRequest(request, context)
     ]);
 
     if (isOAuth2ErrorResponse(response)) {

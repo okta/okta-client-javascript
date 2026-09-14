@@ -30,22 +30,29 @@ export function Landing () {
       setCredentialIds(allIDs);
     };
 
+    const removeHandler = async ({ id }) => {
+      if (credential?.id === id) {
+        setCredential(null);
+      }
+      await updateHandler();
+    }
+
     const defaultHandler = ({ id }) => {
       setDefault(id);
     };
 
     Credential.on('credential_added', updateHandler);
-    Credential.on('credential_removed', updateHandler);
+    Credential.on('credential_removed', removeHandler);
     Credential.on('cleared', updateHandler);
     Credential.on('default_changed', defaultHandler);
 
     return () => {
       Credential.off('credential_added', updateHandler);
-      Credential.off('credential_removed', updateHandler);
+      Credential.off('credential_removed', removeHandler);
       Credential.off('cleared', updateHandler);
       Credential.off('default_changed', defaultHandler);
     };
-  }, [setCredentialIds, setCredential, setDefault]);
+  }, [credential, setCredentialIds, setCredential, setDefault]);
 
   const clear = async () => {
     await Credential.clear();
