@@ -332,12 +332,25 @@ export class BrowserTokenStorage implements TokenStorage {
   }
 
   /**
+   * Call to remove a corrupted entry for storage
+   */
+  private removeCorruptedEntry (id: string): boolean {
+    const key = this.idToStoreKey(id);
+    const item = localStorage.getItem(key);
+    if (item === null) {
+      return false;   // already removed by a concurrent get()/getMetadata() call for this id
+    }
+    localStorage.removeItem(key);
+    return true;
+  }
+
+  /**
    * Handles errors thrown when reading a token from storage
    */
   protected async handleReadError (error: unknown, id: string) {
-    // remove token if json structure is malformed
-    localStorage.removeItem(this.idToStoreKey(id));
-    this.emitter.emit('token_removed', { storage: this, id });
+    if (this.removeCorruptedEntry(id)) {
+      this.emitter.emit('token_removed', { storage: this, id });
+    }
     return null;
   }
 
@@ -345,10 +358,10 @@ export class BrowserTokenStorage implements TokenStorage {
    * Handles errors thrown when decrypting a stored token
    */
   protected async handleDecryptionError (error: Error, id: string) {
-    // if token cannot be decrypted, remove it from storage
-    localStorage.removeItem(this.idToStoreKey(id));
-    await this.removeEncryptionKeyIfEmpty();
-    this.emitter.emit('token_removed', { storage: this, id });
+    if (this.removeCorruptedEntry(id)) {
+      await this.removeEncryptionKeyIfEmpty();
+      this.emitter.emit('token_removed', { storage: this, id });
+    }
     return null;
   }
 

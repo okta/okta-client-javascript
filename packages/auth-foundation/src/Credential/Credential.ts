@@ -367,6 +367,7 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
   }
 
   /**
+   * @deprecated
    * Helper method to get a `Authorization` header, expressed as an object
    * 
    * @example
@@ -427,7 +428,6 @@ export class Credential implements RequestAuthorizer, JSONSerializable {
         }
 
         this.token = response;
-        // this.coordinator.emitter.emit('credential_refreshed', { credential: this });
       })
       .finally(() => {
         this._refreshPromise = null;

@@ -191,6 +191,41 @@ describe('BrowserTokenStorage', () => {
     });
   });
 
+  describe('behaviors', () => {
+    let storage: BrowserTokenStorage;
+
+    beforeEach(() => {
+      localStorage.clear();
+
+      storage = new BrowserTokenStorage();
+      storage.encryptAtRest = false;    // see NOTE above
+    });
+
+    it('removes token from storage after read error', async () => {
+      const onRemove = jest.fn();
+      storage.emitter.on('token_removed', onRemove);
+      const onHandleReadError = jest.spyOn(storage as any, 'handleReadError');
+
+      const t1 = makeTestToken();
+      await storage.add(t1);
+
+      // corrupts storage entry for token
+      // casts `storage` to `any` because `idToStoreKey` is a protected method
+      localStorage.setItem((storage as any).idToStoreKey(t1.id), 'somemalformedjson');
+
+      // using concurrent read requests to ensure only one `token_removed` event is emitted
+      const [token, metadata] = await Promise.all([
+        storage.get(t1.id),
+        storage.getMetadata(t1.id)
+      ]);
+
+      expect(token).toBeNull();
+      expect(metadata).toBeNull();
+      expect(onRemove).toHaveBeenCalledTimes(1);
+      expect(onHandleReadError).toHaveBeenCalledTimes(1);
+    });
+  });
+
   describe('configurations', () => {
     describe('encryptAtRest', () => {
       // Using crypto libraries directly (instead of mocking) seems to cause random failures when calling .encrypt
