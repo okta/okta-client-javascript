@@ -5,7 +5,8 @@ import {
   OAuth2ErrorResponse,
   isOAuth2ErrorResponse,
   hasSameValues,
-  AcrValues
+  AcrValues,
+  DPoPError
 } from '@okta/spa-platform';
 import { signIn, signOutFlow, getMordorToken, handleAcrStepUp } from './auth';
 
@@ -96,6 +97,10 @@ class TokenBroker extends HostOrchestrator.Host {
 
       // return aborts (aka timeouts) as null to trigger AS redirect
       if (err instanceof DOMException && err.name === 'AbortError') {
+        return null;
+      }
+
+      if (err instanceof DPoPError) {
         return null;
       }
 

@@ -16,6 +16,8 @@ class CustomJSDomEnv extends JSDOMEnv {
     this.global.Response = Response;
     this.global.Headers = Headers;
     this.global.DOMException = DOMException;
+    // https://github.com/dumbmatter/fakeIndexedDB#jsdom-often-used-with-jest
+    this.global.structuredClone = structuredClone;
   }
 }
 

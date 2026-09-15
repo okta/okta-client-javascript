@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.8.0] - 2026-09-02
+## [0.8.0] - 2026-09-15
 
 ### `@okta/auth-foundation`
 
@@ -18,6 +18,7 @@ All notable changes to this project will be documented in this file.
 
 #### Fixed
 - Cross-tab credential sync no longer broadcasts full token payloads over `BroadcastChannel`; tabs now read the current value from storage, and only when they already reference the credential in question, reducing memory pressure across many open tabs ([#39](https://github.com/okta/okta-client-javascript/pull/39))
+- `IndexedDBStore` CRUD operations now resolve on `transaction.oncomplete` rather than `request.onsucces` ([#40](https://github.com/okta/okta-client-javascript/pull/40))
 
 ## [0.7.2] - 2026-04-09
 
