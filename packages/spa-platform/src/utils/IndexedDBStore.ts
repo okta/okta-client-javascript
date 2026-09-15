@@ -8,6 +8,13 @@ type StoreMethod = 'get' | 'add' | 'delete' | 'clear';
 /** @internal */
 function isIDBUnknownObjectStoreError (err: unknown, storeName: string) {
   if (err instanceof DOMException) {
+    // per spec, `IDBDatabase.transaction()` always throws `NotFoundError` when a named object
+    // store doesn't exist — check this first since UA-specific `message` wording varies (and can
+    // differ again in test environments/polyfills), while `name` is standardized
+    if (err.name === 'NotFoundError') {
+      return true;
+    }
+
     if (err.message === `IDBDatabase.transaction: '${storeName}' is not a known object store name`) {
       return true;
     }
@@ -20,10 +27,20 @@ function isIDBUnknownObjectStoreError (err: unknown, storeName: string) {
   return false;
 }
 
+/**
+ * @internal
+ * Closes `db` once `tx` settles, whether it commits or aborts — an aborted transaction
+ * that's never closed leaks the connection and can block a later version upgrade.
+ */
+function attachTransactionLifecycle (db: IDBDatabase, tx: IDBTransaction): void {
+  tx.addEventListener('complete', () => db.close(), { once: true });
+  tx.addEventListener('abort', () => db.close(), { once: true });
+}
+
 
 /**
  * Lightweight wrapper around IndexedDB ObjectStore instances
- * 
+ *
  * @internal
  */
 export class IndexedDBStore<T> {
@@ -59,13 +76,7 @@ export class IndexedDBStore<T> {
             const db = req.result;
             const tx = db.transaction(storeName, 'readwrite');
 
-            tx.addEventListener('error', () => {
-              reject(tx.error!);
-            }, { once: true });
-
-            tx.addEventListener('complete', () => {
-              db.close();
-            }, { once: true });
+            attachTransactionLifecycle(db, tx);
 
             const store = tx.objectStore(storeName);
             resolve({ store, tx });
@@ -77,18 +88,26 @@ export class IndexedDBStore<T> {
 
               // increment db version
               const upgradeReq = indexedDB.open(dbName, req.result.version + 1);
+
               upgradeReq.onupgradeneeded = function () {
                 // create new ObjectStore
                 upgradeReq.result.createObjectStore(storeName);
+              };
+
+              upgradeReq.onerror = function () {
+                reject(upgradeReq.error!);
+              };
+
+              upgradeReq.onblocked = function () {
+                // another tab holds an open connection to an earlier version, blocking this upgrade
+                reject(new Error(`IndexedDB upgrade of '${dbName}' blocked by another open connection`));
               };
 
               upgradeReq.onsuccess = function () {
                 const db = upgradeReq.result;
                 const upgradeTx = db.transaction(storeName, 'readwrite');
 
-                upgradeTx.oncomplete = function () {
-                  db.close();
-                };
+                attachTransactionLifecycle(db, upgradeTx);
 
                 // store won't be created until a transaction attempts to use it
                 const store = upgradeTx.objectStore(storeName);
@@ -108,6 +127,8 @@ export class IndexedDBStore<T> {
   }
 
   // convenience abstraction for wrapping IDBObjectStore methods in promises
+  // each call opens (and awaits the full lifecycle of) its own dedicated transaction —
+  // requests are never shared across separate get/add/remove/clear calls
   private async invokeStoreMethod (method: StoreMethod, ...args: any[]): Promise<IDBRequest> {
     const { store, tx } = await this.keyStore();
     return new Promise((resolve, reject) => {
@@ -115,12 +136,12 @@ export class IndexedDBStore<T> {
       // https://github.com/microsoft/TypeScript/issues/49802
       // @ts-expect-error ts(2556)
       const req = store[method](...args);
-      tx.oncomplete = function () {
-        resolve(req);
-      };
-      req.onerror = function () {
-        reject(req.error);
-      };
+
+      // resolve only once the transaction durably commits, not merely once the request succeeds —
+      // and reject on abort (covers a request error, a commit-time failure like QuotaExceededError,
+      // or an explicit tx.abort()) so this promise can never hang
+      tx.addEventListener('complete', () => resolve(req), { once: true });
+      tx.addEventListener('abort', () => reject(tx.error ?? req.error), { once: true });
     });
   }
 
