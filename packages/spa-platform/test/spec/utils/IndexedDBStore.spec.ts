@@ -10,6 +10,18 @@ function deleteDatabase (name: string): Promise<void> {
   });
 }
 
+function openRawConnection (name: string): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(name);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function sleep (ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
 describe('IndexedDBStore', () => {
 
   // every test starts from a fresh (nonexistent) database, so each one exercises
@@ -65,6 +77,46 @@ describe('IndexedDBStore', () => {
     // never handled with `preventDefault()`, so the transaction auto-aborts; this should reject
     // via the transaction's `abort` event rather than hang forever
     await expect(store.add('foo', { value: 'baz' })).rejects.toBeInstanceOf(DOMException);
+  });
+
+  describe('version-upgrade blocked by another connection', () => {
+    const originalTimeoutMs = IndexedDBStore.upgradeBlockedTimeoutMs;
+    let blockingConnection: IDBDatabase | undefined;
+
+    beforeEach(async () => {
+      // ensure the database exists at version 1 (with the default 'DPoPKeys' store) before
+      // opening a second, deliberately-unclosed connection — this connection (with no
+      // `onversionchange` handler to close itself) is what causes the version bump below to block
+      await new IndexedDBStore('DPoPKeys').get('warmup');
+      blockingConnection = await openRawConnection('AuthFoundation');
+    });
+
+    afterEach(() => {
+      IndexedDBStore.upgradeBlockedTimeoutMs = originalTimeoutMs;
+      blockingConnection?.close();   // release so the outer `afterEach`'s deleteDatabase can run cleanly
+    });
+
+    it('still resolves if the blocking connection closes before the timeout elapses', async () => {
+      IndexedDBStore.upgradeBlockedTimeoutMs = 200;
+
+      const store = new IndexedDBStore<{ value: string }>('BlockedStore');
+      const promise = store.add('foo', { value: 'bar' });
+
+      // give the upgrade request a moment to report blocked, then release well before the timeout
+      await sleep(20);
+      blockingConnection?.close();
+
+      await expect(promise).resolves.toBeUndefined();
+      expect(await store.get('foo')).toEqual({ value: 'bar' });
+    });
+
+    it('rejects once the timeout elapses without the blocking connection closing', async () => {
+      IndexedDBStore.upgradeBlockedTimeoutMs = 50;
+
+      const store = new IndexedDBStore('AnotherBlockedStore');
+
+      await expect(store.add('foo', { value: 'bar' })).rejects.toThrow(/blocked by another open connection/);
+    });
   });
 
 });

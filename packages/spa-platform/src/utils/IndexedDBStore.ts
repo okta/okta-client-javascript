@@ -44,6 +44,10 @@ function attachTransactionLifecycle (db: IDBDatabase, tx: IDBTransaction): void 
  * @internal
  */
 export class IndexedDBStore<T> {
+  // `onblocked` isn't itself a failure (see `keyStore()`) — this only bounds how long to wait
+  // for it to resolve on its own before treating it as one. Mutable static so tests can shrink it.
+  static upgradeBlockedTimeoutMs = 2000;
+
   private readonly dbName: string = 'AuthFoundation';
 
   constructor (
@@ -88,22 +92,34 @@ export class IndexedDBStore<T> {
 
               // increment db version
               const upgradeReq = indexedDB.open(dbName, req.result.version + 1);
+              let blockedTimeoutId: ReturnType<typeof setTimeout> | undefined;
 
               upgradeReq.onupgradeneeded = function () {
+                clearTimeout(blockedTimeoutId);
                 // create new ObjectStore
                 upgradeReq.result.createObjectStore(storeName);
               };
 
               upgradeReq.onerror = function () {
+                clearTimeout(blockedTimeoutId);
                 reject(upgradeReq.error!);
               };
 
               upgradeReq.onblocked = function () {
-                // another tab holds an open connection to an earlier version, blocking this upgrade
-                reject(new Error(`IndexedDB upgrade of '${dbName}' blocked by another open connection`));
+                // another tab holds an open connection to an earlier version, blocking this upgrade.
+                // this isn't itself a failure — `upgradeReq` is still pending and will still fire
+                // `onupgradeneeded`/`onsuccess` once that connection closes, so only give up if it's
+                // still blocked after a short wait (every connection opened by this class is used for
+                // one transaction and closed immediately, so blocking is expected to clear almost
+                // instantly under normal conditions)
+                blockedTimeoutId = setTimeout(() => {
+                  reject(new Error(`IndexedDB upgrade of '${dbName}' blocked by another open connection`));
+                }, IndexedDBStore.upgradeBlockedTimeoutMs);
               };
 
               upgradeReq.onsuccess = function () {
+                clearTimeout(blockedTimeoutId);
+
                 const db = upgradeReq.result;
                 const upgradeTx = db.transaction(storeName, 'readwrite');
 
