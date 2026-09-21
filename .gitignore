@@ -14,6 +14,7 @@ node_modules
 testenv
 testenv*
 testenv.yml
+.watchmanconfig
 
 # Testing
 coverage

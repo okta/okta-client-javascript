@@ -1,3 +1,10 @@
+/**
+ * @packageDocumentation
+ * @internal
+ * 
+ * Does not differ enough from base class to require further documentation
+ */
+
 import {
   FetchClient as FetchClientBase,
   type DPoPNonceCache

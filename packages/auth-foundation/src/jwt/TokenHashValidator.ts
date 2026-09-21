@@ -10,7 +10,13 @@ import { JWTError } from '../errors/index.ts';
 import { validateString } from '../utils/validators.ts';
 
 /**
+ * A validator for validating tokens via hash claims. Used in OIDC to validate access tokens (`at_hash`) and
+ * device secrets (`ds_hash`) associated with an ID token
+ * 
  * @group JWT
+ * @see
+ * * {@link https://openid.net/specs/openid-connect-core-1_0.html#CodeFlowTokenValidation | OIDC Spec: Access Token Validation}
+ * * {@link https://openid.net/specs/openid-connect-native-sso-1_0.html#section-3.4.1-2.1.2.2 | OIDC Native SSO: ID Token Claims }
  */
 export interface TokenHashValidator {
   validate: (token: string, idToken: JWT) => Promise<void>;
