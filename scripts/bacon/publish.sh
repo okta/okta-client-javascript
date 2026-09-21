@@ -15,7 +15,7 @@ npm config set @okta:registry ${REGISTRY}
 PUBLISHED_PACKAGES=""
 PROMOTABLE_VERSIONS=""
 
-if ! scripts/utils/sync_package_version.js; then
+if ! ./scripts/utils/sync_package_version.js; then
   echo "failed to sync package vertsions"
   exit ${FAILED_SETUP}
 fi
