@@ -1,12 +1,5 @@
 #!/bin/bash
 
-if ! $OKTA_HOME/$REPO/scripts/utils/sync_package_version.js; then
-  echo "failed to sync package versions"
-  exit ${FAILED_SETUP}
-fi
-
-exit 1
-
 source $OKTA_HOME/$REPO/scripts/bacon/setup.sh
 
 # Install required dependencies
@@ -22,7 +15,7 @@ npm config set @okta:registry ${REGISTRY}
 PUBLISHED_PACKAGES=""
 PROMOTABLE_VERSIONS=""
 
-if ! ./scripts/utils/sync_package_version.js; then
+if ! $OKTA_HOME/$REPO/scripts/utils/sync_package_versions.js; then
   echo "failed to sync package versions"
   exit ${FAILED_SETUP}
 fi
