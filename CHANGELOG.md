@@ -21,6 +21,9 @@ All notable changes to this project will be documented in this file.
 
 ### `@okta/oauth2-flows`
 
+### Added
+- adds `ResourceOwnerFlow` (for Native clients) ([#48](https://github.com/okta/okta-client-javascript/pull/48))
+
 #### Changed
 - **Breaking:** `AuthorizationCodeFlow.resume()` now requires an explicit `redirectUri` (`string | URL | URLSearchParams`) and no longer falls back to `window.location.href` ([#35](https://github.com/okta/okta-client-javascript/pull/35))
 

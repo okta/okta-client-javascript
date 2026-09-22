@@ -17,6 +17,10 @@
     "test:node": {
       "cache": false,
       "dependsOn": ["^build"]
+    },
+    "test:integ": {
+      "cache": false,
+      "dependsOn": ["^build"]
     }
   }
 }
