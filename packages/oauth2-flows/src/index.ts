@@ -16,5 +16,6 @@ export * from './types.ts';
 export * from './AuthenticationFlow.ts';
 export * from './LogoutFlow.ts';
 export * from './AuthorizationCodeFlow/index.ts';
+export * from './ResourceOwnerFlow/index.ts';
 export * from './SessionLogoutFlow/index.ts';
 export * from './AuthTransaction.ts';

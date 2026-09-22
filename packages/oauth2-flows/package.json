@@ -26,13 +26,15 @@
     "test:unit": "jest",
     "test:watch": "jest --watchAll",
     "test:browser": "jest --config jest.browser.config.js",
-    "test:node": "jest --config jest.node.config.js"
+    "test:node": "jest --config jest.node.config.js",
+    "test:integration": "jest --config jest.integration.config.js"
   },
   "peerDependencies": {
     "@okta/auth-foundation": "*"
   },
   "devDependencies": {
     "@okta/auth-foundation": "*",
+    "@repo/env": "*",
     "@repo/eslint-config": "*",
     "@repo/jest-helpers": "*",
     "@repo/rollup-config": "*",

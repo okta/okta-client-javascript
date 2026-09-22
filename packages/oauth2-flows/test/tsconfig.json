@@ -13,6 +13,7 @@
     "e2e/**/*.ts",
     "helpers/**/*.ts",
     "spec/**/*.ts",
+    "integration/**/*.ts",
   ],
   "exclude": [
     "node_modules"

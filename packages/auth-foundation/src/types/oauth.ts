@@ -97,7 +97,7 @@ export type OAuth2Params = {
  * 
  * @group Types
  */
-export type GrantType = 'authorization_code' | 'refresh_token';
+export type GrantType = 'authorization_code' | 'refresh_token' | 'password';
 
 /**
  * Possible values of `token_type` from a `/token` response
