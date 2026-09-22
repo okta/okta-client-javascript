@@ -15,6 +15,11 @@ npm config set @okta:registry ${REGISTRY}
 PUBLISHED_PACKAGES=""
 PROMOTABLE_VERSIONS=""
 
+if ! $OKTA_HOME/$REPO/scripts/utils/sync_package_versions.js; then
+  echo "failed to sync package versions"
+  exit ${FAILED_SETUP}
+fi
+
 if ! yarn build; then
   echo "build failed! Exiting..."
   exit ${TEST_FAILURE}

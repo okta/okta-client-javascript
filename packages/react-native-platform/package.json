@@ -1,6 +1,6 @@
 {
   "name": "@okta/react-native-platform",
-  "version": "0.7.0",
+  "version": "0.9.0",
   "author": "developer@okta.com",
   "type": "module",
   "main": "dist/esm/index.js",

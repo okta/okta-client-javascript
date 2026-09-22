@@ -426,8 +426,6 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
       return { error: `Missing token: refreshToken` };
     }
 
-    this.emitter.emit('token_will_refresh', { token });
-
     const openIdConfiguration = await this.openIdConfiguration();
     const refreshParams: Token.RefreshRequestParams = {
       id: token.id,

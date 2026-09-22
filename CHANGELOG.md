@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2026-09-21
+
+### `@okta/auth-foundation`
+
+#### Added
+- Added `Configuration.getOptions()` to `OAuth2Client.Configuration`, returning the client's `authentication`, `allowHTTP`, and `syncClockWithAuthorizationServer` settings ([#35](https://github.com/okta/okta-client-javascript/pull/35))
+- Added `allowHTTP` to `IDTokenValidatorContext`, allowing ID token issuer-scheme validation to be skipped on a per-call basis ([#35](https://github.com/okta/okta-client-javascript/pull/35))
+- Added `TokenStorage.loadDefaultTokenId()` to explicitly (re)query storage for the default token id ([#35](https://github.com/okta/okta-client-javascript/pull/35))
+- Added `jku`, `x5u`, `x5t`, and `x5c` to `JWTHeader`, and `use` to `JWK` ([#35](https://github.com/okta/okta-client-javascript/pull/35))
+
+#### Changed
+- **Breaking:** `TokenStorage` implementations must now implement `loadDefaultTokenId(): Promise<string | null>`, and `defaultTokenId` may be `undefined` (not yet loaded from storage) in addition to `string | null` ([#35](https://github.com/okta/okta-client-javascript/pull/35))
+
+#### Fixed
+- Fixed `allowHTTP: true` on `OAuth2Client.Configuration` not being honored during ID token validation, causing `http://` issuers to fail even when explicitly allowed ([#35](https://github.com/okta/okta-client-javascript/pull/35))
+- Fixed `OAuth2Client` instances reconstructed from stored tokens (e.g. via `Credential.find`) losing the original client's `authentication`/`allowHTTP`/`syncClockWithAuthorizationServer` settings ([#35](https://github.com/okta/okta-client-javascript/pull/35))
+
+### `@okta/oauth2-flows`
+
+#### Changed
+- **Breaking:** `AuthorizationCodeFlow.resume()` now requires an explicit `redirectUri` (`string | URL | URLSearchParams`) and no longer falls back to `window.location.href` ([#35](https://github.com/okta/okta-client-javascript/pull/35))
+
+### `@okta/react-native-platform`
+
+Initial beta release for React Native. See the [docs](https://okta.github.io/okta-client-javascript/api/react-native-platform/) for more details.
+
+### `@okta/react-native-webcrypto-bridge`
+
+Initial beta release, providing a native WebCrypto implementation for React Native.
+
 ## [0.8.0] - 2026-09-15
 
 ### `@okta/auth-foundation`
