@@ -10,7 +10,7 @@ import { ResourceOwnerFlow } from 'src/ResourceOwnerFlow';
  * auto-integrates with `testenv` via jest setup file
  */
 const { ISSUER, NATIVE_CLIENT_ID, USERNAME, PASSWORD } = process.env;
-
+console.log('ENV: ', process.env)
 
 describe('ResourceOwnerFlow (integration)', () => {
   const flow = new ResourceOwnerFlow({
