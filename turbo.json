@@ -20,7 +20,8 @@
     },
     "test:integ": {
       "cache": false,
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "passThroughEnv": ["ISSUER", "SPA_CLIENT_ID", "DPOP_CLIENT_ID", "NATIVE_CLIENT_ID", "USERNAME", "PASSWORD"]
     }
   }
 }
