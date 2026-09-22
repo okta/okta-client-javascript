@@ -1,54 +1,47 @@
 # Okta OAuth2 Client SDKs
 
+> [!IMPORTANT]
 > This SDK is currently in `beta` phase
 
-API Documentation and Integration Guides: https://okta-client-js.netlify.app/
+Auth is hard, and OAuth2 can be harder — both to understand and to implement correctly. This repo is a monorepo of interconnected JavaScript/TypeScript libraries that let you integrate OAuth2 into your app without needing to master the full spec yourself:
 
+* **`@okta/auth-foundation`** — the foundational library (token handling, HTTP clients, platform abstractions) that every other package builds on
+* **`@okta/oauth2-flows`** — environment-agnostic OAuth2 flow implementations (Authorization Code, Logout)
+* **`@okta/spa-platform`** — token lifecycle management, storage, and tab synchronization for browser/SPA apps
+* **`@okta/react-native-platform`** and **`@okta/react-native-webcrypto-bridge`** — React Native support, including a native WebCrypto bridge
 
-## Design Goals
-Auth is hard. OAuth can be even harder; both to understand as well as implement. The goal of this ecosystem of SDKs is to enable developers to seemlessly integrate OAuth into their Web Apps without the need to comprehensively understand all the intricacies of the OAuth2 spec
+**Full API documentation and integration guides:** https://okta.github.io/okta-client-javascript
 
+## Contributing to this repo
 
-## Package Overview
+### Prerequisites
+* Node.js >= 20.11.0 (recommended: >= 22.13.1)
+* Yarn >= 1.19.0
 
-#### Foundational SDK
-* `@okta/auth-foundation` -  Foundational library on which all other SDKs are built
-
-#### Token Acquisition SDKs
-  * `@okta/oauth2-flows` - Implementations of OAuth2 flows designed for Browser-based environments (emphasising SPA-based architectures)
-  * `@okta/direct-auth`- *COMING SOON!*
-  * `@okta/spa-idx` - *COMING SOON!*
-
-#### Token Management / Platform SDKs
-  * `@okta/spa-platform` - Provides utilities for mangaging token lifecycles, storing tokens, synchronizing browser tabs, and requesting protected resources; designed for Browser-based environments (emphasising SPA-based architectures)
-
-
-## Integrating the SDKs in your project
-
-To install, run:
-
-```bash
-yarn add @okta/auth-foundation @okta/oauth2-flows @okta/spa-platform
-```
-
-More integration guides can be found at https://okta-client-js.netlify.app/
-
-
-## Getting Started (with this repo)
+### Setup
 
 ```bash
 node --version    # should be >=20
-yarn              # installs all required dependencies
-yarn build        # builds all SDK libaries
+yarn               # installs all dependencies across the workspace
+yarn build         # builds all SDK packages
 ```
 
+### Common tasks
 
-## Samples
+```bash
+yarn build         # build all packages (via Turborepo)
+yarn lint          # lint all packages
+yarn test:unit     # run unit tests across all packages
+yarn test:node     # run node-environment tests (excludes *-platform packages)
+```
 
-### Redirect Model
-Implements Authorization Code Flow via Redirect Model
+To work on a single package, `cd` into it under `packages/` and use its local scripts (e.g. `yarn test:watch`).
 
-Located: `e2e/apps/redirect-model`
+### Repo structure
 
-### Token Broker
-Implements Authorization Code Flow via Redirect Model to obtain a "all-scoped" token. This token is used to request downscoped access tokens to be used for resource requests
+```
+packages/     the published SDKs (see above) plus internal dev tooling (mock-auth-server)
+tooling/      shared build/lint/test config used across packages
+e2e/          sample apps exercising the SDKs end-to-end
+docs/         source for the documentation site
+```
