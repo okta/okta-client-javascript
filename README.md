@@ -3,7 +3,7 @@
 > [!IMPORTANT]
 > This SDK is currently in `beta` phase
 
-Auth is hard, and OAuth2 can be harder — both to understand and to implement correctly. This repo is a monorepo of interconnected JavaScript/TypeScript libraries that let you integrate OAuth2 into your app without needing to master the full spec yourself:
+Auth is hard. OAuth2 can be harder — both to understand and to implement correctly. This repo is a monorepo of interconnected JavaScript/TypeScript libraries that let you integrate OAuth2 into your app without needing to master the full spec yourself:
 
 * **`@okta/auth-foundation`** — the foundational library (token handling, HTTP clients, platform abstractions) that every other package builds on
 * **`@okta/oauth2-flows`** — environment-agnostic OAuth2 flow implementations (Authorization Code, Logout)
