@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0] - 2026-09-23
+
+### `@okta/oauth2-flows`
+
+### Added
+- adds `ResourceOwnerFlow` (for Native clients) ([#48](https://github.com/okta/okta-client-javascript/pull/48))
+
+### `@okta/react-native-platform`
+
+### Added
+- adds `ResourceOwnerFlow` ([#48](https://github.com/okta/okta-client-javascript/pull/48))
+
 ## [0.9.0] - 2026-09-21
 
 ### `@okta/auth-foundation`
@@ -20,9 +32,6 @@ All notable changes to this project will be documented in this file.
 - Fixed `OAuth2Client` instances reconstructed from stored tokens (e.g. via `Credential.find`) losing the original client's `authentication`/`allowHTTP`/`syncClockWithAuthorizationServer` settings ([#35](https://github.com/okta/okta-client-javascript/pull/35))
 
 ### `@okta/oauth2-flows`
-
-### Added
-- adds `ResourceOwnerFlow` (for Native clients) ([#48](https://github.com/okta/okta-client-javascript/pull/48))
 
 #### Changed
 - **Breaking:** `AuthorizationCodeFlow.resume()` now requires an explicit `redirectUri` (`string | URL | URLSearchParams`) and no longer falls back to `window.location.href` ([#35](https://github.com/okta/okta-client-javascript/pull/35))
