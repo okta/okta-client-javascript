@@ -9,7 +9,8 @@ import {
   type TokenStorage,
   type TokenStorageEvents,
   CredentialError,
-  EventEmitter
+  EventEmitter,
+  randomBytes
 } from '@okta/auth-foundation/core';
 import { buf, b64u } from '@okta/auth-foundation/internal';
 import { IndexedDBStore } from '../utils/IndexedDBStore.ts';
@@ -273,15 +274,17 @@ export class BrowserTokenStorage implements TokenStorage {
     const rawToken = token.toJSON();
     // storing context is redundant, delete it from stored object (and re-populate via metadata when read)
     delete rawToken.context;
-    const data: { token: JsonRecord | string, metadata: JsonRecord, v: number } = {
+    const data: { token: JsonRecord | string, metadata: JsonRecord, v: number, iv?: string } = {
       token: rawToken,
       metadata,
       v: BrowserTokenStorage.version
     };
 
     if (this.encryptAtRest) {
-      const encryptedToken = await this.encrypt(JSON.stringify(rawToken), token.id);
+      const iv = randomBytes(12);
+      const encryptedToken = await this.encrypt(JSON.stringify(rawToken), iv);
       data.token = b64u(encryptedToken);
+      data.iv = iv;
     }
 
     const key = this.idToStoreKey(token.id);
@@ -309,8 +312,8 @@ export class BrowserTokenStorage implements TokenStorage {
       // .token will be a string when encrypted, object when stored unecrypted
       if (typeof json.token === 'string') {
         try {
-          const { token: encryptedToken, metadata } = json;
-          const decrypted = await this.decrypt(encryptedToken, id);
+          const { token: encryptedToken, metadata, iv } = json;
+          const decrypted = await this.decrypt(encryptedToken, iv);
           const token = JSON.parse(buf(decrypted));
 
           return { token, metadata };
