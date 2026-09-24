@@ -281,13 +281,49 @@ describe('BrowserTokenStorage', () => {
         await expect(storage.encryptionKeyStore.get(storage.encryptionKeyName)).resolves.toBe(null);
       });
 
+      it('token metadata can be updated without decryption', async () => {
+        await expect(storage.allIDs()).resolves.toEqual([]);
+
+        const t1 = makeTestToken(randomBytes());
+        await storage.add(t1);
+
+        // Adds spies after token is written to storage - they are expected to be called to store the token originally
+        jest.spyOn(storage as any, 'encrypt');
+        jest.spyOn(storage as any, 'decrypt');
+
+        await expect(storage.getMetadata(t1.id)).resolves.toMatchObject({
+          ...t1.context,
+          id: t1.id,
+          tags: []
+        });
+
+        await storage.setMetadata(Token.Metadata(t1, ['foo']));
+
+        await expect(storage.getMetadata(t1.id)).resolves.toMatchObject({
+          ...t1.context,
+          id: t1.id,
+          tags: ['foo']
+        });
+
+        await storage.setMetadata(Token.Metadata(t1, ['foo', 'bar']));
+
+        await expect(storage.getMetadata(t1.id)).resolves.toMatchObject({
+          ...t1.context,
+          id: t1.id,
+          tags: ['foo', 'bar']
+        });
+
+        expect((storage as any).encrypt).not.toHaveBeenCalled();
+        expect((storage as any).decrypt).not.toHaveBeenCalled();
+      });
+
       it('can gracefully handle `encryptedAtRest` flag being toggled', async () => {
         const encryptedToken = makeTestToken(randomBytes());
         await storage.add(encryptedToken);
 
         await expect(storage.get(encryptedToken.id)).resolves.toEqual(encryptedToken);
         storage.encryptAtRest = false;
-        await expect(storage.get(encryptedToken.id)).resolves.toEqual(encryptedToken);
+        await expect(storage.get(encryptedToken.id)).resolves.toEqual(null);
 
         const unencryptedToken = makeTestToken(randomBytes());
         await storage.add(unencryptedToken);
@@ -297,8 +333,8 @@ describe('BrowserTokenStorage', () => {
         await expect(storage.get(unencryptedToken.id)).resolves.toEqual(unencryptedToken);
 
         storage.encryptAtRest = false;
-        await expect(storage.get(encryptedToken.id)).resolves.toEqual(encryptedToken);
-        await expect(storage.get(encryptedToken.id)).resolves.toEqual(encryptedToken);
+        await expect(storage.get(encryptedToken.id)).resolves.toEqual(null);
+        await expect(storage.get(unencryptedToken.id)).resolves.toEqual(unencryptedToken);
 
         storage.encryptAtRest = true;
         await expect(storage.get(encryptedToken.id)).resolves.toEqual(encryptedToken);
