@@ -75,8 +75,8 @@ export async function hash (str: string): Promise<string> {
  * 
  * @group Crypto
  */
-export function randomBytes(): string {
-  return b64u(crypto.getRandomValues(new Uint8Array(32)));
+export function randomBytes (length: number = 32): string {
+  return b64u(crypto.getRandomValues(new Uint8Array(length)));
 }
 
 /**

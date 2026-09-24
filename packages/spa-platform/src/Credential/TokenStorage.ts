@@ -9,7 +9,8 @@ import {
   type TokenStorage,
   type TokenStorageEvents,
   CredentialError,
-  EventEmitter
+  EventEmitter,
+  randomBytes
 } from '@okta/auth-foundation/core';
 import { buf, b64u } from '@okta/auth-foundation/internal';
 import { IndexedDBStore } from '../utils/IndexedDBStore.ts';
@@ -204,7 +205,27 @@ export class BrowserTokenStorage implements TokenStorage {
       return null;
     }
 
-    const { token, metadata } = stored;
+    let { token, metadata } = stored;
+
+    // NOTE: add json structure migrations here in the future (above v3)
+    // if (json.v === 3) { return migration() }
+
+    // .token will be a string when encrypted, object when stored unecrypted
+    if (typeof token === 'string') {
+      // if the token value in storage is encrypted, but the
+      if (!this.encryptAtRest) {
+        return null;
+      }
+
+      try {
+        const decrypted = await this.decrypt(token, stored.iv);
+        token = JSON.parse(buf(decrypted));
+      }
+      catch (err) {
+        return await this.handleDecryptionError(err as Error, id);
+      }
+    }
+
     // extract Token.Context values from Metadata (which includes additional key/values)
     const context = Token.extractContext(metadata);
     // TODO: confirm client info, should be added to storage
@@ -238,8 +259,8 @@ export class BrowserTokenStorage implements TokenStorage {
     // TODO: [OKTA-977044] uncomment
     // const key = this.idToStoreKey(metadata.id);
 
-    const { token } = JSON.parse(oldResult);
-    const data = { token, metadata };
+    const currentJSON = JSON.parse(oldResult);
+    const data = { ...currentJSON, metadata };
     localStorage.setItem(key, JSON.stringify(data));
     this.emitter.emit('metadata_updated', { storage: this, id: metadata.id, metadata });
   }
@@ -273,15 +294,17 @@ export class BrowserTokenStorage implements TokenStorage {
     const rawToken = token.toJSON();
     // storing context is redundant, delete it from stored object (and re-populate via metadata when read)
     delete rawToken.context;
-    const data: { token: JsonRecord | string, metadata: JsonRecord, v: number } = {
+    const data: { token: JsonRecord | string, metadata: JsonRecord, v: number, iv?: string } = {
       token: rawToken,
       metadata,
       v: BrowserTokenStorage.version
     };
 
     if (this.encryptAtRest) {
-      const encryptedToken = await this.encrypt(JSON.stringify(rawToken), token.id);
+      const iv = randomBytes(12);
+      const encryptedToken = await this.encrypt(JSON.stringify(rawToken), iv);
       data.token = b64u(encryptedToken);
+      data.iv = iv;
     }
 
     const key = this.idToStoreKey(token.id);
@@ -301,26 +324,8 @@ export class BrowserTokenStorage implements TokenStorage {
       if (!raw) {
         return null;
       }
+
       const json = JSON.parse(raw);
-
-      // NOTE: add json structure migrations here in the future (above v3)
-      // if (json.v === 3) { return migration() }
-
-      // .token will be a string when encrypted, object when stored unecrypted
-      if (typeof json.token === 'string') {
-        try {
-          const { token: encryptedToken, metadata } = json;
-          const decrypted = await this.decrypt(encryptedToken, id);
-          const token = JSON.parse(buf(decrypted));
-
-          return { token, metadata };
-        }
-        catch (err) {
-          return await this.handleDecryptionError(err as Error, id);
-        }
-      }
-
-      // else - avoids issues parsing when `encryptAtRest` is toggled
       return json;
     }
     catch (err) {
