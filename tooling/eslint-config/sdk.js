@@ -44,6 +44,7 @@ module.exports = {
     {
       files: [
         'test/spec/**/*',
+        'test/integration/**/*',
         'test/jest.setup.js'
       ],
       plugins: [

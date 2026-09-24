@@ -1,6 +1,6 @@
 {
   "name": "@okta/oauth2-flows",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "type": "module",
   "main": "dist/esm/index.js",
   "module": "dist/esm/index.js",
@@ -26,13 +26,15 @@
     "test:unit": "jest",
     "test:watch": "jest --watchAll",
     "test:browser": "jest --config jest.browser.config.js",
-    "test:node": "jest --config jest.node.config.js"
+    "test:node": "jest --config jest.node.config.js",
+    "test:integ": "jest --config jest.integration.config.js"
   },
   "peerDependencies": {
     "@okta/auth-foundation": "*"
   },
   "devDependencies": {
     "@okta/auth-foundation": "*",
+    "@repo/env": "*",
     "@repo/eslint-config": "*",
     "@repo/jest-helpers": "*",
     "@repo/rollup-config": "*",

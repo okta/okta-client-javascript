@@ -22,6 +22,13 @@ test_suites:
     timeout: '20'
     criteria: MERGE
     queue_name: al2023
+  - name: 'integ'
+    script_path: /root/okta/okta-client-javascript/scripts/bacon
+    script_name: integ
+    sort_order: '2'
+    timeout: '20'
+    criteria: MERGE
+    queue_name: al2023
   - name: 'e2e-oidc'
     script_path: /root/okta/okta-client-javascript/scripts/bacon
     script_name: e2e-oidc

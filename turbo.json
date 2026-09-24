@@ -17,6 +17,11 @@
     "test:node": {
       "cache": false,
       "dependsOn": ["^build"]
+    },
+    "test:integ": {
+      "cache": false,
+      "dependsOn": ["^build"],
+      "passThroughEnv": ["ISSUER", "SPA_CLIENT_ID", "DPOP_CLIENT_ID", "NATIVE_CLIENT_ID", "USERNAME", "PASSWORD"]
     }
   }
 }

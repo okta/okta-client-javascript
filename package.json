@@ -1,6 +1,6 @@
 {
   "name": "@okta/okta-client-js",
-  "version": "0.9.0",
+  "version": "0.10.0",
   "private": true,
   "packageManager": "yarn@1.22.19",
   "engines": {
@@ -12,7 +12,8 @@
     "lint": "turbo run --continue --log-order=grouped lint",
     "lint:lockfile": "lockfile-lint --path yarn.lock --allowed-hosts registry.yarnpkg.com --validate-https",
     "test:unit": "turbo run test:unit --filter=./packages/* --log-order=grouped",
-    "test:node": "turbo run test:node --filter=./packages/* --filter=!*platform --log-order=grouped"
+    "test:node": "turbo run test:node --filter=./packages/* --filter=!*platform --log-order=grouped",
+    "test:integ": "turbo run test:integ --filter=./packages/* --log-order=grouped"
   },
   "devDependencies": {
     "@repo/eslint-config": "*",
