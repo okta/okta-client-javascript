@@ -28,8 +28,10 @@ import { isFirefox } from '../utils/UserAgent.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function log (...args: any[]) {}
 
+/** @internal */
+const BROADCAST_MESSAGE_VERSION = 2;
 
-type BroadcastMessage = { eventName: string, id: string, source: string };
+type BroadcastMessage = { eventName: string, id: string, source: string, v: number };
 
 /**
  * Browser-specific implementation of {@link CredentialCoordinator}
@@ -92,6 +94,7 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
     this.channel.postMessage({
       eventName,
       source: this.id,    // id associated with CredentialCoordinator instance (aka per tab)
+      v: BROADCAST_MESSAGE_VERSION,   // increment this version when changes are made to tab sync message structure
       ...data
     });
   }
@@ -99,87 +102,97 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
   protected registerTabListeners (): void {
     // eslint-disable-next-line max-statements
     this.channel.onmessage = async (event) => {
-      // TODO: investigate better solution
-      if (isFirefox()) {
-        // Issue: `credential_added` event is receieved by other tabs before the storage event is
-        // Firefox seems to have a local cache of LocalStorage per tab which is not updated until the storage event
-        // is received by that tab. The delay (usually ~.0001 ms) is enough to cause `Credential.allIds()` to return
-        // an incorrect value when used in an `credential_added` event handler in another tab
-        // This issue has not been observed on Chromium browsers
-        // (https://stackoverflow.com/questions/57089227/inconsistency-when-writing-synchronous-to-localstorage-from-multiple-tabs)
-        await pause(50);
-      }
+      try {
+        // TODO: investigate better solution
+        if (isFirefox()) {
+          // Issue: `credential_added` event is receieved by other tabs before the storage event is
+          // Firefox seems to have a local cache of LocalStorage per tab which is not updated until the storage event
+          // is received by that tab. The delay (usually ~.0001 ms) is enough to cause `Credential.allIds()` to return
+          // an incorrect value when used in an `credential_added` event handler in another tab
+          // This issue has not been observed on Chromium browsers
+          // (https://stackoverflow.com/questions/57089227/inconsistency-when-writing-synchronous-to-localstorage-from-multiple-tabs)
+          await pause(50);
+        }
 
-      const { eventName, id, source } = event.data as BroadcastMessage;
-      log('tab sync event: ', { eventName, source });
-      if (source == this.id) {
-        return;   // do not listen to messages broadcasted by this instance
-      }
+        const { eventName, id, source, v } = event.data as BroadcastMessage;
+        log('tab sync event: ', { eventName, source });
+        if (source == this.id) {
+          return;   // do not listen to messages broadcasted by this instance
+        }
 
-      if (eventName === 'default_changed') {
-        log('default', id, this._default);
-        if (id !== this._default?.id) {
-          this._default = undefined;    // set to undefined to trigger "reload" when accessed after this event
-          this.emitter.emit('default_changed', { storage: this.tokenStorage, id });
-        }
-      }
-      else if (eventName === 'cleared') {
-        await this.clear(true);   // only clear local values and do not broadcast
-        this.emitter.emit('cleared');
-      }
-      else if (eventName === 'metadata_updated') {
-        // loads metadata from storage
-        const metadata = await this.tokenStorage.getMetadata(id);
-        if (metadata) {
-          this.emitter.emit('metadata_updated', { storage: this.tokenStorage, id, metadata });
-        }
-      }
-      else if (eventName === 'credential_added') {
-        log('added');
-        this.emitter.emit('credential_added', { id });
-        // NOTE: cross-tab 'credential_added' no longer defaults to adding a `Credential` instance to `dataSource`
-      }
-      else if (eventName === 'credential_removed') {
-        log('removal');
-        if (this.credentialDataSource.hasCredential(id)) {
-          // if a `Credential` exists for the given token, a event will be relayed via `dataSource.emitter`
-          this.credentialDataSource.remove(id);
-        }
-        else {
-          // No event will be relayed if a `Credential` exists does not exist, emit one directly
-          this.emitter.emit('credential_removed', { id });
-        }
-      }
-      else if (eventName === 'credential_refreshed') {
-        log('refresh');
-
-        // if the tab receiving this event does not "know" (have a corresponding `Credential` instance)
-        // for the token which refresh, skip processing this event
-        if (!this.credentialDataSource.hasCredential(id)) {
-          log('token not known to tab');
+        if (v !== BROADCAST_MESSAGE_VERSION) {
+          log(`version mismatch: ${v} vs ${BROADCAST_MESSAGE_VERSION}. Ignoring message`);
           return;
         }
 
-        const token = await this.tokenStorage.get(id);
-        if (!token) {
-          return;
+        if (eventName === 'default_changed') {
+          log('default', id, this._default);
+          if (id !== this._default?.id) {
+            this._default = undefined;    // set to undefined to trigger "reload" when accessed after this event
+            this.emitter.emit('default_changed', { storage: this.tokenStorage, id });
+          }
         }
-        const credential = this.credentialDataSource.credentialFor(token);
+        else if (eventName === 'cleared') {
+          await this.clear(true);   // only clear local values and do not broadcast
+          this.emitter.emit('cleared');
+        }
+        else if (eventName === 'metadata_updated') {
+          // loads metadata from storage
+          const metadata = await this.tokenStorage.getMetadata(id);
+          if (metadata) {
+            this.emitter.emit('metadata_updated', { storage: this.tokenStorage, id, metadata });
+          }
+        }
+        else if (eventName === 'credential_added') {
+          log('added');
+          this.emitter.emit('credential_added', { id });
+          // NOTE: cross-tab 'credential_added' no longer defaults to adding a `Credential` instance to `dataSource`
+        }
+        else if (eventName === 'credential_removed') {
+          log('removal');
+          if (this.credentialDataSource.hasCredential(id)) {
+            // if a `Credential` exists for the given token, a event will be relayed via `dataSource.emitter`
+            this.credentialDataSource.remove(id);
+          }
+          else {
+            // No event will be relayed if a `Credential` exists does not exist, emit one directly
+            this.emitter.emit('credential_removed', { id });
+          }
+        }
+        else if (eventName === 'credential_refreshed') {
+          log('refresh');
 
-        // when a Credential is updated in a separate tab, the Token read from storage
-        // may differ from cred.token via DataSource, so the update should continue.
-        // If the tokens are equal, this means this DataSource has already updated the token to the new value
-        if (Token.isEqual(token, credential.token)) {
-          log('token has already been updated');
-          return;
+          // if the tab receiving this event does not "know" (have a corresponding `Credential` instance)
+          // for the token which refresh, skip processing this event
+          if (!this.credentialDataSource.hasCredential(id)) {
+            log('token not known to tab');
+            return;
+          }
+
+          const token = await this.tokenStorage.get(id);
+          if (!token) {
+            return;
+          }
+          const credential = this.credentialDataSource.credentialFor(token);
+
+          // when a Credential is updated in a separate tab, the Token read from storage
+          // may differ from cred.token via DataSource, so the update should continue.
+          // If the tokens are equal, this means this DataSource has already updated the token to the new value
+          if (Token.isEqual(token, credential.token)) {
+            log('token has already been updated');
+            return;
+          }
+
+          // @ts-expect-error - Credential `set token()` is a private setter to avoid exposing this to the public API
+          credential.token = token;
+          this.emitter.emit('credential_refreshed', { credential });
         }
 
-        // @ts-expect-error - Credential `set token()` is a private setter to avoid exposing this to the public API
-        credential.token = token;
-        this.emitter.emit('credential_refreshed', { credential });
+        log('allIDs: ', this.allIDs(), 'size: ', this.credentialDataSource.size);
       }
-
-      log('allIDs: ', this.allIDs(), 'size: ', this.credentialDataSource.size);
+      catch (err) {
+        log('error caught: ', err);
+      }
     };
   }
 
