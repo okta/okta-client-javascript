@@ -9,8 +9,9 @@ describe('CredentialCoordinatorImpl', () => {
   let channel: any;
 
   // simulates an incoming cross-tab BroadcastChannel message, since BroadcastChannel is mocked
-  function receive (eventName: string, data: Record<string, any> = {}, source = 'other-tab') {
-    return channel.onmessage({ data: { eventName, source, ...data } });
+  // NOTE: `v` must match `BROADCAST_MESSAGE_VERSION` in CredentialCoordinator.ts, or `onmessage` ignores the message
+  function receive (eventName: string, data: Record<string, any> = {}, source = 'other-tab', v = 2) {
+    return channel.onmessage({ data: { eventName, source, v, ...data } });
   }
 
   beforeEach(() => {
@@ -18,7 +19,6 @@ describe('CredentialCoordinatorImpl', () => {
     jest.useFakeTimers();
     cc = new CredentialCoordinatorImpl(Credential);
     Credential.coordinator = cc;
-    channel = (cc as any).channel;
     (cc.tokenStorage as BrowserTokenStorage).encryptAtRest = false;   // disables crypto/indexedDB requirements
   });
 
@@ -30,15 +30,65 @@ describe('CredentialCoordinatorImpl', () => {
     it('should construct', () => {
       expect(cc).toBeInstanceOf(CredentialCoordinatorImpl);
     });
+
+    it('does not open a BroadcastChannel or broadcast anything by default (tab sync is opt-in)', async () => {
+      const cred = await cc.store(makeTestToken());
+      await cc.setDefault(cred);
+      await cred.setTags(['foo']);
+      await cc.remove(cred);
+      await cc.clear();
+
+      expect((cc as any).channel).toBeUndefined();
+    });
+  });
+
+  describe('enableTabSync / disableTabSync', () => {
+    it('is idempotent: calling enableTabSync twice does not create a second channel', () => {
+      cc.enableTabSync();
+      const firstChannel = (cc as any).channel;
+      cc.enableTabSync();
+
+      expect((cc as any).channel).toBe(firstChannel);
+    });
+
+    it('is idempotent: calling disableTabSync twice does not throw', () => {
+      cc.enableTabSync();
+      cc.disableTabSync();
+
+      expect(() => cc.disableTabSync()).not.toThrow();
+    });
+
+    it('disableTabSync closes the channel and stops broadcasting local events', async () => {
+      cc.enableTabSync();
+      const disabledChannel = (cc as any).channel;
+
+      cc.disableTabSync();
+
+      expect(disabledChannel.close).toHaveBeenCalledTimes(1);
+      expect((cc as any).channel).toBeUndefined();
+
+      await cc.store(makeTestToken());
+      expect(disabledChannel.postMessage).not.toHaveBeenCalled();
+    });
+
+    it('calling disableTabSync without ever enabling is a no-op', () => {
+      expect(() => cc.disableTabSync()).not.toThrow();
+    });
   });
 
   describe('Broadcast local Credential* events cross-tab', () => {
+    beforeEach(() => {
+      cc.enableTabSync();
+      channel = (cc as any).channel;
+    });
+
     describe('Events', () => {
       test('credential_added', async () => {
         const cred = await cc.store(makeTestToken());
         expect(channel.postMessage).toHaveBeenCalledWith({
           eventName: 'credential_added',
           source: expect.any(String),
+          v: 2,
           id: cred.id
         });
       });
@@ -56,6 +106,7 @@ describe('CredentialCoordinatorImpl', () => {
         expect(channel.postMessage).toHaveBeenCalledWith({
           eventName: 'credential_refreshed',
           source: expect.any(String),
+          v: 2,
           id: cred.id
         });
       });
@@ -69,6 +120,7 @@ describe('CredentialCoordinatorImpl', () => {
         expect(channel.postMessage).toHaveBeenCalledWith({
           eventName: 'credential_removed',
           source: expect.any(String),
+          v: 2,
           id: cred.id
         });
       });
@@ -82,6 +134,7 @@ describe('CredentialCoordinatorImpl', () => {
         expect(channel.postMessage).toHaveBeenCalledWith({
           eventName: 'default_changed',
           source: expect.any(String),
+          v: 2,
           id: cred.id
         });
       });
@@ -94,6 +147,7 @@ describe('CredentialCoordinatorImpl', () => {
         expect(channel.postMessage).toHaveBeenCalledWith({
           eventName: 'metadata_updated',
           source: expect.any(String),
+          v: 2,
           id: cred.id
         });
       });
@@ -105,11 +159,11 @@ describe('CredentialCoordinatorImpl', () => {
 
         // broadcasts by default (when `localOnly` = false)
         await cc.clear();
-        expect(channel.postMessage).toHaveBeenCalledWith({ eventName: 'cleared', source: expect.any(String) });
+        expect(channel.postMessage).toHaveBeenCalledWith({ eventName: 'cleared', source: expect.any(String), v: 2 });
       });
     });
 
-    it('detaches broadcast listeners from a replaced tokenStorage', () => {
+    it('detaches broadcast listeners from a replaced tokenStorage while tab sync is enabled', () => {
       const oldStorage = cc.tokenStorage;
       cc.tokenStorage = new BrowserTokenStorage();
       channel.postMessage.mockClear();
@@ -118,9 +172,52 @@ describe('CredentialCoordinatorImpl', () => {
 
       expect(channel.postMessage).not.toHaveBeenCalled();
     });
+
+    it('attaches broadcast listeners to a replaced tokenStorage while tab sync is enabled', () => {
+      const newStorage = new BrowserTokenStorage();
+      cc.tokenStorage = newStorage;
+      channel.postMessage.mockClear();
+
+      newStorage.emitter.emit('token_added', { storage: newStorage, id: 'foo', token: makeTestToken('foo') });
+
+      expect(channel.postMessage).toHaveBeenCalledWith({
+        eventName: 'credential_added',
+        source: expect.any(String),
+        v: 2,
+        id: 'foo'
+      });
+    });
+  });
+
+  describe('replacing tokenStorage while tab sync is disabled', () => {
+    it('does not attach broadcast listeners to the new tokenStorage', () => {
+      const newStorage = new BrowserTokenStorage();
+      cc.tokenStorage = newStorage;
+
+      expect((cc as any).channel).toBeUndefined();
+
+      cc.enableTabSync();
+      channel = (cc as any).channel;
+      channel.postMessage.mockClear();
+
+      newStorage.emitter.emit('token_added', { storage: newStorage, id: 'foo', token: makeTestToken('foo') });
+
+      // listeners are bound against whatever storage is current *when enabled*, so this should still broadcast
+      expect(channel.postMessage).toHaveBeenCalledWith({
+        eventName: 'credential_added',
+        source: expect.any(String),
+        v: 2,
+        id: 'foo'
+      });
+    });
   });
 
   describe('Receiving cross-tab messages', () => {
+    beforeEach(() => {
+      cc.enableTabSync();
+      channel = (cc as any).channel;
+    });
+
     describe('Events', () => {
       test('credential_added', async () => {
         const addedSpy = jest.fn();
@@ -222,8 +319,16 @@ describe('CredentialCoordinatorImpl', () => {
 
   describe('close', () => {
     it('closes the underlying BroadcastChannel', () => {
+      cc.enableTabSync();
+      channel = (cc as any).channel;
+
       cc.close();
+
       expect(channel.close).toHaveBeenCalledTimes(1);
+    });
+
+    it('is a no-op if tab sync was never enabled', () => {
+      expect(() => cc.close()).not.toThrow();
     });
   });
 });

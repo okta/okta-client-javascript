@@ -7,7 +7,8 @@ import type {
   TokenStorage,
   JsonPrimitive,
   TokenStorageEvents,
-  JsonRecord
+  JsonRecord,
+  Credential
 } from '@okta/auth-foundation/core';
 import {
   Token,
@@ -28,32 +29,66 @@ import { isFirefox } from '../utils/UserAgent.ts';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function log (...args: any[]) {}
 
-/** @internal */
+/**
+ * @internal
+ * 
+ * NOTE: If any changes are made to the payload structure of the tab sync events
+ * increment this version variable.
+ */
 const BROADCAST_MESSAGE_VERSION = 2;
 
 type BroadcastMessage = { eventName: string, id: string, source: string, v: number };
 
 /**
  * Browser-specific implementation of {@link CredentialCoordinator}
- * 
+ *
  * @internal
  */
 export class CredentialCoordinatorImpl extends CredentialCoordinatorBase implements CredentialCoordinator {
   // shortID assoicated with instance to prevent listening to messages broadcasted by this instance
   private readonly id: string = shortID();
-  private readonly channel: BroadcastChannel = new BroadcastChannel('CredentialCoordinatorImpl');
+  // lazily created: only opened once `enableTabSync()` is called
+  private channel?: BroadcastChannel;
 
   constructor (CredentialConstructor: (ConstructorParameters<typeof CredentialCoordinatorBase>)[0]) {
     super(CredentialConstructor);
     this.tokenStorage = new BrowserTokenStorage();
     this.credentialDataSource = new DefaultCredentialDataSource(CredentialConstructor);
-
-    this.registerTabListeners();
-
-    this.emitter.on('credential_refreshed', ({ credential }) => {
-      this.broadcast('credential_refreshed', { id: credential.id });
-    });
   }
+
+  /**
+   * Opts in to broadcasting credential lifecycle events (add/remove/refresh/default/metadata)
+   * across browser tabs via `BroadcastChannel`, so state stays in sync everywhere.
+   *
+   * @remarks
+   * Disabled by default. Call once, e.g. at application startup.
+   */
+  public enableTabSync (): void {
+    if (this.channel) {
+      return;
+    }
+    this.channel = new BroadcastChannel(`TabSync:v${BROADCAST_MESSAGE_VERSION}`);
+    this.registerTabListeners();
+    this.bindBroadcastListeners(this.tokenStorage);
+    this.emitter.on('credential_refreshed', this.broadcastCredentialRefreshed);
+  }
+
+  /**
+   * Opts out of cross-tab broadcasting, closing the underlying `BroadcastChannel`.
+   */
+  public disableTabSync (): void {
+    if (!this.channel) {
+      return;
+    }
+    this.emitter.off('credential_refreshed', this.broadcastCredentialRefreshed);
+    this.unbindBroadcastListeners(this.tokenStorage);
+    this.close();
+    this.channel = undefined;
+  }
+
+  private readonly broadcastCredentialRefreshed = ({ credential }: { credential: Credential }): void => {
+    this.broadcast('credential_refreshed', { id: credential.id });
+  };
 
   // NOTE: getter is required to be defined since setter is defined
   public get tokenStorage (): TokenStorage {
@@ -62,44 +97,64 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
 
   public set tokenStorage (tokenStorage: TokenStorage) {
     if (super.tokenStorage) {
-      ([
-        'token_added',
-        'token_removed',
-        'default_changed',
-        'metadata_updated',
-      ] satisfies (keyof TokenStorageEvents)[]).forEach(evt => super.tokenStorage.emitter.off(evt));
+      this.unbindBroadcastListeners(super.tokenStorage);
     }
 
     super.tokenStorage = tokenStorage;
 
-    this.tokenStorage.emitter.on('token_added', ({ token }) => {
+    if (this.channel) {
+      this.bindBroadcastListeners(tokenStorage);
+    }
+  }
+
+  private bindBroadcastListeners (tokenStorage: TokenStorage): void {
+    tokenStorage.emitter.on('token_added', ({ token }) => {
       this.broadcast('credential_added', { id: token.id });
     });
 
-    this.tokenStorage.emitter.on('token_removed', ({ id }) => {
+    tokenStorage.emitter.on('token_removed', ({ id }) => {
       this.broadcast('credential_removed', { id });
     });
 
-    this.tokenStorage.emitter.on('default_changed', ({ id }) => {
+    tokenStorage.emitter.on('default_changed', ({ id }) => {
       this.broadcast('default_changed', { id });
     });
 
-    this.tokenStorage.emitter.on('metadata_updated', ({ id }) => {
+    tokenStorage.emitter.on('metadata_updated', ({ id }) => {
       this.broadcast('metadata_updated', { id });
     });
   }
 
+  private unbindBroadcastListeners (tokenStorage: TokenStorage): void {
+    ([
+      'token_added',
+      'token_removed',
+      'default_changed',
+      'metadata_updated',
+    ] satisfies (keyof TokenStorageEvents)[]).forEach(evt => tokenStorage.emitter.off(evt));
+  }
+
   protected broadcast (eventName: string, data: Record<string, JsonPrimitive | JsonRecord>) {
-    // TODO: consider catching `InvalidStateError` thrown here (thrown when .postMessage is called on a closed channel)
-    this.channel.postMessage({
-      eventName,
-      source: this.id,    // id associated with CredentialCoordinator instance (aka per tab)
-      v: BROADCAST_MESSAGE_VERSION,   // increment this version when changes are made to tab sync message structure
-      ...data
-    });
+    if (!this.channel) {
+      return;   // tab sync not enabled
+    }
+    try {
+      this.channel.postMessage({
+        eventName,
+        source: this.id,    // id associated with CredentialCoordinator instance (aka per tab)
+        v: BROADCAST_MESSAGE_VERSION,   // increment this version when changes are made to tab sync message structure
+        ...data
+      });
+    }
+    catch (err) {
+      // don't leak broadcast errors
+    }
   }
 
   protected registerTabListeners (): void {
+    if (!this.channel) {
+      return;
+    }
     // eslint-disable-next-line max-statements
     this.channel.onmessage = async (event) => {
       try {
@@ -128,7 +183,10 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
         if (eventName === 'default_changed') {
           log('default', id, this._default);
           if (id !== this._default?.id) {
-            this._default = undefined;    // set to undefined to trigger "reload" when accessed after this event
+            // clear the cache (rather than writing through `setDefault`/`setDefaultTokenId`) so this doesn't
+            // itself emit a local `default_changed` on `tokenStorage`, which would get broadcast right back
+            // out and loop between tabs; the id is already persisted by the tab that made the change
+            this._default = undefined;
             this.emitter.emit('default_changed', { storage: this.tokenStorage, id });
           }
         }
@@ -210,6 +268,10 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
    * {@link https://jestjs.io/docs/cli#--detectopenhandles | jest --detectOpenHandles}
    */
   public close () {
+    if (!this.channel) {
+      return;
+    }
+    this.channel.onmessage = null;
     this.channel.close();
   }
 }
