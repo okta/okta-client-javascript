@@ -7,6 +7,8 @@ import { Loading } from './component/Loading';
 import './index.css';
 
 
+Credential.enableTabSync();
+
 // TODO: [OKTA-977044] remove
 const USE_DPOP = __USE_DPOP__ === "true";
 if (USE_DPOP) {

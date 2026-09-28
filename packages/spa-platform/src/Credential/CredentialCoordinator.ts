@@ -155,7 +155,7 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
     if (!this.channel) {
       return;
     }
-    // eslint-disable-next-line max-statements
+    // eslint-disable-next-line max-statements, complexity
     this.channel.onmessage = async (event) => {
       try {
         // TODO: investigate better solution

@@ -17,6 +17,8 @@ if (!rootElement) {
 // @ts-expect-error - This is added for e2e purposes only, not recommended for production apps
 window.Credential = Credential;
 
+Credential.enableTabSync();
+
 const root = createRoot(rootElement);
 root.render(
   <StrictMode>
