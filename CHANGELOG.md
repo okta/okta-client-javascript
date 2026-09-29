@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2026-09-28
+
+### `@okta/spa-platform`
+
+### Refactored
+- Tab sync feature is now opt-in. Adds `enableTabSync`/`disableTabSync` methods to `Credential`. Additionally, sync events are now tied to a verison number and will ignored if the versions don't match. ([#52](https://github.com/okta/okta-client-javascript/pull/52))
+
 ## [0.8.0] - 2026-09-15
 
 ### `@okta/auth-foundation`

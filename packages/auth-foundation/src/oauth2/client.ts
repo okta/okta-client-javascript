@@ -206,9 +206,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
         // proper error is returned from AS
         OAuth2Client.isDPoPProofClockSkewError(json) &&
         // request hasn't been retried too many times previously
-        request.canRetry() &&
-        // (heuristic) the TimeCoordinator updated with a meaningful time difference (~2.5 mintues)
-        Math.abs(Date.now() - Platform.TimeCoordinator.clockSkew) >= 150
+        request.canRetry()
       ) {
         // If a JWT (DPoP Proof) clock skew error is returned we can retry the request.
         // The `Date` header of the /token response will be have been processed, hopefully

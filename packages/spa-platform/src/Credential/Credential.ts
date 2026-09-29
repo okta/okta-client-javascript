@@ -32,4 +32,22 @@ export class Credential extends CredentialBase implements RequestAuthorizer, JSO
     // `?.` syntax means `.close` will only be invoked if it exists on the CredentialCoordinator implementation
     (this.coordinator as CredentialCoordinatorImpl)?.close?.();
   }
+
+  /**
+   * Opts in to broadcasting credential lifecycle events (add/remove/refresh/default/metadata)
+   * across browser tabs via `BroadcastChannel`, so state stays in sync everywhere.
+   *
+   * @remarks
+   * Disabled by default. Call once, e.g. at application startup.
+   */
+  public static enableTabSync () {
+    (this.coordinator as CredentialCoordinatorImpl)?.enableTabSync?.();
+  }
+
+  /**
+   * Opts out of cross-tab broadcasting, closing the underlying BroadcastChannel.
+   */
+  public static disableTabSync () {
+    (this.coordinator as CredentialCoordinatorImpl)?.disableTabSync?.();
+  }
 }
