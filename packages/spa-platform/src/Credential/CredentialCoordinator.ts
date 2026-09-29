@@ -39,7 +39,7 @@ type BroadcastMessage = { eventName: string, id: string, source: string };
 export class CredentialCoordinatorImpl extends CredentialCoordinatorBase implements CredentialCoordinator {
   // shortID assoicated with instance to prevent listening to messages broadcasted by this instance
   private readonly id: string = shortID();
-  private readonly channel: BroadcastChannel = new BroadcastChannel('CredentialCoordinatorImpl');
+  private readonly channel: BroadcastChannel = new BroadcastChannel('TabSync');
 
   constructor (CredentialConstructor: (ConstructorParameters<typeof CredentialCoordinatorBase>)[0]) {
     super(CredentialConstructor);

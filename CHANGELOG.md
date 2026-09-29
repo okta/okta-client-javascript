@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2026-09-29
+
+### `@okta/auth-foundation`
+
+- Changes default of `syncClockWithAuthorizationServer` to `false` ([#53](https://github.com/okta/okta-client-javascript/pull/53))
+
+#### Fixed
+
+### `@okta/spa-platform`
+
+#### Fixed
+- Payload structure of tab-sync events changed, causing failure with mismatched SDK versions on same page. Updates channel used to avoid crossing events. ([#53](https://github.com/okta/okta-client-javascript/pull/53))
+
 ## [0.8.0] - 2026-09-15
 
 ### `@okta/auth-foundation`

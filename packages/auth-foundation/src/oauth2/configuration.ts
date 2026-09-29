@@ -50,7 +50,7 @@ export class Configuration extends APIClient.Configuration implements APIClientC
    * used to calculate a clock skew between the Authorization Server and the system clock. This is
    * useful for situations when the client's system clock is set to something other than the "true time".
    *
-   * Defaults to `true`.
+   * Defaults to `false`.
    *
    * @remarks
    * By default, the `Date` header is not safelisted for CORS requests. The Authorization Server will need
@@ -58,7 +58,7 @@ export class Configuration extends APIClient.Configuration implements APIClientC
    *
    * Reference: https://developer.mozilla.org/en-US/docs/Glossary/CORS-safelisted_response_header
    */
-  public syncClockWithAuthorizationServer: boolean = true;
+  public syncClockWithAuthorizationServer: boolean = false;
 
   public static DefaultOptions: Required<OAuth2ClientOptions> & typeof APIClient.Configuration.DefaultOptions = {
     ...APIClient.Configuration.DefaultOptions,
