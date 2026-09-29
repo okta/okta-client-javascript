@@ -49,6 +49,7 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
   private readonly id: string = shortID();
   // lazily created: only opened once `enableTabSync()` is called
   private channel?: BroadcastChannel;
+  private syncListeners = new Map<keyof TokenStorageEvents, ((...args: any[]) => void)>();
 
   constructor (CredentialConstructor: (ConstructorParameters<typeof CredentialCoordinatorBase>)[0]) {
     super(CredentialConstructor);
@@ -108,30 +109,35 @@ export class CredentialCoordinatorImpl extends CredentialCoordinatorBase impleme
   }
 
   private bindBroadcastListeners (tokenStorage: TokenStorage): void {
-    tokenStorage.emitter.on('token_added', ({ token }) => {
+    const tokenAdded = ({ token }) => {
       this.broadcast('credential_added', { id: token.id });
-    });
+    };
+    tokenStorage.emitter.on('token_added', tokenAdded);
+    this.syncListeners.set('token_added', tokenAdded);
 
-    tokenStorage.emitter.on('token_removed', ({ id }) => {
+    const tokenRemoved = ({ id }) => {
       this.broadcast('credential_removed', { id });
-    });
+    };
+    tokenStorage.emitter.on('token_removed', tokenRemoved);
+    this.syncListeners.set('token_removed', tokenRemoved);
 
-    tokenStorage.emitter.on('default_changed', ({ id }) => {
+    const defaultChanged = ({ id }) => {
       this.broadcast('default_changed', { id });
-    });
+    };
+    tokenStorage.emitter.on('default_changed', defaultChanged);
+    this.syncListeners.set('default_changed', defaultChanged);
 
-    tokenStorage.emitter.on('metadata_updated', ({ id }) => {
+    const metadataUpdated = ({ id }) => {
       this.broadcast('metadata_updated', { id });
-    });
+    };
+    tokenStorage.emitter.on('metadata_updated', metadataUpdated);
+    this.syncListeners.set('metadata_updated', metadataUpdated);
   }
 
   private unbindBroadcastListeners (tokenStorage: TokenStorage): void {
-    ([
-      'token_added',
-      'token_removed',
-      'default_changed',
-      'metadata_updated',
-    ] satisfies (keyof TokenStorageEvents)[]).forEach(evt => tokenStorage.emitter.off(evt));
+    for (const [event, handler] of this.syncListeners.entries()) {
+      tokenStorage.emitter.off(event, handler);
+    }
   }
 
   protected broadcast (eventName: string, data: Record<string, JsonPrimitive | JsonRecord>) {
