@@ -58,7 +58,8 @@ export default ({ config }: ConfigContext) => ({
       "expo-build-properties",
       {
         "ios": {
-          "newArchEnabled": true
+          "newArchEnabled": true,
+          "deploymentTarget": "16.4"
         },
         "android": {
           "newArchEnabled": true
