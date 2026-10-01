@@ -212,7 +212,7 @@ export class BrowserTokenStorage implements TokenStorage {
 
     // .token will be a string when encrypted, object when stored unecrypted
     if (typeof token === 'string') {
-      // if the token value in storage is encrypted, but the
+      // if the token value in storage is encrypted, but `encryptAtRest` setting is disabled, return `null`
       if (!this.encryptAtRest) {
         return null;
       }
