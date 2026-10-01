@@ -134,7 +134,9 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
   protected async processResponse(response: Response, request: APIRequest): Promise<void> {
     await super.processResponse(response, request);
 
-    if (this.configuration.syncClockWithAuthorizationServer) {
+    // Filter out by POST requests. HTTP requests may be cached within the browser and therefore their `Date` header will reflect
+    // when the request was made, not the "current time". By the nature, POST requests are not cache (like many GET requests are).
+    if (this.configuration.syncClockWithAuthorizationServer && request.method === 'POST') {
       // NOTE: this logic will not work on CORS requests, the Date header needs to be allowlisted via access-control-expose-headers
       const dateHeader = response.headers.get('date');
       if (dateHeader) {
@@ -235,14 +237,7 @@ export class OAuth2Client<E extends OAuth2Client.Events = OAuth2Client.Events> e
     let json = await response.json();
 
     if (isOAuth2ErrorResponse(json)) {
-      if (
-        // proper error is returned from AS
-        OAuth2Client.isDPoPProofClockSkewError(json) &&
-        // request hasn't been retried too many times previously
-        request.canRetry() &&
-        // (heuristic) the TimeCoordinator updated with a meaningful time difference (~2.5 mintues)
-        Math.abs(Date.now() - Platform.TimeCoordinator.clockSkew) >= 150
-      ) {
+      if (OAuth2Client.isDPoPProofClockSkewError(json) && request.canRetry()) {
         // If a JWT (DPoP Proof) clock skew error is returned we can retry the request.
         // The `Date` header of the /token response will be have been processed, hopefully
         // this will align the client's clock with the Authorization Server's
