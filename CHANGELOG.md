@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### `@okta/auth-foundation`
 
 #### Fixed
-- Fixed `EventEmitter`'s internal `signals` map being keyed by `keyof Events`, which made `EventEmitter<Events>` (and therefore `TokenOrchestrator<Events>`) invariant in `Events` and rejected any orchestrator subclass that widened its event map (e.g. constructing `FetchClient` with a custom `AuthorizationCodeFlowOrchestrator<Events>`) ([#TBD](https://github.com/okta/okta-client-javascript/pull/TBD))
+- Fixed `EventEmitter`'s internal `signals` map being keyed by `keyof Events`, which made `EventEmitter<Events>` (and therefore `TokenOrchestrator<Events>`) invariant in `Events` and rejected any orchestrator subclass that widened its event map (e.g. constructing `FetchClient` with a custom `AuthorizationCodeFlowOrchestrator<Events>`) ([#61](https://github.com/okta/okta-client-javascript/pull/61))
 
 ## [0.9.0] - 2026-09-21
 
