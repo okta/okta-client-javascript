@@ -16,9 +16,16 @@ get_sdk_version () {
   local version=$(jq '.version' ./package.json | tr -d \'\")
 
   if [[ $name == \@okta\/* ]]; then
-    if [[ "$version" != "$repo_version" ]]; then
+    # packages must share the repo's major.minor, but may be ahead on patch (an out-of-band
+    # patch release of just that package) -- never behind patch, and never a different major.minor
+    if ! node -e "
+      const semver = (v) => v.split('.').map(Number);
+      const [rM, rm, rp] = semver(process.argv[1]);
+      const [pM, pm, pp] = semver(process.argv[2]);
+      process.exit(pM === rM && pm === rm && pp >= rp ? 0 : 1);
+    " "$repo_version" "$version"; then
       local pkg="${name}@${version}"
-      echo "SDK Version Mismatch Detected: $pkg"
+      echo "SDK Version Mismatch Detected: $pkg (expected same major.minor as ${repo_version}, patch >= ${repo_version##*.})"
       bad_pkgs+=(${pkg})
     fi
   fi
