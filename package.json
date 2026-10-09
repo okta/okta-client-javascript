@@ -10,6 +10,7 @@
     "build": "yarn build:sdks",
     "build:sdks": "turbo run build --filter=./packages/* --log-order=grouped",
     "lint": "turbo run --continue --log-order=grouped lint",
+    "type-check": "turbo run type-check --filter=./e2e/apps/* --log-order=grouped",
     "lint:lockfile": "lockfile-lint --path yarn.lock --allowed-hosts registry.yarnpkg.com --validate-https",
     "test:unit": "turbo run test:unit --filter=./packages/* --log-order=grouped",
     "test:node": "turbo run test:node --filter=./packages/* --filter=!*platform --log-order=grouped"

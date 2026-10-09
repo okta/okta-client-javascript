@@ -32,6 +32,19 @@ do
     # cut removes `@okta/` prefix, which seems to cause problems with logging functions
     pkg_name=$(jq -r '.name' package.json | cut -c7-)
     create_log_group "Publishing $pkg_name"
+
+    # packages are not always released in lockstep (a package may be bumped independently for an
+    # out-of-band patch release), so skip any package whose current version was already published
+    # by a previous merge, rather than failing on npm's duplicate-version rejection
+    full_pkg_name=$(jq -r '.name' package.json)
+    pkg_version=$(jq -r '.version' package.json)
+    if npm view "${full_pkg_name}@${pkg_version}" version --registry "$REGISTRY" &>/dev/null; then
+      echo "${full_pkg_name}@${pkg_version} already published, skipping"
+      finish_log_group $?
+      popd
+      continue
+    fi
+
     echo "Publishing $pkg_name..."
 
     # record the artifact version before the SHA is appended
