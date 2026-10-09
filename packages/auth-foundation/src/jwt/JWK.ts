@@ -6,7 +6,7 @@
 
 import type { JWT } from './JWT.ts';
 import { JWTError } from '../errors/index.ts';
-import { buf, b64u } from '../crypto/index.ts';
+import { verifyJWTSignature } from '../crypto/index.ts';
 
 /**
  * Defines properties of a JSON Web Key
@@ -86,14 +86,10 @@ export const DefaultJWKValidator: JWKValidator = {
       throw new JWTError('No public key found');
     }
 
-    const components = token.rawValue.split('.');
-    const signature = components.pop();
-    const payload = components.join('.');
-
     const subtleAlg: SubtleAlgoritm = jwkToCryptoAlg(jwk);
     const key: CryptoKey = await crypto.subtle.importKey('jwk', jwk, subtleAlg, true, ['verify']);
-    const verified = await crypto.subtle.verify(subtleAlg, key, b64u(signature!), buf(payload));
 
+    const verified = await verifyJWTSignature(token.rawValue, key);
     return verified;
   }
 };

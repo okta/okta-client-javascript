@@ -87,3 +87,18 @@ export function randomBytes (length: number = 32): string {
 export function shortID (): string {
   return [...crypto.getRandomValues(new Uint8Array(6))].map(v => v.toString(16)).join('');
 }
+
+/**
+ * Verifies the signature of JWT string
+ * @param token - the JWT (as a `string`) to be verified
+ * @param key  - the {@link !CryptoKey} to be used for verification
+ * @returns `true` when signature is verified by the provided `key`
+ */
+export async function verifyJWTSignature (token: string, key: CryptoKey): Promise<boolean> {
+  const components = token.split('.');
+  const signature = components.pop();
+  const payload = components.join('.');
+
+  const verified = await crypto.subtle.verify(key.algorithm, key, b64u(signature!), buf(payload));
+  return verified;
+}
