@@ -41,7 +41,7 @@ export class EventEmitter<Events extends EventMap> {
   listeners: { [K in keyof Events]?: Array<EventListener<Events[K]>> } = {};
   // scoped per-event, since the same `handler` function reference may be registered against
   // multiple events (or reused across `on()` calls) with different signals attached
-  signals: Map<keyof Events, WeakMap<(...arg: any[]) => void, { signal: AbortSignal, abortHandler: () => void }>> = new Map();
+  signals: Map<PropertyKey, WeakMap<(...arg: any[]) => void, { signal: AbortSignal, abortHandler: () => void }>> = new Map();
 
   /**
    * Binds a listener function to a specific event

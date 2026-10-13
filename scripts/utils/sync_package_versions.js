@@ -37,6 +37,11 @@ function parseSemver(version) {
   return { major: Number(major), minor: Number(minor), patch: Number(patch), prerelease, raw: version };
 }
 
+// ignores `prerelease`, consistent with how `targetRange` below is derived from major.minor only
+function compareSemver(a, b) {
+  return a.major - b.major || a.minor - b.minor || a.patch - b.patch;
+}
+
 function findPackages() {
   return fs
     .readdirSync(PACKAGES_DIR)
@@ -63,15 +68,21 @@ function main() {
 
   console.log(`Releasing ${rootJson.version} (in-repo dependency range: ${targetRange})`);
 
-  // 1. every published package must already be at the version being released
+  // 1. every published package must share the root's major.minor, and may be ahead on patch only
+  //    (an out-of-band patch release of just that package) -- never behind patch, and never a
+  //    different major.minor
   const mismatches = packages
-    .filter((pkg) => pkg.json.version !== rootJson.version)
-    .map((pkg) => `${pkg.json.name} is at ${pkg.json.version}, expected ${rootJson.version}`);
+    .filter((pkg) => {
+      const pkgVersion = parseSemver(pkg.json.version);
+      if (!pkgVersion) return true;
+      return pkgVersion.major !== release.major || pkgVersion.minor !== release.minor || compareSemver(pkgVersion, release) < 0;
+    })
+    .map((pkg) => `${pkg.json.name} is at ${pkg.json.version}, expected ${release.major}.${release.minor}.x (patch >= ${release.patch})`);
 
   if (mismatches.length) {
     console.error('\nVersion mismatch detected:');
     mismatches.forEach((msg) => console.error(`  - ${msg}`));
-    console.error('\nEvery package under packages/* must match the root package.json version before publishing.');
+    console.error('\nEvery package under packages/* must share the root package.json major.minor (patch may be ahead) before publishing.');
     process.exit(1);
   }
 
