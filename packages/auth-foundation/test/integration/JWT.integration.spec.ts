@@ -1,4 +1,5 @@
 import { JWT, OAuth2Client } from '@okta/auth-foundation';
+// eslint-disable-next-line no-restricted-imports
 import { b64u, buf } from '@okta/auth-foundation/internal';
 import { ResourceOwnerFlow } from '@okta/oauth2-flows';
 
@@ -15,7 +16,7 @@ describe('JWT', () => {
       issuer: ISSUER!,
       clientId: NATIVE_CLIENT_ID!,
       scopes: 'openid profile offline_access',
-    })
+    });
     const flow = new ResourceOwnerFlow(client);
 
     const getToken = async () => {

@@ -95,10 +95,17 @@ export function shortID (): string {
  * @returns `true` when signature is verified by the provided `key`
  */
 export async function verifyJWTSignature (token: string, key: CryptoKey): Promise<boolean> {
-  const components = token.split('.');
-  const signature = components.pop();
-  const payload = components.join('.');
+  const [ head, body, signature ] = token.split('.');
+  const payload = [ head, body ].join('.');
 
-  const verified = await crypto.subtle.verify(key.algorithm, key, b64u(signature!), buf(payload));
-  return verified;
+  if (!head || !body || !signature) {
+    return false;
+  }
+
+  try {
+    return await crypto.subtle.verify(key.algorithm, key, b64u(signature), buf(payload));
+  }
+  catch {
+    return false;
+  }
 }
