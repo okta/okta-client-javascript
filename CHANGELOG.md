@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [0.10.0] - 2026-09-23
 
+### `@okta/auth-foundation
+
+### Added
+- Expands `JWT.verifySignature` to accept `CryptoKey` instances as well as `JWKS` ([#66]https://github.com/okta/okta-client-javascript/pull/66)
+
 ### `@okta/oauth2-flows`
 
 ### Added

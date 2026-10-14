@@ -8,7 +8,7 @@ import type { JsonRecord, RawRepresentable, Expires, TimeInterval } from '../typ
 import { JWTError } from '../errors/index.ts';
 import { validateString } from '../utils/validators.ts';
 import { JWK, JWKS } from './JWK.ts';
-import { buf, b64u } from '../crypto/index.ts';
+import { buf, b64u, verifyJWTSignature } from '../crypto/index.ts';
 import { IDTokenValidator } from './IDTokenValidator.ts';
 import { Platform } from '../platform/Platform.ts';
 
@@ -370,15 +370,25 @@ export class JWT implements RawRepresentable, Expires {
   /**
    * Alias for {@link JWT.validate}.
    */
-  async verifySignature (keySet: JWKS): Promise<boolean> {
-    return JWK.validator.validate(this, keySet);
+  verifySignature (keySet: JWKS): Promise<boolean>
+  verifySignature (key: CryptoKey): Promise<boolean>
+  async verifySignature (keySet: JWKS | CryptoKey): Promise<boolean> {
+    // providing a JWK set will parse and import JWK, then verify signature
+    if (Array.isArray(keySet)) {
+      return JWK.validator.validate(this, keySet);
+    }
+
+    // if a CryptoKey is provided directly perform validation directly
+    return verifyJWTSignature(this.rawValue, keySet);
   }
 
   /**
-   * 
+   * Verifies the signature of a {@link JWT} string
    */
-  async validate (keySet: JWKS): Promise<boolean> {
-    return this.verifySignature(keySet);
+  validate (keySet: JWKS): Promise<boolean>
+  validate (key: CryptoKey): Promise<boolean>
+  async validate (keySet: JWKS | CryptoKey): Promise<boolean> {
+    return this.verifySignature(keySet as JWKS);
   }
 
   // TODO: fix this

@@ -12,7 +12,7 @@ export function mockIDToken () {
   return [
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6ImltanVzdGtpZGRpbmcifQ',
     'eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWUsImlhdCI6MTUxNjIzOTAyMn0',
-    'fakesignature'
+    'fakekeysignature'    // signature needs to be a multiple of 4 (requirement of base64 encoding)
   ].join('.');
 };
 
