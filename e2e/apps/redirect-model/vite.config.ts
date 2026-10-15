@@ -28,7 +28,7 @@ export default defineConfig(configEnv => ({
   plugins: [
     react(),
     tsConfigPaths(),
-    mockResourceServerPlugin() as Plugin,
+    mockResourceServerPlugin({ allowSkipParam: true }) as Plugin,
   ],
   define: env,
 }));

@@ -33,7 +33,14 @@ function validateDPoPNonce (req: Request, res: Response) {
 }
 
 export type TokenPresentMiddlewareOptions = {
+  /**
+   * When `true`, resource server will mock requiring an dpop-nonce, mimicking the behavior of dpop-protected resources
+   */
   enableDPoPNonce?: boolean;
+  /**
+   * When `true`, resources can be requested without authentication by providing `?skip=1`. FOR TESTING LOCALLY ONLY.
+   */
+  allowSkipParam?: boolean;
 };
 
 /**
@@ -42,6 +49,10 @@ export type TokenPresentMiddlewareOptions = {
  */
 function createTokenPresentMiddleware (options: TokenPresentMiddlewareOptions = { enableDPoPNonce: true }): RequestHandler {
   return (req, res, next) => {
+    if (options.allowSkipParam === true && req.originalUrl?.endsWith('?skip=1')) {
+      return next();
+    }
+
     if (req.headers.dpop && options.enableDPoPNonce) {
       if (!validateDPoPNonce(req, res)) {
         return;
@@ -75,16 +86,11 @@ function createDPoPMiddleware (options: DPoPMiddlewareOptions = { enableDPoPNonc
   return (req, res, next) => next();
 }
 
-export type BearerMiddlewareOptions = {
-  allowSkipParam?: boolean;
-};
+export type BearerMiddlewareOptions = {};
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function createBearerMiddleware (options: BearerMiddlewareOptions = {}): RequestHandler {
   return (req, res, next) => {
-    if (options.allowSkipParam === true && req.originalUrl?.endsWith('?skip=1')) {
-      return next();
-    }
-
     const authHeader = req.headers.authorization;
 
     if (authHeader) {

@@ -1,11 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import { requestLogger } from './logger.ts';
-import { createAuthMiddleware } from './auth.ts';
+import { type AuthMiddlewareOptions, createAuthMiddleware } from './auth.ts';
 import { messagesRouter } from './mocks/messages.ts';
 import { bankingRouter } from './mocks/banking.ts';
 import type { MockResourceServerOptions } from './types.ts';
 
+
+export type MockResourceServerPluginOptions = MockResourceServerOptions & AuthMiddlewareOptions;
 
 export function createMockResourceServer (options: MockResourceServerOptions) {
   const app = express();
@@ -16,7 +18,7 @@ export function createMockResourceServer (options: MockResourceServerOptions) {
   if (options.enableLogging) {
     mockResourceServer.use(requestLogger);
   }
-  mockResourceServer.use(createAuthMiddleware(options.auth ?? 'token_present'));
+  mockResourceServer.use(createAuthMiddleware(options.auth ?? 'token_present', options));
   mockResourceServer.use(messagesRouter);
   mockResourceServer.use(bankingRouter);
 
