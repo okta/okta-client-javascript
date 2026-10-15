@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsConfigPaths from 'vite-tsconfig-paths'
-import mockServer from './resource-server';
+import { mockResourceServerPlugin } from '@repo/mock-resource-server/vite-plugin';
 import envModule from '@repo/env';
 
 
@@ -28,7 +28,7 @@ export default defineConfig(configEnv => ({
   plugins: [
     react(),
     tsConfigPaths(),
-    mockServer(),
+    mockResourceServerPlugin() as Plugin,
   ],
   define: env,
 }));
