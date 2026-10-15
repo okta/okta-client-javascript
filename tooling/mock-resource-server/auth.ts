@@ -86,6 +86,8 @@ function createDPoPMiddleware (options: DPoPMiddlewareOptions = { enableDPoPNonc
   return (req, res, next) => next();
 }
 
+// placeholder
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type 
 export type BearerMiddlewareOptions = {};
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
