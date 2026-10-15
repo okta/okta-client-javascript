@@ -21,17 +21,16 @@
     "react-router-dom": "^6.24.1"
   },
   "devDependencies": {
-    "@faker-js/faker": "^9.0.1",
     "@types/react": "18.3.10",
     "@types/react-dom": "18.3.0",
     "@repo/env": "*",
     "@repo/eslint-config": "*",
+    "@repo/mock-resource-server": "*",
     "@vitejs/plugin-react": "^4.2.0",
     "eslint": "^8.56.0",
     "typescript": "5.0.3",
     "vite": "4.3.9",
     "vite-plugin-linter": "1.2.0",
-    "vite-plugin-mock-server": "^1.3.1",
     "vite-plugin-svgr": "4.2.0",
     "vite-tsconfig-paths": "3.5.1"
   }

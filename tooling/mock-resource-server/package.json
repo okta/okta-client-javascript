@@ -1,0 +1,47 @@
+{
+  "name": "@repo/mock-resource-server",
+  "version": "0.0.0",
+  "type": "module",
+  "private": true,
+  "main": "index.ts",
+  "bin": {
+    "mock-resource-server": "./cli.ts"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./vite-plugin": "./vite-plugin.ts"
+  },
+  "scripts": {
+    "lint": "eslint --ext .js,.ts .",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.6.0",
+    "@okta/auth-foundation": "*",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "morgan": "^1.11.0"
+  },
+  "devDependencies": {
+    "@repo/eslint-config": "*",
+    "@repo/typescript-config": "*",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.6",
+    "@types/morgan": "^1.9.10",
+    "eslint": "^8.56.0",
+    "typescript": "^5.9.2",
+    "vite": "^4.3.9"
+  },
+  "devEngines": {
+    "runtime": {
+      "name": "node",
+      "version": ">=22.22.2",
+      "onFail": "warn"
+    },
+    "packageManager": {
+      "name": "yarn",
+      "version": ">=1.19.0",
+      "onFail": "warn"
+    }
+  }
+}

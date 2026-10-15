@@ -2,7 +2,7 @@
 
 create_log_group "Setup"
 
-if ! setup_service node v22.13.1 ; then
+if ! setup_service node v22.22.2 ; then
   echo "Failed to install node"
   exit ${FAILED_SETUP}
 fi
