@@ -26,7 +26,8 @@ export default ({ config }: ConfigContext) => ({
   },
   newArchEnabled: true,
   "android": {
-    "package": "com.anonymous.reporeactnativeoidc"
+    "package": "com.anonymous.reporeactnativeoidc",
+    "usesCleartextTraffic": true
   },
   "ios": {
     "bundleIdentifier": "com.anonymous.reporeactnativeoidc"
@@ -57,7 +58,8 @@ export default ({ config }: ConfigContext) => ({
       "expo-build-properties",
       {
         "ios": {
-          "newArchEnabled": true
+          "newArchEnabled": true,
+          "deploymentTarget": "16.4"
         },
         "android": {
           "newArchEnabled": true

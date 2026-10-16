@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useState, useCallback } from 'react';
 import { Button, StyleSheet, ActivityIndicator } from 'react-native';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { Credential } from '@okta/react-native-platform';
 
 export default function AuthScreen() {
+  const router = useRouter();
   const { signIn, signOut } = useAuth();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -76,6 +77,10 @@ export default function AuthScreen() {
     }
   }
 
+  const handleOpenWebview = () => {
+    router.navigate('/webview');
+  }
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -113,6 +118,7 @@ export default function AuthScreen() {
             <Button accessibilityLabel="requestTokenButton" title="Request Token" onPress={handleSignIn} />
             <Button accessibilityLabel="signOutButton" title="Sign Out" onPress={handleSignOut} color="#ff3b30" />
             <Button accessibilityLabel="clearButton" title="Clear" onPress={handleClearStorage} color="#ffce1b" />
+            { isAuthenticated && (<Button accessibilityLabel="webviewButton" title="Open Webview" onPress={handleOpenWebview} />) }
           </ThemedView>
 
           <ThemedView style={styles.stepContainer}>

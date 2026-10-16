@@ -39,6 +39,7 @@ export type TokenResponse = {
   accessToken: string;
   idToken?: string;
   refreshToken?: string;
+  issuedTokenType?: string;
   context: Token.Context;
 };
 
@@ -100,6 +101,11 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
    * If the OAuth2 configuration includes the scope `offline_access`, a `refreshToken` will be available
    */
   public readonly refreshToken?: string;
+  /**
+   * A property used when a token was retrieved via Token Exchange flow
+   * @see {@link https://datatracker.ietf.org/doc/html/rfc8693#section-2.2.1-2.4 | RFC 8693: OAuth 2.0 Token Exchange}
+   */
+  public readonly issuedTokenType?: string;
   /**
    * Defines the context this token was issued from
    */
@@ -211,6 +217,14 @@ export class Token implements JSONSerializable, Expires, RequestAuthorizer {
    */
   get isValid (): boolean {
     return !this.isExpired;
+  }
+
+  /**
+   * Returns `true` when token was retrieved when performing Native-to-Web SSO (interclient token)
+   * @see {@link https://developer.okta.com/docs/guides/native-to-web-sso/main/#request-to-initialize-native-to-web-sso | Okta Developer Docs}
+   */
+  get isInterclientToken (): boolean {
+    return this.issuedTokenType === 'urn:okta:params:oauth:token-type:interclient_token';
   }
 
   /**
