@@ -70,8 +70,16 @@ AuthTransaction.storage = new BrowserTransactionStorage();
  */
 export class AuthorizationCodeFlow extends AuthorizationCodeFlowBase {
 
-  resume (redirectUri: string | URL | URLSearchParams = window.location.href)  {
-    return super.resume(redirectUri);
+  async resume (redirectUri: string | URL | URLSearchParams = window.location.href)  {
+    const result = await super.resume(redirectUri);
+    // TODO: add option to opt-out of this?
+    if (redirectUri === window.location.href) {
+      // clears the query params sent to this route (presumably from the auth server)
+      // this prevents the situation where the enduser hits the back button and attempts
+      // to replay a previously consumed auth code (they are one-time-use)
+      history.replaceState(null, document.title, location.pathname + location.hash);
+    }
+    return result;
   }
 
   /**

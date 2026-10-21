@@ -29,7 +29,7 @@ export default function WebViewScreen () {
       if (credential) {
         const interclientAT = await flow.launch(credential.token);
         console.log(interclientAT)
-        setInterclientToken(interclientAT);
+        setInterclientToken(interclientAT.href);
       }
       else {
         setError('No credential available');

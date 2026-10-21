@@ -24,8 +24,12 @@ export const InterclientAccessCallback: React.FC<FlowCallbackProps> = ({
     if (!flowResumed) {
       flowResumed = true;
 
+      console.log('URL hash: ', window.location.hash);
+
+      // `.slice(1)` drops the leading `#` character so `URLSearchParams` can be leveraged to parse the hash value
+      const hashParams = new URLSearchParams(window.location.hash.slice(1));
       const params = new URLSearchParams(window.location.search);
-      const interclientToken = params.get('token');
+      const interclientToken = hashParams.get('token') ?? params.get('token');
 
       console.log('URL Params: ', params);
 

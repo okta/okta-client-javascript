@@ -36,6 +36,7 @@ import { TokenExchangeFlow, AuthenticationFlowError } from '@okta/oauth2-flows';
 export class InterclientAccessFlow extends TokenExchangeFlow {
   readonly targetWebAppClientId: string;
   readonly bootstrapUrl: string;
+  readonly ssoTokenParamType: string;
 
   /** Constructs a new {@link OAuth2Client} internally from `options` */
   constructor (options: InterclientAccessFlow.Init);
@@ -49,15 +50,16 @@ export class InterclientAccessFlow extends TokenExchangeFlow {
       super(client);
     }
     else {
-      const { bootstrapUrl, targetWebAppClientId, ...oauth2Params } = client;
+      const { bootstrapUrl, targetWebAppClientId, ssoTokenParamType, ...oauth2Params } = client;
       super(oauth2Params);
-      options = { bootstrapUrl, targetWebAppClientId };
+      options = { bootstrapUrl, targetWebAppClientId, ssoTokenParamType };
     }
 
-    const { bootstrapUrl, targetWebAppClientId } = options as InterclientAccessFlow.Params;
+    const { bootstrapUrl, targetWebAppClientId, ssoTokenParamType } = options as InterclientAccessFlow.Params;
 
     this.bootstrapUrl = (new URL(bootstrapUrl)).href;
     this.targetWebAppClientId = targetWebAppClientId;
+    this.ssoTokenParamType = ssoTokenParamType ?? 'hash';
   }
 
   /**
@@ -68,7 +70,7 @@ export class InterclientAccessFlow extends TokenExchangeFlow {
    * @param path - Optional path (relative to the web app) the user should land on once signed in
    * @returns The URL to load into a `WebView` — loading it hands the session off to the web app
    */
-  async launch (token: Token, path?: string): Promise<string> {
+  async launch (token: Token, path?: string): Promise<URL> {
     if (!token.idToken) {
       throw new AuthenticationFlowError('Missing `idToken` on `token` — Native-to-Web SSO requires an OIDC session');
     }
@@ -82,13 +84,24 @@ export class InterclientAccessFlow extends TokenExchangeFlow {
       audience: `urn:okta:apps:${this.targetWebAppClientId}`
     });
 
-    const url = new URL(this.bootstrapUrl);
-    url.searchParams.set('token', interclientToken.accessToken);
+    let url = new URL(this.bootstrapUrl);
+
+    switch (this.ssoTokenParamType) {
+      case 'hash':
+        url = new URL(`#token=${interclientToken.accessToken}`, url);
+        break;
+      case 'query':
+        url.searchParams.set('token', interclientToken.accessToken);
+        break;
+      default:
+        break;
+    }
+
     if (path) {
       url.searchParams.set('path', path);
     }
 
-    return url.href;
+    return url;
   }
 }
 
@@ -101,6 +114,15 @@ export namespace InterclientAccessFlow {
     bootstrapUrl: string | URL;
     /** The `client_id` of the target web app that should assume the current session */
     targetWebAppClientId: string;
+    /**
+     * Defines how the resulting interclient SSO token will be provided to the Web App's session handoff route.
+     * * `hash` - Appends as a URL hash (ex: `https://app.example.com/native/sso#token=<token_string>`). This is the recommended approach as the token
+     * will never leave the device (due to the nature of URL hashes)
+     * * `query` - Appends the token as a query param (ex: `https://app.example.com/native/sso?token=<token_string>`). This is an acceptable approach, but
+     * the token will be sent to the server
+     * * `none` - The token is not appended to the URL and will need to be provided to the Web App in some other means. This options is an escape hatch.
+     */
+    ssoTokenParamType?: 'hash' | 'query' | 'none';
   };
 
   /**
