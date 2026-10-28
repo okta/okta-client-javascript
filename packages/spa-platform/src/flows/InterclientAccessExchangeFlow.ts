@@ -4,7 +4,6 @@
  */
 
 import { AuthorizationCodeFlow } from './AuthorizationCodeFlow.ts';
-import { randomBytes } from '@okta/auth-foundation/core';
 
 
 /**
@@ -51,16 +50,6 @@ import { randomBytes } from '@okta/auth-foundation/core';
  * @see {@link https://developer.okta.com/docs/guides/native-to-web-sso/main/ | Okta Documentation: Native to Web SSO}
  */
 export class InterclientAccessExchangeFlow extends AuthorizationCodeFlow {
-
-  // protected prepare (context: Partial<AuthorizationCodeFlow.Context> = {}): Promise<AuthorizationCodeFlow.Context> {
-  //   return {
-  //     ...context,
-  //     // @ts-ignore
-  //     redirectUri: this.redirectUri,
-  //     state: context.state ?? randomBytes()
-  //   };
-  // }
-
   /**
    * Starts the bootstrap leg: begins a normal {@link AuthorizationCodeFlow}, attaching the interclient
    * token as an `/authorize` parameter and `path` as `stateData`, then redirects to the Authorization Server.
@@ -77,6 +66,7 @@ export class InterclientAccessExchangeFlow extends AuthorizationCodeFlow {
     { interclientToken, path }: { interclientToken: string; path?: string }
   ): Promise<void> {
     if (!flow.inProgress) {
+      // eslint-disable-next-line camelcase
       await flow.start({ path }, {}, { interclient_token: interclientToken });
     }
 

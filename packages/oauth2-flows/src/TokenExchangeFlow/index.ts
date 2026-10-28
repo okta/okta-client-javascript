@@ -139,9 +139,15 @@ export namespace TokenExchangeFlow {
       if (params.requestedTokenType) {
         this.body.set('requested_token_type', params.requestedTokenType);
       }
-      if (params.audience) this.body.set('audience', params.audience);
-      if (params.resource) this.body.set('resource', params.resource);
-      if (params.scope) this.body.set('scope', params.scope);
+      if (params.audience) {
+        this.body.set('audience', params.audience);
+      }
+      if (params.resource) {
+        this.body.set('resource', params.resource);
+      }
+      if (params.scope) {
+        this.body.set('scope', params.scope);
+      }
     }
   }
 }

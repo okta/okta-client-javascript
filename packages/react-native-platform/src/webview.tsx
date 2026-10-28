@@ -1,16 +1,10 @@
-import type { ComponentRef, ComponentType, ReactElement, Ref } from 'react';
-import { ActivityIndicator, Text } from 'react-native';
+import type { ComponentRef, ReactElement, Ref } from 'react';
+import { ActivityIndicator, Text, View, StyleSheet } from 'react-native';
 import { WebView, type WebViewProps } from 'react-native-webview';
 import type { Token } from './core.ts';
 import type { InterclientAccessFlow } from './flows.ts';
 import { useInterclientSSO } from './flows/InterclientAccessFlow/useInterclientSSO.ts';
 
-
-export type SSOWebViewErrorProps = {
-  error: Error;
-  /** Discards the failed attempt and exchanges for a fresh interclient token */
-  retry: () => void;
-};
 
 export type SSOWebViewProps = {
   /** {@link InterclientAccessFlow} instance to be used to obtain the SSO token used to establish a web session. */
@@ -27,20 +21,49 @@ export type SSOWebViewProps = {
   tokenProvider?: () => Promise<Token>;
   /** Path (relative to the web app) the user should land on once signed in */
   path?: string;
-  /**
-   * A {@link ReactElement} to render while performing the SSO flow. Defaults to React Native's {@link ActivityIndicator | <ActivityIndicator />}.
-   */
-  loadingComponent?: ReactElement;
-  /**
-   * A {@link Component} which will be rendered if an error occurs while performing the SSO flow.
-   */
-  ErrorComponent?: ComponentType<SSOWebViewErrorProps>;
-} & Omit<WebViewProps, 'source'>;
+  // eslint-disable-next-line no-unused-vars
+  renderSSOError?: (error: Error, retry: () => void) => ReactElement;
+} & Omit<WebViewProps, 'source' | 'renderError'>;
 
 
-// Defined at module scope so its identity is stable across renders (an inline default would remount on every render)
-function DefaultErrorComponent ({ error }: SSOWebViewErrorProps) {
-  return <Text>{error.message}</Text>;
+// Based on https://github.com/react-native-webview/react-native-webview/blob/054572b187824084aa19e709f5d2f569a33a6f4a/src/WebView.styles.ts
+const styles = StyleSheet.create({
+  loadingOrErrorView: {
+    position: 'absolute',
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
+    width: '100%',
+    backgroundColor: 'white',
+  },
+  errorText: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  errorTextTitle: {
+    fontSize: 15,
+    fontWeight: '500',
+    marginBottom: 10,
+  },
+});
+
+function defaultRenderLoading () {
+  return (
+    <View style={styles.loadingOrErrorView}>
+      <ActivityIndicator size="large" />
+    </View>
+  );
+}
+
+function defaultRenderSSOError (error: Error) {
+  return (
+    <View style={styles.loadingOrErrorView}>
+      <Text style={styles.errorTextTitle}>{'Error loading page'}</Text>
+      <Text style={styles.errorText}>{`Error: ${error.message}`}</Text>
+    </View>
+  );
 }
 
 /**
@@ -55,25 +78,26 @@ export function SSOWebView ({
   ref,
   tokenProvider,
   path,
-  loadingComponent = <ActivityIndicator size="large" />,
-  ErrorComponent = DefaultErrorComponent,
+  renderLoading = defaultRenderLoading,
+  startInLoadingState = true,
+  renderSSOError = defaultRenderSSOError,
   ...webviewProps
 }: SSOWebViewProps) {
-  // not destructured, so `sso.status` narrows `sso.error`
   const sso = useInterclientSSO(flow, { tokenProvider, path });
 
   if (sso.status === 'error') {
-    return <ErrorComponent error={sso.error} retry={sso.retry} />;
+    return renderSSOError(sso.error, sso.retry);
   }
 
   if (!sso.source) {
-    return loadingComponent;
+    return renderLoading();
   }
 
   return (
     <WebView
       {...webviewProps}
       ref={ref}
+      startInLoadingState={startInLoadingState}
       source={sso.source}
     />
   );

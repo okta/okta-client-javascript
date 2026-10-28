@@ -4,7 +4,7 @@ import { render, screen, act } from '@testing-library/react-native';
 import type { WebView } from 'react-native-webview';
 import type { Token } from '@okta/auth-foundation/core';
 import { Credential } from 'src/core';
-import { SSOWebView, type SSOWebViewErrorProps } from 'src/webview';
+import { SSOWebView } from 'src/webview';
 import type { InterclientAccessFlow } from 'src/flows/InterclientAccessFlow/InterclientAccessFlow';
 
 // Only the default `tokenProvider` reaches `Credential`; specs for it set `getDefault` themselves
@@ -29,6 +29,7 @@ jest.mock('react-native-webview', () => {
 const SSO_URL = 'https://app.example.com/native/sso#token=';
 
 function deferred<T> () {
+  // eslint-disable-next-line no-unused-vars
   let resolve!: (value: T) => void;
   const promise = new Promise<T>(res => {
     resolve = res;
@@ -50,13 +51,14 @@ const sourceOf = () => screen.getByTestId('webview').props.source;
 
 describe('SSOWebView', () => {
   describe('loading', () => {
-    it('renders `loadingComponent` instead of the WebView until the exchange completes', async () => {
+    it('renders `renderLoading` instead of the WebView until the exchange completes', async () => {
       const { flow, launch, tokenProvider } = setup();
       const exchange = deferred<URL>();
       launch.mockReturnValueOnce(exchange.promise);
 
+      const renderLoading = () => (<Text testID="loading">Loading</Text>);
       await render(
-        <SSOWebView flow={flow} tokenProvider={tokenProvider} loadingComponent={<Text testID="loading">Loading</Text>} />
+        <SSOWebView flow={flow} tokenProvider={tokenProvider} renderLoading={renderLoading} />
       );
 
       expect(screen.getByTestId('loading')).toBeTruthy();
@@ -80,7 +82,6 @@ describe('SSOWebView', () => {
       expect(screen.container.queryAll(instance => instance.type === 'ActivityIndicator')).toHaveLength(1);
       expect(screen.queryByTestId('webview')).toBeNull();
     });
-    
   });
 
   describe('exchange', () => {
@@ -122,14 +123,16 @@ describe('SSOWebView', () => {
     it('forwards WebView props, but not its own', async () => {
       const { flow, tokenProvider } = setup();
       const onLoadStart = jest.fn();
+      const renderLoading = () => (<Text>Loading</Text>);
+      const renderSSOError = () => (<Text>Error</Text>);
 
       await render(
         <SSOWebView
           flow={flow}
           tokenProvider={tokenProvider}
           path="/messages"
-          loadingComponent={<Text>Loading</Text>}
-          ErrorComponent={() => <Text>Error</Text>}
+          renderLoading={renderLoading}
+          renderSSOError={renderSSOError}
           javaScriptEnabled={false}
           onLoadStart={onLoadStart}
           style={{ flex: 1 }}
@@ -138,9 +141,20 @@ describe('SSOWebView', () => {
       const { props } = await screen.findByTestId('webview');
 
       expect(props).toMatchObject({ javaScriptEnabled: false, onLoadStart, style: { flex: 1 } });
-      for (const own of ['flow', 'tokenProvider', 'path', 'loadingComponent', 'ErrorComponent']) {
+      for (const own of ['flow', 'tokenProvider', 'path', 'renderLoading', 'renderSSOError']) {
         expect(props).not.toHaveProperty(own);
       }
+    });
+
+    it('starts the WebView in its loading state by default, unless overridden', async () => {
+      const { flow, tokenProvider } = setup();
+
+      const { unmount } = await render(<SSOWebView flow={flow} tokenProvider={tokenProvider} />);
+      expect((await screen.findByTestId('webview')).props.startInLoadingState).toBe(true);
+      await unmount();
+
+      await render(<SSOWebView flow={flow} tokenProvider={tokenProvider} startInLoadingState={false} />);
+      expect((await screen.findByTestId('webview')).props.startInLoadingState).toBe(false);
     });
 
     it('forwards `ref` to the WebView once it is rendered', async () => {
@@ -181,8 +195,9 @@ describe('SSOWebView', () => {
       const { flow, launch, tokenProvider } = setup();
       const exchange = deferred<URL>();
       launch.mockResolvedValueOnce(new URL(`${SSO_URL}a`)).mockReturnValueOnce(exchange.promise);
+      const renderLoading = () => (<Text testID="loading">Loading</Text>);
       const element = (path: string) => (
-        <SSOWebView flow={flow} tokenProvider={tokenProvider} path={path} loadingComponent={<Text testID="loading">Loading</Text>} />
+        <SSOWebView flow={flow} tokenProvider={tokenProvider} path={path} renderLoading={renderLoading} />
       );
 
       const { rerender } = await render(element('/a'));
@@ -205,21 +220,21 @@ describe('SSOWebView', () => {
   });
 
   describe('errors', () => {
-    it('renders `ErrorComponent` with the error, and no WebView', async () => {
+    it('renders `renderSSOError` with the error and `retry`, and no WebView', async () => {
       const { flow, launch } = setup();
       const failure = new Error('no session');
       const tokenProvider = jest.fn().mockRejectedValue(failure);
-      const props: SSOWebViewErrorProps[] = [];
-      const ErrorComponent = (errorProps: SSOWebViewErrorProps) => {
-        props.push(errorProps);
-        return <Text testID="error">{errorProps.error.message}</Text>;
+      const calls: { error: Error; retry: () => void }[] = [];
+      const renderSSOError = (error: Error, retry: () => void) => {
+        calls.push({ error, retry });
+        return <Text testID="error">{error.message}</Text>;
       };
 
-      await render(<SSOWebView flow={flow} tokenProvider={tokenProvider} ErrorComponent={ErrorComponent} />);
+      await render(<SSOWebView flow={flow} tokenProvider={tokenProvider} renderSSOError={renderSSOError} />);
       await screen.findByTestId('error');
 
-      expect(props.at(-1)?.error).toBe(failure);
-      expect(typeof props.at(-1)?.retry).toBe('function');
+      expect(calls.at(-1)?.error).toBe(failure);
+      expect(typeof calls.at(-1)?.retry).toBe('function');
       expect(screen.queryByTestId('webview')).toBeNull();
       expect(launch).not.toHaveBeenCalled();
     });
@@ -230,7 +245,8 @@ describe('SSOWebView', () => {
 
       await render(<SSOWebView flow={flow} tokenProvider={tokenProvider} />);
 
-      expect(await screen.findByText('no session')).toBeTruthy();
+      // the default view prefixes the message (ex: "Error: no session")
+      expect(await screen.findByText(/no session/)).toBeTruthy();
     });
 
     it('surfaces a missing default Credential', async () => {
@@ -243,20 +259,20 @@ describe('SSOWebView', () => {
       expect(launch).not.toHaveBeenCalled();
     });
 
-    it('exchanges for a fresh token when `ErrorComponent` calls `retry`', async () => {
+    it('exchanges for a fresh token when `renderSSOError` calls `retry`', async () => {
       const { flow, launch, token } = setup();
       const tokenProvider = jest.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue(token);
-      const props: SSOWebViewErrorProps[] = [];
-      const ErrorComponent = (errorProps: SSOWebViewErrorProps) => {
-        props.push(errorProps);
-        return <Text testID="error">{errorProps.error.message}</Text>;
+      const calls: { error: Error; retry: () => void }[] = [];
+      const renderSSOError = (error: Error, retry: () => void) => {
+        calls.push({ error, retry });
+        return <Text testID="error">{error.message}</Text>;
       };
 
-      await render(<SSOWebView flow={flow} tokenProvider={tokenProvider} ErrorComponent={ErrorComponent} />);
+      await render(<SSOWebView flow={flow} tokenProvider={tokenProvider} renderSSOError={renderSSOError} />);
       await screen.findByTestId('error');
 
       await act(async () => {
-        props.at(-1)?.retry();
+        calls.at(-1)?.retry();
       });
       await screen.findByTestId('webview');
 

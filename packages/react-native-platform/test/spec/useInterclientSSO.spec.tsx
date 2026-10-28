@@ -20,6 +20,7 @@ afterEach(async () => {
   await Promise.all(openStrictRoots.splice(0).map(unmount => unmount()));
 });
 
+// eslint-disable-next-line no-unused-vars
 async function renderStrictHook<Result, Props = undefined> (hook: (props: Props) => Result, initialProps?: Props) {
   const result = {} as { current: Result };
   const Probe = ({ hookProps }: { hookProps: Props }) => {
