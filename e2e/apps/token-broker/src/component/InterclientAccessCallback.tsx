@@ -24,17 +24,12 @@ export const InterclientAccessCallback: React.FC<FlowCallbackProps> = ({
     if (!flowResumed) {
       flowResumed = true;
 
-      console.log('URL hash: ', window.location.hash);
-
       // `.slice(1)` drops the leading `#` character so `URLSearchParams` can be leveraged to parse the hash value
       const hashParams = new URLSearchParams(window.location.hash.slice(1));
       const params = new URLSearchParams(window.location.search);
       const interclientToken = hashParams.get('token') ?? params.get('token');
 
-      console.log('URL Params: ', params);
-
       if (interclientToken) {
-        console.log('performing handoff', interclientToken);
         // bootstrap leg: hand off to the Authorization Server; this redirects and never resolves
         performInterclientHandoff(interclientToken, params.get('path') ?? undefined)
         .catch(err => {
@@ -43,7 +38,6 @@ export const InterclientAccessCallback: React.FC<FlowCallbackProps> = ({
         });
       }
       else {
-        console.log('performing auth code')
         // completion leg: Authorization Server redirected back with `code`
         handleAuthorizationCodeFlowResponse()
         .then((path) => {
