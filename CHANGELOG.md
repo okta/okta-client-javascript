@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### `@okta/auth-foundation`
 
 ### Added
-- Expands `JWT.verifySignature` to accept `CryptoKey` instances as well as `JWKS` ([#66]https://github.com/okta/okta-client-javascript/pull/66)
+- Expands `JWT.verifySignature` to accept `CryptoKey` instances as well as `JWKS` ([#66](https://github.com/okta/okta-client-javascript/pull/66))
 - Added support for OAuth 2.0 Token Exchange flow (and token_type `N/A`)
 
 ### Changed
@@ -26,6 +26,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Added `InterclientAccessExchangeFlow`, the web-app side of [Native-to-Web SSO](https://developer.okta.com/docs/guides/native-to-web-sso/main/).
+  * `InterclientAccessExchangeFlow.parseNativeHandoff()` reads the native app's interclient `token` (and optional `path`) from a URL, defaulting to `window.location`, and returns `null` when the URL isn't a handoff
+  * `InterclientAccessExchangeFlow.PerformNativeHandoff()` attaches that `interclient_token` to the `/authorize` request. When no params are given it parses `window.location` itself, and removes the token from the address bar before redirecting
 
 #### Changed
 - `AuthorizationCodeFlow.resume()` now removes the query string from the current URL (via `history.replaceState`) after a successful `resume()` using the default `window.location.href`, so navigating back cannot replay a consumed (one-time-use) authorization code

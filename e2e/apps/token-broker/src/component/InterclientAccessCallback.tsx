@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { performInterclientHandoff, handleAuthorizationCodeFlowResponse } from '@/auth';
+import { parseInterclientHandoff, performInterclientHandoff, handleAuthorizationCodeFlowResponse } from '@/auth';
 import { Loading } from './Loading.js';
 
 interface FlowCallbackProps {
@@ -24,14 +24,12 @@ export const InterclientAccessCallback: React.FC<FlowCallbackProps> = ({
     if (!flowResumed) {
       flowResumed = true;
 
-      // `.slice(1)` drops the leading `#` character so `URLSearchParams` can be leveraged to parse the hash value
-      const hashParams = new URLSearchParams(window.location.hash.slice(1));
-      const params = new URLSearchParams(window.location.search);
-      const interclientToken = hashParams.get('token') ?? params.get('token');
+      // `null` unless this url is the native app's handoff (`/native/sso?path=<>#token=<>`)
+      const handoff = parseInterclientHandoff();
 
-      if (interclientToken) {
+      if (handoff) {
         // bootstrap leg: hand off to the Authorization Server; this redirects and never resolves
-        performInterclientHandoff(interclientToken, params.get('path') ?? undefined)
+        performInterclientHandoff(handoff)
         .catch(err => {
           console.log(err, err.message);
           setCallbackError(err as unknown as Error);

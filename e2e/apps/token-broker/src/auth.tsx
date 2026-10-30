@@ -97,10 +97,16 @@ export async function handleAcrStepUp (acrValues: AcrValues, maxAge: number = 1)
 
 const interclientAccessFlow = new InterclientAccessExchangeFlow(client, { redirectUri: `${window.location.origin}/native/sso` });
 
-// Bootstrap leg — called when the WebView first lands on `/native/sso?token=...&path=...`.
+// Returns the native app's handoff parsed from `window.location`, or `null` when the url isn't one (ex: it's the
+// redirect back from the Authorization Server, which `handleAuthorizationCodeFlowResponse` handles)
+export function parseInterclientHandoff () {
+  return InterclientAccessExchangeFlow.parseNativeHandoff();
+}
+
+// Bootstrap leg — called when the WebView first lands on `/native/sso?path=...#token=...`.
 // Redirects to the Authorization Server and never resolves (see `PerformNativeHandoff`).
-export async function performInterclientHandoff (interclientToken: string, path?: string) {
-  return InterclientAccessExchangeFlow.PerformNativeHandoff(interclientAccessFlow, { interclientToken, path });
+export async function performInterclientHandoff (handoff: InterclientAccessExchangeFlow.NativeHandoffParams) {
+  return InterclientAccessExchangeFlow.PerformNativeHandoff(interclientAccessFlow, handoff);
 }
 
 export const signOutFlow = new SessionLogoutFlow(client, {
