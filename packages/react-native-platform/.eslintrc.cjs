@@ -1,6 +1,9 @@
 module.exports = {
   extends: ["@repo/eslint-config/react-native-sdk.js"],
   root: true,
+  env: {
+    node: true,
+  },
   rules: {
     'no-restricted-imports': [
       'error',

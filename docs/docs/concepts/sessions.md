@@ -33,3 +33,7 @@ Resource servers have a few options to validate access tokens from incoming requ
     > This approach only works with Okta [Custom Authorization Servers](https://developer.okta.com/docs/concepts/auth-servers/#custom-authorization-server)
 2. An `OAuth2` [`introspect`](https://developer.okta.com/docs/api/openapi/okta-oauth/oauth/tag/OrgAS/#tag/OrgAS/operation/introspect) request can be made to obtain the validity of a token. A `JSON` payload with the token's claims will be returned. In addition, the `active` (`boolean`) property will indicate if the token is still active (not revoked or expired).
     * While this approach handles revoked tokens, it's significantly more expensive since it requires a network request per access token.
+
+### Sharing Sessions Across Applications
+
+A related but distinct concern is handing an *active* session from one application to another, without asking the user to sign in again. Okta's Native to Web SSO lets a native app hand its session off to a companion web app this way — see [Native to Web SSO](/docs/references/native_to_web_sso) for how this SDK implements it.

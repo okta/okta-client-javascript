@@ -4,15 +4,16 @@
     "paths": {
       "src/*": ["../src/*"]
     },
-    "jsx": "react"
+    "jsx": "react-jsx"
   },
   "lib": [
     "dom"
   ],
   "include": [
     "helpers/**/*.ts",
-    "spec/**/*.ts", 
-    "jest.setupAfterEnv.ts",
+    "spec/**/*.ts",
+    "spec/**/*.tsx",
+    "jest.setupAfterEnv.ts"
   ],
   "exclude": [
     "node_modules"

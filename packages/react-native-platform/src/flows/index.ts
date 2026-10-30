@@ -18,4 +18,5 @@
 
 export * from './AuthorizationCodeFlow.ts';
 export * from './ResourceOwnerFlow.ts';
+export * from './InterclientAccessFlow/InterclientAccessFlow.ts';
 // export * from './SessionLogoutFlow.ts';
