@@ -4,7 +4,7 @@
     "rootDir": "./src",
     "baseUrl": "./",
     "outDir": "./dist/types",
-    "jsx": "react-native"
+    "jsx": "react-jsx"
   },
   "lib": [
     "dom"

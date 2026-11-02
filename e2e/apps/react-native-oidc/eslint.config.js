@@ -16,6 +16,8 @@ module.exports = defineConfig([
         "@okta/auth-foundation",
         "@okta/oauth2-flows",
         "@okta/react-native-platform",
+        "@okta/react-native-platform/flows",
+        "@okta/react-native-platform/webview",
         "@okta/react-native-webcrypto-bridge"
       ]
     }

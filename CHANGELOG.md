@@ -4,20 +4,44 @@ All notable changes to this project will be documented in this file.
 
 ## [0.10.0] - 2026-09-23
 
-### `@okta/auth-foundation
+### `@okta/auth-foundation`
 
 ### Added
-- Expands `JWT.verifySignature` to accept `CryptoKey` instances as well as `JWKS` ([#66]https://github.com/okta/okta-client-javascript/pull/66)
+- Expands `JWT.verifySignature` to accept `CryptoKey` instances as well as `JWKS` ([#66](https://github.com/okta/okta-client-javascript/pull/66))
+- Added support for OAuth 2.0 Token Exchange flow (and token_type `N/A`)
+
+### Changed
+- `randomBytes` now accepts a `length` parameter, defaulting to the previous hardcoded value of `32` ([#49](https://github.com/okta/okta-client-javascript/pull/49))
 
 ### `@okta/oauth2-flows`
 
 ### Added
-- adds `ResourceOwnerFlow` (for Native clients) ([#48](https://github.com/okta/okta-client-javascript/pull/48))
+- Added `ResourceOwnerFlow` (for Native clients) ([#48](https://github.com/okta/okta-client-javascript/pull/48))
+- Added `TokenExchangeFlow`, a generic [RFC 8693](https://datatracker.ietf.org/doc/html/rfc8693) OAuth 2.0 Token Exchange flow.
+
+#### Changed
+- `AuthorizationCodeFlow.parseRedirectUri()` errors for a missing `code` or `state` now have `code: 'MISSING_REDIRECT_PARAM'`
+
+### `@okta/spa-platform`
+
+### Added
+- Added `InterclientAccessExchangeFlow`, the web-app side of [Native-to-Web SSO](https://developer.okta.com/docs/guides/native-to-web-sso/main/).
+  * `InterclientAccessExchangeFlow.parseNativeHandoff()` reads the native app's interclient `token` (and optional `path`) from a URL, defaulting to `window.location`, and returns `null` when the URL isn't a handoff
+  * `InterclientAccessExchangeFlow.PerformNativeHandoff()` attaches that `interclient_token` to the `/authorize` request. When no params are given it parses `window.location` itself, and removes the token from the address bar before redirecting
+
+#### Changed
+- `AuthorizationCodeFlow.resume()` now removes the query string from the current URL (via `history.replaceState`) after a successful `resume()` using the default `window.location.href`, so navigating back cannot replay a consumed (one-time-use) authorization code
+
+### Fixed
+- `BrowserTokenStorage` now correctly stores and generates a 12 byte `iv` when encrypted stored tokens ([#49](https://github.com/okta/okta-client-javascript/pull/49))
+- `BrowserTokenStorage.getMetadata` no longer decrypts token internally ([#49](https://github.com/okta/okta-client-javascript/pull/49))
 
 ### `@okta/react-native-platform`
 
 ### Added
-- adds `ResourceOwnerFlow` ([#48](https://github.com/okta/okta-client-javascript/pull/48))
+- Added `ResourceOwnerFlow` ([#48](https://github.com/okta/okta-client-javascript/pull/48))
+- Added `InterclientAccessFlow` (from `@okta/react-native-platform/flows`), the native side of Native-to-Web SSO. It exchanges the current session for a single-use interclient token and builds the web app's bootstrap URL
+- Added `SSOWebView` (via `@okta/react-native-platform/webview`), a wrapper around `react-native-webview`'s `WebView` which performs Native-to-Web SSO before loading the web app.
 
 ## [0.9.1] - 2026-10-09
 

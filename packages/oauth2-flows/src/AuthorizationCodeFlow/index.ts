@@ -122,13 +122,11 @@ export class AuthorizationCodeFlow extends AuthenticationFlow {
     const state = getSearchParam(params, 'state');
 
     if (!code) {
-      throw new AuthenticationFlowError('Failed to parse `code` from redirect url');
+      throw new AuthenticationFlowError('Failed to parse `code` from redirect url', { code: 'MISSING_REDIRECT_PARAM' });
     }
     if (!state) {
-      throw new AuthenticationFlowError('Failed to parse `state` from redirect url');
+      throw new AuthenticationFlowError('Failed to parse `state` from redirect url', { code: 'MISSING_REDIRECT_PARAM' });
     }
-
-    // TODO: compare to expected state, can this be done?
 
     return { code, state };
   }

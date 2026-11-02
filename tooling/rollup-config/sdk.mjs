@@ -39,7 +39,7 @@ export default function (tsModule, packageJson) {
         }
       }),
       cleanup({
-        extensions: ['js', 'ts'],
+        extensions: ['js', 'ts', 'jsx', 'tsx'],
         comments: 'none'
       }),
       license({
