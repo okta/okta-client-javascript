@@ -15,7 +15,9 @@ export DPOP_CLIENT_ID=0oa134a2ztzXFBDZU1t8
 # TODO: update this when node-platform is added
 export NODE_CLIENT_ID=0oa134a119yTnBMUl1t8
 export USERNAME=mary@acme.com
-get_terminus_secret "/" PASSWORD PASSWORD
+get_terminus_secret "/" P_KEY P_KEY
+get_terminus_secret "/" ${P_KEY} PASSWORD
+
 
 start_e2e_runner () {
   if ! yarn workspace @repo/wdio-e2e start; then

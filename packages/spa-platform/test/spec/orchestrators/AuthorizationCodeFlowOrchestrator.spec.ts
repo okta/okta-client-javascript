@@ -260,6 +260,104 @@ describe('AuthorizationCodeFlowOrchestrator', () => {
       });
     });
 
+    describe('`getOriginalUri` option', () => {
+      const redirectError = new TokenOrchestratorError('Fatal error, failed to perform redirect');
+      let startSpy: jest.SpyInstance;
+
+      beforeEach(() => {
+        jest.spyOn(AuthorizationCodeFlow, 'PerformRedirect').mockResolvedValue(undefined);
+        startSpy = jest.spyOn(flow, 'start');
+      });
+
+      it('defaults to the current location', async () => {
+        const orch = new AuthorizationCodeFlowOrchestrator(flow, { emitBeforeRedirect: false });
+        expect(orch.options.getOriginalUri()).toBe('/');
+        await expect(orch.getToken()).rejects.toThrow(redirectError);
+        expect(startSpy).toHaveBeenLastCalledWith({ originalUri: '/' }, expect.anything());
+      });
+
+      it('provides the default `originalUri` when none is provided to `getToken`', async () => {
+        const getOriginalUri = jest.fn(() => '/custom/default');
+        const orch = new AuthorizationCodeFlowOrchestrator(flow, { emitBeforeRedirect: false, getOriginalUri });
+        await expect(orch.getToken()).rejects.toThrow(redirectError);
+        expect(getOriginalUri).toHaveBeenCalledTimes(1);
+        expect(startSpy).toHaveBeenLastCalledWith({ originalUri: '/custom/default' }, expect.anything());
+      });
+
+      it('is still used when `stateData` is provided without an `originalUri`', async () => {
+        const orch = new AuthorizationCodeFlowOrchestrator(flow, {
+          emitBeforeRedirect: false,
+          getOriginalUri: () => '/custom/default'
+        });
+        await expect(orch.getToken({ stateData: { foo: 1 } })).rejects.toThrow(redirectError);
+        expect(startSpy).toHaveBeenLastCalledWith({ originalUri: '/custom/default', foo: 1 }, expect.anything());
+      });
+
+      it('is not called when `originalUri` is provided to `getToken`', async () => {
+        const getOriginalUri = jest.fn(() => '/custom/default');
+        const orch = new AuthorizationCodeFlowOrchestrator(flow, { emitBeforeRedirect: false, getOriginalUri });
+        await expect(orch.getToken({ originalUri: '/per-call' })).rejects.toThrow(redirectError);
+        expect(getOriginalUri).not.toHaveBeenCalled();
+        expect(startSpy).toHaveBeenLastCalledWith({ originalUri: '/per-call' }, expect.anything());
+      });
+
+      it('is not called when `stateData.originalUri` is provided to `getToken`', async () => {
+        const getOriginalUri = jest.fn(() => '/custom/default');
+        const orch = new AuthorizationCodeFlowOrchestrator(flow, { emitBeforeRedirect: false, getOriginalUri });
+        await expect(orch.getToken({ stateData: { originalUri: '/from-state' } })).rejects.toThrow(redirectError);
+        expect(getOriginalUri).not.toHaveBeenCalled();
+        expect(startSpy).toHaveBeenLastCalledWith({ originalUri: '/from-state' }, expect.anything());
+      });
+
+      it('is overridden by the object provided to `done()` of `login_prompt_required`', async () => {
+        const orch = new AuthorizationCodeFlowOrchestrator(flow, {
+          emitBeforeRedirect: true,
+          getOriginalUri: () => '/custom/default'
+        });
+        orch.on('login_prompt_required', ({ done }) => {
+          (done as any)({ originalUri: '/from-done' });
+        });
+        await expect(orch.getToken()).rejects.toThrow(redirectError);
+        expect(startSpy).toHaveBeenLastCalledWith({ originalUri: '/from-done' }, expect.anything());
+      });
+
+      it('is evaluated each time a redirect starts, not when the orchestrator is constructed', async () => {
+        let current = '/first';
+        const getOriginalUri = jest.fn(() => current);
+        const orch = new AuthorizationCodeFlowOrchestrator(flow, { emitBeforeRedirect: false, getOriginalUri });
+        expect(getOriginalUri).not.toHaveBeenCalled();
+
+        await expect(orch.getToken()).rejects.toThrow(redirectError);
+        expect(startSpy).toHaveBeenLastCalledWith({ originalUri: '/first' }, expect.anything());
+        flow.reset();
+
+        current = '/second';
+        await expect(orch.getToken()).rejects.toThrow(redirectError);
+        expect(startSpy).toHaveBeenLastCalledWith({ originalUri: '/second' }, expect.anything());
+        expect(getOriginalUri).toHaveBeenCalledTimes(2);
+      });
+
+      it('is not called when a valid token is found in storage', async () => {
+        const getOriginalUri = jest.fn(() => '/custom/default');
+        const cred = await Credential.store(makeTestToken());
+        jest.spyOn(cred, 'refreshIfNeeded').mockResolvedValue(undefined);
+
+        const orch = new AuthorizationCodeFlowOrchestrator(flow, { emitBeforeRedirect: false, getOriginalUri });
+        jest.spyOn(orch, 'selectCredential').mockResolvedValue(cred);
+        await expect(orch.getToken()).resolves.toBe(cred.token);
+        expect(getOriginalUri).not.toHaveBeenCalled();
+      });
+
+      it('is not called when `avoidPrompting` is enabled', async () => {
+        jest.spyOn(AuthorizationCodeFlow, 'PerformSilently').mockResolvedValue({ token: makeTestToken(), context: {} });
+
+        const getOriginalUri = jest.fn(() => '/custom/default');
+        const orch = new AuthorizationCodeFlowOrchestrator(flow, { avoidPrompting: true, getOriginalUri });
+        await expect(orch.getToken()).resolves.toBeInstanceOf(Token);
+        expect(getOriginalUri).not.toHaveBeenCalled();
+      });
+    });
+
     it('throws when flow is already in progress', async () => {
       const orch = new AuthorizationCodeFlowOrchestrator(flow);
       await flow.start();

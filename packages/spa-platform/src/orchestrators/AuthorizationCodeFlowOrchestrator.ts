@@ -19,7 +19,10 @@ import { Credential } from '../Credential/index.ts';
 /** @internal */
 const defaultOptions: AuthorizationCodeFlowOrchestrator.Options = {
   avoidPrompting: false,
-  emitBeforeRedirect: true
+  emitBeforeRedirect: true,
+  getOriginalUri: () => {
+    return toRelativeUrl(window.location.href);
+  }
 };
 
 /**
@@ -57,12 +60,13 @@ export class AuthorizationCodeFlowOrchestrator<
     public readonly flow: AuthorizationCodeFlow,
     init: Partial<AuthorizationCodeFlowOrchestrator.Options> = {}
   ) {
-    const { avoidPrompting, emitBeforeRedirect, tags } = init;
+    const { avoidPrompting, emitBeforeRedirect, getOriginalUri, tags } = init;
     super();
     this.options = {
       tags,
       avoidPrompting: avoidPrompting ?? defaultOptions.avoidPrompting,
       emitBeforeRedirect: emitBeforeRedirect ?? defaultOptions.emitBeforeRedirect,
+      getOriginalUri: getOriginalUri ?? defaultOptions.getOriginalUri,
     };
   }
 
@@ -163,7 +167,7 @@ export class AuthorizationCodeFlowOrchestrator<
       meta.originalUri = originalUri;
     }
     else if (meta.originalUri === undefined) {
-      meta.originalUri = toRelativeUrl(window.location.href);
+      meta.originalUri = this.options.getOriginalUri();
     }
 
     if (this.options.emitBeforeRedirect) {
@@ -192,7 +196,8 @@ export class AuthorizationCodeFlowOrchestrator<
    * @remarks
    * `originalUri` and `stateData` are only used if a redirect is required. They are returned by
    * {@link AuthorizationCodeFlowOrchestrator.resumeFlow} once the user has authenticated.
-   * `originalUri` defaults to the current `window.location`, which routers may not have updated yet while
+   * `originalUri` defaults to {@link AuthorizationCodeFlowOrchestrator.Options.getOriginalUri | Options.getOriginalUri}
+   * (the current `window.location`, unless configured otherwise), which routers may not have updated yet while
    * a route loader or guard runs. In that case, provide the destination explicitly.
    *
    * @example
@@ -245,6 +250,36 @@ export namespace AuthorizationCodeFlowOrchestrator {
   export type Options = {
     avoidPrompting: boolean;
     emitBeforeRedirect: boolean;
+    /**
+     * Provides the orchestrator-wide default `originalUri`: the route the application should return the user to
+     * once they have authenticated. It is returned by {@link AuthorizationCodeFlowOrchestrator.resumeFlow}.
+     *
+     * @remarks
+     * Defaults to the current `window.location` (path, query and hash).
+     *
+     * This is evaluated each time a redirect is about to start, and only if the `originalUri` was not already provided
+     * by {@link AuthorizationCodeFlowOrchestrator.TokenParams | getToken({ originalUri })} or `stateData.originalUri`.
+     *
+     * Use it for app-wide policy which applies to every redirect, including redirects triggered indirectly
+     * (e.g. via `FetchClient`) where per-call values cannot be provided. Examples are removing a base path
+     * or locale prefix. Set it once, when constructing the orchestrator.
+     *
+     * To override the value for a single call (e.g. within a router loader or guard, where `window.location` is not
+     * updated yet), pass `originalUri` to {@link AuthorizationCodeFlowOrchestrator.getToken | getToken}
+     * rather than reassigning this option.
+     *
+     * @example
+     * ```ts
+     * const orchestrator = new AuthorizationCodeFlowOrchestrator(flow, {
+     *   // app is served from `/app`, but its routes are relative to that base path
+     *   getOriginalUri: () => {
+     *     const { pathname, search, hash } = window.location;
+     *     return pathname.replace(/^\/app/, '') + search + hash;
+     *   }
+     * });
+     * ```
+     */
+    getOriginalUri: () => string;
     tags?: string[]
   };
 
@@ -254,7 +289,8 @@ export namespace AuthorizationCodeFlowOrchestrator {
   export type TokenParams = TokenOrchestrator.AuthorizeParams & {
     /**
      * The route to return the user to after authenticating. Shorthand for `stateData.originalUri`, which it overrides.
-     * Defaults to the current `window.location`
+     * Defaults to {@link AuthorizationCodeFlowOrchestrator.Options.getOriginalUri | Options.getOriginalUri}
+     * (the current `window.location`, unless configured otherwise)
      */
     originalUri?: string;
     /**
