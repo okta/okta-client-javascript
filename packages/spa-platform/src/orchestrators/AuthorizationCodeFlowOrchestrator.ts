@@ -11,6 +11,7 @@ import {
   TokenOrchestratorError,
   EventEmitter
 } from '@okta/auth-foundation/core';
+import type { JsonRecord } from '@okta/auth-foundation/core';
 import { AuthorizationCodeFlow } from '../flows/index.ts';
 import { Credential } from '../Credential/index.ts';
 
@@ -18,10 +19,7 @@ import { Credential } from '../Credential/index.ts';
 /** @internal */
 const defaultOptions: AuthorizationCodeFlowOrchestrator.Options = {
   avoidPrompting: false,
-  emitBeforeRedirect: true,
-  getOriginalUri: () => {
-    return toRelativeUrl(window.location.href);
-  }
+  emitBeforeRedirect: true
 };
 
 /**
@@ -59,13 +57,12 @@ export class AuthorizationCodeFlowOrchestrator<
     public readonly flow: AuthorizationCodeFlow,
     init: Partial<AuthorizationCodeFlowOrchestrator.Options> = {}
   ) {
-    const { avoidPrompting, emitBeforeRedirect, getOriginalUri, tags } = init;
+    const { avoidPrompting, emitBeforeRedirect, tags } = init;
     super();
     this.options = {
       tags,
       avoidPrompting: avoidPrompting ?? defaultOptions.avoidPrompting,
       emitBeforeRedirect: emitBeforeRedirect ?? defaultOptions.emitBeforeRedirect,
-      getOriginalUri: getOriginalUri ?? defaultOptions.getOriginalUri,
     };
   }
 
@@ -129,9 +126,11 @@ export class AuthorizationCodeFlowOrchestrator<
 
   /**
    * Defines how to request a token from Authorization Server
+   *
+   * @param params - OAuth2 parameters of the requested token
    * @internal
    */
-  protected async requestToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null> {
+  protected async requestToken (params: AuthorizationCodeFlowOrchestrator.TokenParams): Promise<Token | null> {
     if (this.flow.inProgress) {
       throw new TokenOrchestratorError('flow already in progress');
     }
@@ -157,7 +156,15 @@ export class AuthorizationCodeFlowOrchestrator<
     }
 
     // handle with redirect
-    const meta = { originalUri: this.options.getOriginalUri() };
+    // copied so neither the caller's `stateData` nor the object held by the flow is mutated by the merge below
+    const { originalUri, stateData } = params;
+    const meta: JsonRecord = { ...stateData };
+    if (originalUri !== undefined) {
+      meta.originalUri = originalUri;
+    }
+    else if (meta.originalUri === undefined) {
+      meta.originalUri = toRelativeUrl(window.location.href);
+    }
 
     if (this.options.emitBeforeRedirect) {
       // promise blocks thread until the `done` function is called in the loginPrompt listener
@@ -181,8 +188,23 @@ export class AuthorizationCodeFlowOrchestrator<
 
   /**
    * Determines if a valid token already exists in storage, otherwise requests a new token
+   *
+   * @remarks
+   * `originalUri` and `stateData` are only used if a redirect is required. They are returned by
+   * {@link AuthorizationCodeFlowOrchestrator.resumeFlow} once the user has authenticated.
+   * `originalUri` defaults to the current `window.location`, which routers may not have updated yet while
+   * a route loader or guard runs. In that case, provide the destination explicitly.
+   *
+   * @example
+   * ```ts
+   * // React Router loader
+   * const loader = ({ request }) => {
+   *   const { pathname, search, hash } = new URL(request.url);
+   *   return orchestrator.getToken({ originalUri: pathname + search + hash });
+   * };
+   * ```
    */
-  public async getToken (params: TokenOrchestrator.AuthorizeParams = {}): Promise<Token | null> {
+  public async getToken (params: AuthorizationCodeFlowOrchestrator.TokenParams = {}): Promise<Token | null> {
     const credential = await this.selectCredential(params);
     // token found in storage
     if (credential) {
@@ -223,8 +245,23 @@ export namespace AuthorizationCodeFlowOrchestrator {
   export type Options = {
     avoidPrompting: boolean;
     emitBeforeRedirect: boolean;
-    getOriginalUri: () => string;
     tags?: string[]
+  };
+
+  /**
+   * Parameters accepted by {@link AuthorizationCodeFlowOrchestrator.getToken}
+   */
+  export type TokenParams = TokenOrchestrator.AuthorizeParams & {
+    /**
+     * The route to return the user to after authenticating. Shorthand for `stateData.originalUri`, which it overrides.
+     * Defaults to the current `window.location`
+     */
+    originalUri?: string;
+    /**
+     * Data to persist across the redirect, returned as the `context` of
+     * {@link AuthorizationCodeFlowOrchestrator.resumeFlow}. Must be JSON-serializable
+     */
+    stateData?: JsonRecord;
   };
 
   /**
@@ -232,6 +269,6 @@ export namespace AuthorizationCodeFlowOrchestrator {
    * @interface
    */
   export type Events = {
-    'login_prompt_required': { done: () => void, params: TokenOrchestrator.AuthorizeParams };
+    'login_prompt_required': { done: () => void, params: AuthorizationCodeFlowOrchestrator.TokenParams };
   } & TokenOrchestrator.Events;
 }

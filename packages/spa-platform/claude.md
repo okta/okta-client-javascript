@@ -119,7 +119,6 @@ const flow = new AuthorizationCodeFlow({
 const orchestrator = new AuthorizationCodeFlowOrchestrator(flow, {
   avoidPrompting: false,
   emitBeforeRedirect: true,
-  getOriginalUri: () => window.location.pathname,
   tags: ['main-app'],
 });
 
@@ -140,6 +139,21 @@ const token = await orchestrator.getToken({
 
 // Resume flow after redirect callback
 await orchestrator.resumeFlow(window.location.href);
+```
+
+**Per-call `originalUri` / `stateData`**: `originalUri` defaults to the current `window.location`, which routers may not
+have updated yet while a loader or guard runs. Pass the destination explicitly. Both values are only used if a redirect
+is needed, and are returned by `resumeFlow()`:
+
+```typescript
+// React Router (v6+) loader. Fetcher loaders should omit `originalUri`, since the default is already correct.
+const loader = ({ request }) => {
+  const { pathname, search, hash } = new URL(request.url);
+  return orchestrator.getToken({
+    originalUri: pathname + search + hash,
+    stateData: { source: 'profile-loader' },    // JSON-serializable, returned by `resumeFlow()`
+  });
+};
 ```
 
 ### 3. HostOrchestrator (`orchestrators/HostOrchestrator/`)
