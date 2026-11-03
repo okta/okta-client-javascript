@@ -31,6 +31,7 @@ All notable changes to this project will be documented in this file.
 
 #### Changed
 - `AuthorizationCodeFlow.resume()` now removes the query string from the current URL (via `history.replaceState`) after a successful `resume()` using the default `window.location.href`, so navigating back cannot replay a consumed (one-time-use) authorization code
+- `AuthorizationCodeFlowOrchestrator.getToken()` now accepts `originalUri` and `stateData`, allowing the redirect destination and additional state data to be provided per call. ([#79]https://github.com/okta/okta-client-javascript/pull/79)
 
 ### Fixed
 - `BrowserTokenStorage` now correctly stores and generates a 12 byte `iv` when encrypted stored tokens ([#49](https://github.com/okta/okta-client-javascript/pull/49))

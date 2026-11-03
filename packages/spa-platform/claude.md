@@ -119,7 +119,6 @@ const flow = new AuthorizationCodeFlow({
 const orchestrator = new AuthorizationCodeFlowOrchestrator(flow, {
   avoidPrompting: false,
   emitBeforeRedirect: true,
-  getOriginalUri: () => window.location.pathname,
   tags: ['main-app'],
 });
 
@@ -140,6 +139,29 @@ const token = await orchestrator.getToken({
 
 // Resume flow after redirect callback
 await orchestrator.resumeFlow(window.location.href);
+```
+
+**`originalUri` / `stateData`**: `originalUri` is the route the app returns the user to after authenticating, and
+`stateData` is any additional JSON-serializable data to carry across the redirect. Both are only used if a redirect
+is needed, and are returned by `resumeFlow()`. `originalUri` is resolved in this order (first match wins, highest first):
+`done(...)` argument of `login_prompt_required` > `getToken({ originalUri })` > `getToken({ stateData: { originalUri } })` >
+the `getOriginalUri` option (defaults to the current `window.location`).
+
+- `getOriginalUri` (constructor option): the orchestrator-wide default. Use it for app-wide policy, such as stripping a
+  base path or locale prefix, which also applies to redirects triggered indirectly (e.g. by `FetchClient`). Set it once;
+  do not reassign it per call.
+- `getToken({ originalUri, stateData })`: per-call values. Routers may not have updated `window.location` yet while a
+  loader or guard runs, so pass the destination explicitly there:
+
+```typescript
+// React Router (v6+) loader. Fetcher loaders should omit `originalUri`, since the default is already correct.
+const loader = ({ request }) => {
+  const { pathname, search, hash } = new URL(request.url);
+  return orchestrator.getToken({
+    originalUri: pathname + search + hash,
+    stateData: { source: 'profile-loader' },    // JSON-serializable, returned by `resumeFlow()`
+  });
+};
 ```
 
 ### 3. HostOrchestrator (`orchestrators/HostOrchestrator/`)
