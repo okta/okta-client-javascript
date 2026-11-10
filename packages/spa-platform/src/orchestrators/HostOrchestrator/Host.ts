@@ -3,6 +3,8 @@
  * @mergeModuleWith Orchestrators
  */
 
+/* eslint max-depth: [2, 4] */
+
 import type { HostOrchestrator as HO } from './index.ts';
 import {
   Token,
@@ -11,8 +13,6 @@ import {
   EventEmitter,
   type Emitter,
   TokenOrchestrator,
-  TokenOrchestratorError,
-  type OAuth2Error
 } from '@okta/auth-foundation/core';
 import { OrchestrationBridge } from './OrchestrationBridge.ts';
 

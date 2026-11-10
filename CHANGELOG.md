@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - 2026-11-10
+
+### `@okta/spa-platform`
+
+### Fixed
+- Improves error handling thrown by abstract methods in `HostOrchestrator.Host` ([#82](https://github.com/okta/okta-client-javascript/pull/82))
+
 ## [0.10.0] - 2026-09-23
 
 ### `@okta/auth-foundation`
