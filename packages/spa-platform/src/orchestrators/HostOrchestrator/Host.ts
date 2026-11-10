@@ -10,7 +10,9 @@ import {
   type TokenPrimitiveInit,
   EventEmitter,
   type Emitter,
-  TokenOrchestrator
+  TokenOrchestrator,
+  TokenOrchestratorError,
+  type OAuth2Error
 } from '@okta/auth-foundation/core';
 import { OrchestrationBridge } from './OrchestrationBridge.ts';
 
@@ -60,20 +62,26 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
     return window.self === window.top;
   }
 
+  protected toErrorResponse (err: unknown, fallback: string): HO.ErrorResponse {
+    const response: HO.ErrorResponse = { error: fallback };
+
+    if (err instanceof Error) {
+      response.error = err.message;
+      response.name = err.name;
+      response.cause = err.cause instanceof Error ?
+        err.cause.message : typeof err.cause === 'string' ? err.cause : undefined;
+    }
+
+    if (err) {
+      this.emitter.emit('error', { error: err });
+    }
+
+    return response;
+  }
+
   activate () {
     this.#bridge = new OrchestrationBridge(this.name, { allowedOrigins: this.#allowedOrigins });
-    this.#bridge.subscribe(async (event, reply) => {
-      // TODO:
-      // return new Promise(resolve => {});   - for testing, will remove before merge
-      try {
-        // const reply = (msg) => message.reply(msg);
-        await this.parseRequest(event, reply);
-      }
-      catch (err) {
-        console.log('parseRequest error', err);
-        // TODO: probably should throw here?
-      }
-    });
+    this.#bridge.subscribe((event, reply) => this.parseRequest(event, reply));
     this.#bridge.send({
       eventName: 'ACTIVATED',
       hostId: this.id,
@@ -92,31 +100,38 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
     const { eventName } = request;
 
     let response: HO.ResponseEvent[keyof HO.ResponseEvent];
-    switch (eventName) {
-      case 'ACTIVATED':
-        this.handleHostActivated(request);
-        response = {};
-        break;
-      case 'PING':
-        response = { message: 'PONG' } satisfies HO.PingResponse;
-        break;
-      case 'TOKEN':
-        response = await this.handleTokenRequest(request.data);
-        break;
-      case 'AUTHORIZE':
-        response = await this.handleAuthorizeRequest(request.data);
-        break;
-      case 'PROFILE':
-        response = await this.handleProfileRequest(request.data);
-        break;
-      case 'INVALIDATE':
-        response = await this.handleInvalidateRequest(request.data);
-        break;
-      default:
-        response = { error: 'Unknown eventName provided' } satisfies HO.ErrorResponse;
+
+    try {
+      switch (eventName) {
+        case 'ACTIVATED':
+          this.handleHostActivated(request);
+          response = {};
+          break;
+        case 'PING':
+          response = { message: 'PONG' } satisfies HO.PingResponse;
+          break;
+        case 'TOKEN':
+          response = await this.handleTokenRequest(request.data);
+          break;
+        case 'AUTHORIZE':
+          response = await this.handleAuthorizeRequest(request.data);
+          break;
+        case 'PROFILE':
+          response = await this.handleProfileRequest(request.data);
+          break;
+        case 'INVALIDATE':
+          response = await this.handleInvalidateRequest(request.data);
+          break;
+        default:
+          response = { error: 'Unknown eventName provided' } satisfies HO.ErrorResponse;
+      }
+
+      this.emitter.emit('request_fulfilled', { request, response: { ...response }});
+    }
+    catch (err) {
+      response = this.toErrorResponse(err, 'Unable to process request');
     }
 
-    this.emitter.emit('request_fulfilled', { request, response: { ...response }});
     return replyFn(response);
   }
 
@@ -130,82 +145,108 @@ export abstract class HostOrchestrator<E extends HO.HostEvents = HO.HostEvents> 
 
   /** @internal */
   protected async handleTokenRequest (event: HO.TokenRequest): Promise<HO.TokenResponse> {
-    const { authParams } = TokenOrchestrator.extractAuthParams(event);
-    const result = await this.findToken(authParams);
+    let error: unknown = null;
 
-    if (isErrorResponse(result)) {
-      return result;
+    try {
+      const { authParams } = TokenOrchestrator.extractAuthParams(event);
+      const result = await this.findToken(authParams);
+
+      if (isErrorResponse(result)) {
+        return result;
+      }
+      else if (result instanceof Token) {
+        return { token: result.toJSON() as TokenPrimitiveInit };
+      }
     }
-    else if (result instanceof Token) {
-      return { token: result.toJSON() as TokenPrimitiveInit };
+    catch (err) {
+      error = err;
     }
 
-    return { error: 'Unable to obtain token' };
+    return this.toErrorResponse(error, 'Unable to obtain token');
   }
 
   /** @internal */
   protected async handleAuthorizeRequest (event: HO.AuthorizeRequest): Promise<HO.AuthorizeResponse> {
-    const { url, method, nonce } = event;
-    const { authParams } = TokenOrchestrator.extractAuthParams(event);
+    let error: unknown = null;
 
-    if (!url || !method) {
-      return { error: 'request url or method not provided' };
-    }
+    try {
+      const { url, method, nonce } = event;
+      const { authParams } = TokenOrchestrator.extractAuthParams(event);
 
-    const result = await this.findToken(authParams);
+      if (!url || !method) {
+        return { error: 'request url or method not provided' };
+      }
 
-    if (isErrorResponse(result)) {
-      return result;
-    }
-    else if (result instanceof Token) {
-      const token = result;
-      const request = new Request(url, { method });
-      await token.authorize(request, { dpopNonce: nonce });
+      const result = await this.findToken(authParams);
 
-      const dpop = request.headers.get('dpop');
-      const authorization = request.headers.get('authorization');
-  
-      if (authorization) {
-        const result: HO.AuthorizeResponse = {
-          authorization,
-          tokenType: token.tokenType,
-          tokenId: token.id,
-        };
+      if (isErrorResponse(result)) {
+        return result;
+      }
+      else if (result instanceof Token) {
+        const token = result;
+        const request = new Request(url, { method });
+        await token.authorize(request, { dpopNonce: nonce });
 
-        if (token.tokenType === 'DPoP' && dpop) {
-          result.dpop = dpop;
-          return result;
-        }
+        const dpop = request.headers.get('dpop');
+        const authorization = request.headers.get('authorization');
+    
+        if (authorization) {
+          const result: HO.AuthorizeResponse = {
+            authorization,
+            tokenType: token.tokenType,
+            tokenId: token.id,
+          };
 
-        if (token.tokenType === 'Bearer') {
-          return result;
+          if (token.tokenType === 'DPoP' && dpop) {
+            result.dpop = dpop;
+            return result;
+          }
+
+          if (token.tokenType === 'Bearer') {
+            return result;
+          }
         }
       }
     }
+    catch (err) {
+      error = err;
+    }
 
-    return { error: 'Unable to sign request' };
+    return this.toErrorResponse(error, 'Unable to sign request');
   }
 
   /** @internal */
   protected async handleProfileRequest (event: HO.TokenRequest): Promise<HO.ProfileResponse> {
-    const { authParams } = TokenOrchestrator.extractAuthParams(event);
-    const result = await this.findToken(authParams);
+    let error: unknown = null;
 
-    if (isErrorResponse(result)) {
-      return result;
-    }
-    else if (result instanceof Token) {
-      if (result.idToken?.claims) {
-        return { profile: result.idToken.claims };
+    try {
+      const { authParams } = TokenOrchestrator.extractAuthParams(event);
+      const result = await this.findToken(authParams);
+
+      if (isErrorResponse(result)) {
+        return result;
+      }
+      else if (result instanceof Token) {
+        if (result.idToken?.claims) {
+          return { profile: result.idToken.claims };
+        }
       }
     }
+    catch (err) {
+      error = err;
+    }
 
-    return { error: 'Unable to find idToken' };
+    return this.toErrorResponse(error, 'Unable to find idToken');
   }
 
   protected async handleInvalidateRequest (event: HO.InvalidateRequest): Promise<HO.InvalidateResponse> {
-    const { tokenId } = event;
-    return this.invalidateToken(tokenId);
+    try {
+      const { tokenId } = event;
+      return await this.invalidateToken(tokenId);
+    }
+    catch (err) {
+      return this.toErrorResponse(err, 'Unable to invalidate token');
+    }
   }
 
   abstract findToken (params: TokenOrchestrator.AuthorizeParams): Promise<Token | null | HO.ErrorResponse>;
