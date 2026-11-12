@@ -137,15 +137,18 @@ describe('HostOrchestrator', () => {
         listeners = {};
         listeners.received = jest.fn();
         listeners.fulfilled = jest.fn();
+        listeners.error = jest.fn();
 
         host.on('request_received', listeners.received);
         host.on('request_fulfilled', listeners.fulfilled);
+        host.on('error', listeners.error);
       });
 
       afterEach(() => {
         host.close();
         host.off('request_received', listeners.received);
         host.off('request_fulfilled', listeners.fulfilled);
+        host.off('error', listeners.error);
       });
       
       // NOTE: 'ACTIVATED' tested it .activate tests
@@ -405,6 +408,201 @@ describe('HostOrchestrator', () => {
         expect(listeners.fulfilled.mock.lastCall[0]).toMatchObject({
           request: event,
           response: { error: 'some error' }
+        });
+      });
+
+      it('INVALIDATE', async () => {
+        const invalidateSpy = jest.spyOn(host, 'invalidateToken');
+        const reply = jest.fn();
+        event.eventName = 'INVALIDATE';
+        event.data = { tokenId: 'mockTokenId' };
+
+        // happy path
+        await host.parseRequest(event, reply);
+        expect(reply).toHaveBeenCalled();
+        expect(reply).toHaveBeenLastCalledWith({});
+        expect(invalidateSpy).toHaveBeenCalled();
+        expect(invalidateSpy).toHaveBeenLastCalledWith('mockTokenId');
+        expect(listeners.received).toHaveBeenCalledTimes(1);
+        expect(listeners.received.mock.lastCall[0]).toMatchObject({ request: event });
+        expect(listeners.fulfilled).toHaveBeenCalledTimes(1);
+        expect(listeners.fulfilled.mock.lastCall[0]).toMatchObject({
+          request: event,
+          response: {}
+        });
+
+        // error case
+        invalidateSpy.mockResolvedValue({ error: 'some error' });
+
+        await host.parseRequest(event, reply);
+        expect(reply).toHaveBeenCalled();
+        expect(reply).toHaveBeenLastCalledWith({ error: 'some error' });
+        expect(invalidateSpy).toHaveBeenCalledTimes(2);
+        expect(invalidateSpy).toHaveBeenLastCalledWith('mockTokenId');
+        expect(listeners.received).toHaveBeenCalledTimes(2);
+        expect(listeners.received.mock.lastCall[0]).toMatchObject({ request: event });
+        expect(listeners.fulfilled).toHaveBeenCalledTimes(2);
+        expect(listeners.fulfilled.mock.lastCall[0]).toMatchObject({
+          request: event,
+          response: { error: 'some error' }
+        });
+      });
+
+      describe('error handling', () => {
+        let reply;
+
+        const tokenRequests = [
+          { eventName: 'TOKEN', fallback: 'Unable to obtain token' },
+          { eventName: 'AUTHORIZE', fallback: 'Unable to sign request' },
+          { eventName: 'PROFILE', fallback: 'Unable to find idToken' },
+        ];
+
+        beforeEach(() => {
+          reply = jest.fn();
+          event.data = {
+            issuer: 'mockIssuer',
+            clientId: 'mockClientId',
+            scopes: ['mock', 'scopes'],
+            // only used by AUTHORIZE requests
+            url: 'http://localhost:8080/foo',
+            method: 'GET',
+          };
+        });
+
+        it.each(tokenRequests)('$eventName - replies with the error when .findToken() throws', async ({ eventName }) => {
+          const error = new Error('findToken threw');
+          jest.spyOn(host, 'findToken').mockRejectedValue(error);
+          event.eventName = eventName;
+
+          await host.parseRequest(event, reply);
+          expect(reply).toHaveBeenCalledTimes(1);
+          expect(reply).toHaveBeenLastCalledWith({ error: 'findToken threw', name: 'Error' });
+          expect(listeners.error).toHaveBeenCalledTimes(1);
+          expect(listeners.error).toHaveBeenLastCalledWith({ error });
+          expect(listeners.fulfilled).toHaveBeenCalledTimes(1);
+          expect(listeners.fulfilled.mock.lastCall[0]).toMatchObject({
+            request: event,
+            response: { error: 'findToken threw', name: 'Error' }
+          });
+        });
+
+        it.each(tokenRequests)('$eventName - replies with a fallback message when a non-Error is thrown', async ({ eventName, fallback }) => {
+          jest.spyOn(host, 'findToken').mockRejectedValue('not an error');
+          event.eventName = eventName;
+
+          await host.parseRequest(event, reply);
+          expect(reply).toHaveBeenCalledTimes(1);
+          expect(reply).toHaveBeenLastCalledWith({ error: fallback });
+          expect(listeners.error).toHaveBeenCalledTimes(1);
+          expect(listeners.error).toHaveBeenLastCalledWith({ error: 'not an error' });
+          expect(listeners.fulfilled).toHaveBeenCalledTimes(1);
+          expect(listeners.fulfilled.mock.lastCall[0]).toMatchObject({
+            request: event,
+            response: { error: fallback }
+          });
+        });
+
+        it.each([...tokenRequests, { eventName: 'INVALIDATE' }])('$eventName - replies with an error when request data is missing', async ({ eventName }) => {
+          const findTokenSpy = jest.spyOn(host, 'findToken');
+          const invalidateSpy = jest.spyOn(host, 'invalidateToken');
+          event.eventName = eventName;
+          event.data = undefined;
+
+          await host.parseRequest(event, reply);
+          expect(reply).toHaveBeenCalledTimes(1);
+          expect(reply).toHaveBeenLastCalledWith({ error: expect.any(String), name: 'TypeError' });
+          expect(findTokenSpy).not.toHaveBeenCalled();
+          expect(invalidateSpy).not.toHaveBeenCalled();
+          expect(listeners.error).toHaveBeenCalledTimes(1);
+          expect(listeners.fulfilled).toHaveBeenCalledTimes(1);
+        });
+
+        it('AUTHORIZE - replies with the error when signing the request throws', async () => {
+          const error = new Error('signing failed');
+          const authorizeSpy = jest.spyOn(testToken, 'authorize').mockRejectedValue(error);
+          event.eventName = 'AUTHORIZE';
+
+          await host.parseRequest(event, reply);
+          expect(authorizeSpy).toHaveBeenCalledTimes(1);
+          expect(reply).toHaveBeenCalledTimes(1);
+          expect(reply).toHaveBeenLastCalledWith({ error: 'signing failed', name: 'Error' });
+          expect(listeners.error).toHaveBeenCalledTimes(1);
+          expect(listeners.error).toHaveBeenLastCalledWith({ error });
+          expect(listeners.fulfilled).toHaveBeenCalledTimes(1);
+        });
+
+        it('INVALIDATE - replies with the error when .invalidateToken() throws', async () => {
+          const error = new Error('invalidateToken threw');
+          const invalidateSpy = jest.spyOn(host, 'invalidateToken')
+            .mockRejectedValueOnce(error)
+            .mockRejectedValueOnce('not an error');
+          event.eventName = 'INVALIDATE';
+          event.data = { tokenId: 'mockTokenId' };
+
+          await host.parseRequest(event, reply);
+          expect(reply).toHaveBeenLastCalledWith({ error: 'invalidateToken threw', name: 'Error' });
+          expect(listeners.error).toHaveBeenLastCalledWith({ error });
+          expect(listeners.fulfilled).toHaveBeenCalledTimes(1);
+
+          await host.parseRequest(event, reply);
+          expect(reply).toHaveBeenLastCalledWith({ error: 'Unable to invalidate token' });
+          expect(listeners.error).toHaveBeenLastCalledWith({ error: 'not an error' });
+          expect(listeners.fulfilled).toHaveBeenCalledTimes(2);
+
+          expect(invalidateSpy).toHaveBeenCalledTimes(2);
+          expect(reply).toHaveBeenCalledTimes(2);
+        });
+
+        it('includes the error name and cause in the response', async () => {
+          const findTokenSpy = jest.spyOn(host, 'findToken');
+          event.eventName = 'TOKEN';
+
+          findTokenSpy.mockRejectedValueOnce(new TypeError('outer', { cause: new Error('inner') }));
+          await host.parseRequest(event, reply);
+          expect(reply).toHaveBeenLastCalledWith({ error: 'outer', name: 'TypeError', cause: 'inner' });
+
+          findTokenSpy.mockRejectedValueOnce(new Error('outer', { cause: 'string cause' }));
+          await host.parseRequest(event, reply);
+          expect(reply).toHaveBeenLastCalledWith({ error: 'outer', name: 'Error', cause: 'string cause' });
+
+          // causes which are neither an `Error` nor a `string` are omitted
+          findTokenSpy.mockRejectedValueOnce(new Error('outer', { cause: { foo: 'bar' } }));
+          await host.parseRequest(event, reply);
+          expect(reply).toHaveBeenLastCalledWith({ error: 'outer', name: 'Error' });
+          expect(reply.mock.lastCall[0].cause).toBeUndefined();
+        });
+
+        it.each([
+          ['ACTIVATED', 'handleHostActivated'],
+          ['TOKEN', 'handleTokenRequest'],
+          ['AUTHORIZE', 'handleAuthorizeRequest'],
+          ['PROFILE', 'handleProfileRequest'],
+          ['INVALIDATE', 'handleInvalidateRequest'],
+        ])('%s - replies with an error when .%s() throws', async (eventName, method) => {
+          const error = new Error(`${method} threw`);
+          jest.spyOn(host, method).mockImplementation(() => { throw error; });
+          event.eventName = eventName;
+
+          await host.parseRequest(event, reply);
+          expect(reply).toHaveBeenCalledTimes(1);
+          expect(reply).toHaveBeenLastCalledWith({ error: `${method} threw`, name: 'Error' });
+          expect(listeners.received).toHaveBeenCalledTimes(1);
+          expect(listeners.error).toHaveBeenCalledTimes(1);
+          expect(listeners.error).toHaveBeenLastCalledWith({ error });
+          // `request_fulfilled` is only emitted when the request handler returns a response
+          expect(listeners.fulfilled).not.toHaveBeenCalled();
+        });
+
+        it('replies with a fallback message when a request handler throws a non-Error', async () => {
+          jest.spyOn(host, 'handleTokenRequest').mockRejectedValue('not an error');
+          event.eventName = 'TOKEN';
+
+          await host.parseRequest(event, reply);
+          expect(reply).toHaveBeenCalledTimes(1);
+          expect(reply).toHaveBeenLastCalledWith({ error: 'Unable to process request' });
+          expect(listeners.error).toHaveBeenCalledTimes(1);
+          expect(listeners.error).toHaveBeenLastCalledWith({ error: 'not an error' });
+          expect(listeners.fulfilled).not.toHaveBeenCalled();
         });
       });
     });
@@ -672,6 +870,24 @@ describe('HostOrchestrator', () => {
       const result = await sub.pingHost();
       expect(parseReqSpy).toHaveBeenCalledTimes(1);
       expect(result).toBe(true);
+    });
+
+    test('SubApp receives an error response when the Host throws', async () => {
+      // unique name, so other active Hosts do not respond to this SubApp's requests
+      const host = new MockHost('TestErrorHost');
+      const sub = new HostOrchestrator.SubApp('TestErrorHost');
+      // a short timeout ensures a rejection is caused by the Host's response, not by the request timing out
+      sub.defaultTimeout = 1000;
+
+      jest.spyOn(host, 'findToken').mockRejectedValue(new Error('findToken threw'));
+      const errorListener = jest.fn();
+      host.on('error', errorListener);
+
+      await expect(sub.getToken()).rejects.toThrow(new TokenOrchestratorError('findToken threw'));
+      expect(errorListener).toHaveBeenCalledTimes(1);
+
+      host.off('error', errorListener);
+      host.close();
     });
   });
 

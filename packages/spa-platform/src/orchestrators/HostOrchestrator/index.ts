@@ -93,6 +93,7 @@ export namespace HostOrchestrator {
    * @group Host
    */
   export type HostEvents = {
+    'error': { error: unknown; };
     'duplicate_host': { id: string, duplicateId: string };
     'login_prompt_required': Record<string, any>;
     'request_received': { request: RequestEvent[keyof RequestEvent] };
@@ -218,7 +219,7 @@ export namespace HostOrchestrator {
    * @group Types
    * @internal
    */
-  export type ErrorResponse = { error: string; };
+  export type ErrorResponse = { error: string; cause?: string; name?: string };
 
   /**
    * @group Types
