@@ -84,7 +84,7 @@ describe('AuthorizationCodeFlowOrchestrator', () => {
       const t1 = makeTestToken('prompt_result', { scopes: desiredScopes });
       jest.spyOn(AuthorizationCodeFlow, 'PerformSilently').mockResolvedValue({ token: t1, context: {} });
 
-      // should not match on on stored token because the of the additional scope `foobar`
+      // should not match on on stored token because the of the additional scope `foo`
       const orch = new AuthorizationCodeFlowOrchestrator(flow, { avoidPrompting: true });
       expect(await orch.getToken({ scopes: desiredScopes })).toEqual(t1);
       expect(AuthorizationCodeFlow.PerformSilently).toHaveBeenCalled();
@@ -97,7 +97,7 @@ describe('AuthorizationCodeFlowOrchestrator', () => {
       const t1 = makeTestToken('prompt_result', { scopes: desiredScopes });
       jest.spyOn(AuthorizationCodeFlow, 'PerformSilently').mockResolvedValue({ token: t1, context: {} });
 
-      // should not match on on stored token because the of the additional scope `foobar`
+      // should match on stored token which contains `desiredScopes + 'offline_access'` (aka a superset)
       const orch = new AuthorizationCodeFlowOrchestrator(flow, { avoidPrompting: true });
       expect(await orch.getToken({ scopes: desiredScopes })).toEqual(c1.token);
       expect(AuthorizationCodeFlow.PerformSilently).not.toHaveBeenCalled();
