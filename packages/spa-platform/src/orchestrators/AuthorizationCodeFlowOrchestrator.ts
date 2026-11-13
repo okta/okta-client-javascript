@@ -6,6 +6,7 @@
 import {
   Token,
   hasSameValues,
+  isSuperset,
   toRelativeUrl,
   TokenOrchestrator,
   TokenOrchestratorError,
@@ -95,6 +96,9 @@ export class AuthorizationCodeFlowOrchestrator<
 
   /**
    * Defines how to search storage for an existing token
+   * 
+   * @remarks
+   * By default this method performs superset-based comparisons on `scopes` and `tags`.
    */
   public async selectCredential (options: TokenOrchestrator.AuthorizeParams): Promise<Credential | null> {
     const filter: Partial<Token.Metadata> = { scopes: options.scopes };
@@ -110,7 +114,8 @@ export class AuthorizationCodeFlowOrchestrator<
         return false;
       }
 
-      if (filter.scopes && !hasSameValues(filter.scopes, scopes, false)) {
+      // stored token must contain (at least) all requested scopes
+      if (filter.scopes && !isSuperset(scopes, filter.scopes)) {
         return false;
       }
 

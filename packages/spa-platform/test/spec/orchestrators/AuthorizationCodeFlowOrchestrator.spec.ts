@@ -77,6 +77,32 @@ describe('AuthorizationCodeFlowOrchestrator', () => {
       expect(await orch4.getToken()).toEqual(c2.token);
     });
 
+    it('should request a new token when a subset-scoped token is available in storage', async () => {
+      const desiredScopes = ['openid', 'email', 'profile', 'offline_access', 'foobar'];
+
+      await Credential.store(makeTestToken('wrong_match'));
+      const t1 = makeTestToken('prompt_result', { scopes: desiredScopes });
+      jest.spyOn(AuthorizationCodeFlow, 'PerformSilently').mockResolvedValue({ token: t1, context: {} });
+
+      // should not match on on stored token because the of the additional scope `foobar`
+      const orch = new AuthorizationCodeFlowOrchestrator(flow, { avoidPrompting: true });
+      expect(await orch.getToken({ scopes: desiredScopes })).toEqual(t1);
+      expect(AuthorizationCodeFlow.PerformSilently).toHaveBeenCalled();
+    });
+
+    it('should return stored token when a superset-scoped token is available in storage', async () => {
+      const desiredScopes = ['openid', 'email', 'profile'];
+
+      const c1 = await Credential.store(makeTestToken('wrong_match'));
+      const t1 = makeTestToken('prompt_result', { scopes: desiredScopes });
+      jest.spyOn(AuthorizationCodeFlow, 'PerformSilently').mockResolvedValue({ token: t1, context: {} });
+
+      // should not match on on stored token because the of the additional scope `foobar`
+      const orch = new AuthorizationCodeFlowOrchestrator(flow, { avoidPrompting: true });
+      expect(await orch.getToken({ scopes: desiredScopes })).toEqual(c1.token);
+      expect(AuthorizationCodeFlow.PerformSilently).not.toHaveBeenCalled();
+    });
+
     it('will remove expired tokens from storage if refreshing fails', async () => {
       const c1 = await Credential.store(makeTestToken(null, {
         issuedAt: Date.now() - 500000
