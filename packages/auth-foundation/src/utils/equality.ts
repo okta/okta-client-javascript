@@ -31,6 +31,21 @@ export function hasSameValues<T> (a1: T[], a2: T[], strict = true) {
 }
 
 /**
+ * Utility function to verify an array contains every item of another array
+ *
+ * @remarks
+ * Argument order matters. Returns `true` when `superset` contains every item of `subset`,
+ * including when both arrays contain the same items
+ *
+ * @group Utils
+ */
+export function isSuperset<T> (list: T[], candidate: T[]) {
+  if (!Array.isArray(list) || !Array.isArray(candidate)) {return false;}
+  const s: Set<T> = new Set(list);
+  return candidate.every(t => s.has(t));
+}
+
+/**
  * Utility function to verify an object contains specific key/value pairs
  * 
  * @group Utils
