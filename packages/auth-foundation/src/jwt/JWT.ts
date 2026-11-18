@@ -153,8 +153,8 @@ function validateBody (claims: JsonRecord) {
       throw new JWTError('Unexpected `nbf` claim type');
     }
 
-    if (!Platform.TimeCoordinator.now().isAfter(claims.nbf)) {
-      throw new JWTError('`nbf` claim is unexpectedly in the past');
+    if (Platform.TimeCoordinator.now().isBefore(claims.nbf)) {
+      throw new JWTError('`nbf` claim is unexpectedly in the future');
     }
   }
 
@@ -353,7 +353,7 @@ export class JWT implements RawRepresentable, Expires {
       return false;
     }
     const now = Platform.TimeCoordinator.now();
-    return now.isBefore(this.expirationTime);
+    return !now.isBefore(this.expirationTime);
   }
   /**
    * Returns `true`, if the token is not expired, compared to the {@link JWT.expirationTime}
