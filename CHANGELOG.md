@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
 - Added `isSuperset` comparison function ([#85](https://github.com/okta/okta-client-javascript/pull/85))
 
 ### Fixed
-- Fixed issues with `JWT` clock-based validations
+- Fixed issues with `JWT` clock-based validations ([#86](https://github.com/okta/okta-client-javascript/pull/86))
 
 ### `@okta/spa-platform`
 
