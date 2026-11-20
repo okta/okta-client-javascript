@@ -10,6 +10,7 @@ import { DPoPStorage } from './storage.ts';
 import { DPoPNonceCache } from './nonceCache.ts';
 import { DPoPError } from '../../errors/DPoPError.ts';
 import { Platform } from '../../platform/Platform.ts';
+import { EventEmitter } from '../../utils/EventEmitter.ts';
 
 export { DPoPNonceCache, DPoPStorage };
 export type { DPoPHeaders, DPoPClaims, DPoPProofParams };
@@ -21,6 +22,10 @@ export type { DPoPHeaders, DPoPClaims, DPoPProofParams };
  * @group DPoP
  */
 export interface DPoPSigningAuthority {
+  /**
+   * Possible events: {@link DPoPSigningAuthority.Events}
+   */
+  readonly emitter: EventEmitter<DPoPSigningAuthority.Events>;
   createDPoPKeyPair: () => Promise<string>;
   deleteDPoPKeyPair: (keyPairId: string) => Promise<void>;
   clearDPoPKeyPairs: () => Promise<void>;
@@ -33,6 +38,50 @@ export interface DPoPSigningAuthority {
 }
 
 /**
+ * @group DPoP
+ */
+export namespace DPoPSigningAuthority {
+  /**
+   * @interface
+   * Map of events fired from {@link DPoPSigningAuthority.emitter}
+   *
+   * @example
+   * ```ts
+   * // key = Event name
+   * // value = Event Type
+   * Platform.DPoPSigningAuthority.emitter.on('will_sign_proof', ({ request, claims }) => {
+   *   // requests sent to `/proxy/*` are forwarded to the resource server, which will validate `htu`
+   *   // against its own url rather than the proxy's
+   *   const url = new URL(request.url);
+   *   if (url.pathname.startsWith('/proxy/')) {
+   *     claims.htu = `https://api.example.com${url.pathname.replace('/proxy', '')}`;
+   *   }
+   * });
+   * ```
+   */
+  export type Events = {
+    /**
+     * Fired when a `DPoP` proof fails to be generated. The `error` is re-thrown after this event fires
+     */
+    'error': { request: Request, error: Error };
+    /**
+     * Fired before a `DPoP` proof is signed
+     *
+     * @remarks
+     * `claims` are the claims which will be signed. They can be modified (for example, correcting the `htu` claim
+     * when requests are routed through a proxy), but modifications must be made **synchronously** within the listener.
+     * Listeners are invoked in the order they were registered, subsequent listeners will see the modifications
+     * made by previous listeners
+     */
+    'will_sign_proof': { request: Request, claims: DPoPClaims };
+    /**
+     * Fired after a `DPoP` proof is signed
+     */
+    'did_sign_proof': { request: Request, proof: string };
+  };
+}
+
+/**
  * Default implementation of a DPoP Signing Authority.
  * Signs outgoing network requests with a dpop proof (private key JWT) as well as
  * creates, stores and retrieves the Crypto Key Pairs necessary for the signing operation
@@ -40,6 +89,11 @@ export interface DPoPSigningAuthority {
  * @internal
  */
 export class DPoPSigningAuthorityImpl implements DPoPSigningAuthority {
+  /**
+   * Possible events: {@link DPoPSigningAuthority.Events}
+   */
+  readonly emitter: EventEmitter<DPoPSigningAuthority.Events> = new EventEmitter();
+
   constructor (private readonly store: DPoPStorage) {}
 
   /**
@@ -131,7 +185,10 @@ export class DPoPSigningAuthorityImpl implements DPoPSigningAuthority {
       claims.ath = await hash(accessToken);
     }
 
-    return JWT.write(header, claims, dpopKeyPair.privateKey);
+    this.emitter.emit('will_sign_proof', { request, claims });
+    const proof = await JWT.write(header, claims, dpopKeyPair.privateKey);
+    this.emitter.emit('did_sign_proof', { request, proof });
+    return proof;
   }
 
   /**
@@ -141,9 +198,17 @@ export class DPoPSigningAuthorityImpl implements DPoPSigningAuthority {
    * @returns The provided {@link !Request} with an append `dpop` header
    */
   async sign (request: Request, params: Omit<DPoPProofParams, 'request'>) {
-    const proof = await this.generateDPoPProof({ request, ...params });
-    request.headers.set('dpop', proof);
-    return request;
+    try {
+      const proof = await this.generateDPoPProof({ request, ...params });
+      request.headers.set('dpop', proof);
+      return request;
+    }
+    catch (err) {
+      if (err instanceof Error) {
+        this.emitter.emit('error', { request, error: err });
+      }
+      throw err;
+    }
   }
 
 }
