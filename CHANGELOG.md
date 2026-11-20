@@ -8,6 +8,8 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Added `isSuperset` comparison function ([#85](https://github.com/okta/okta-client-javascript/pull/85))
+- Added `DPoPSigningAuthority.Events`. `DPoPSigningAuthority` now emit events when signing proofs ([#88](https://github.com/okta/okta-client-javascript/pull/88))
+  - Provides a means to override claims as needed.
 
 ### Fixed
 - Fixed issues with `JWT` clock-based validations ([#86](https://github.com/okta/okta-client-javascript/pull/86))
