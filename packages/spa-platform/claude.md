@@ -150,8 +150,10 @@ the `getOriginalUri` option (defaults to the current `window.location`).
 - `getOriginalUri` (constructor option): the orchestrator-wide default. Use it for app-wide policy, such as stripping a
   base path or locale prefix, which also applies to redirects triggered indirectly (e.g. by `FetchClient`). Set it once;
   do not reassign it per call.
-- `getToken({ originalUri, stateData })`: per-call values. Routers may not have updated `window.location` yet while a
-  loader or guard runs, so pass the destination explicitly there:
+- `getToken({ originalUri, stateData })`: per-call values. These can also be passed via
+  `fetchClient.fetch(url, { originalUri, stateData })`; `FetchClient` infers the params of its orchestrator (see
+  `TokenOrchestrator.authParamKeys`). Routers may not have updated `window.location` yet while a loader or guard runs,
+  so pass the destination explicitly there:
 
 ```typescript
 // React Router (v6+) loader. Fetcher loaders should omit `originalUri`, since the default is already correct.
