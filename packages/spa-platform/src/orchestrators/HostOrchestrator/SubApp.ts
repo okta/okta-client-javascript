@@ -39,7 +39,9 @@ function toPrimitiveParams (
  * 
  * @overridePath orchestrators/HostOrchestrator/classes/SubApp.md
  */
-export class SubAppOrchestrator<E extends HO.SubAppEvents = HO.SubAppEvents> extends TokenOrchestrator<E> {
+export class SubAppOrchestrator<
+  E extends HO.SubAppEvents = HO.SubAppEvents
+> extends TokenOrchestrator<TokenOrchestrator.AuthorizeParams, E> {
   readonly id = shortID();
   protected readonly authParams: TokenOrchestrator.AuthorizeParams;
   protected readonly emitter: EventEmitter<E> = new EventEmitter();

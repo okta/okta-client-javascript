@@ -2,6 +2,7 @@ import { Token, TokenOrchestratorError, OAuth2Error } from '@okta/auth-foundatio
 import { Credential } from 'src/Credential';
 import { AuthorizationCodeFlow } from 'src/flows/AuthorizationCodeFlow';
 import { AuthorizationCodeFlowOrchestrator } from 'src/orchestrators/AuthorizationCodeFlowOrchestrator';
+import { FetchClient } from 'src/FetchClient';
 import { oauthClient, makeTestToken } from '../../helpers/makeTestResource';
 
 
@@ -283,6 +284,20 @@ describe('AuthorizationCodeFlowOrchestrator', () => {
         const orch = new AuthorizationCodeFlowOrchestrator(flow, { avoidPrompting: true });
         await expect(orch.getToken({ originalUri: '/a', stateData: { foo: 1 } })).resolves.toBeInstanceOf(Token);
         expect(startSpy).toHaveBeenLastCalledWith({}, expect.anything());
+      });
+
+      it('can be provided via `FetchClient.fetch`', async () => {
+        const fetchSpy = global.fetch = jest.fn();
+        const orch = new AuthorizationCodeFlowOrchestrator(flow, { emitBeforeRedirect: false });
+        const client = new FetchClient(orch);
+
+        await expect(client.fetch('http://localhost:8080/foo', {
+          originalUri: '/a',
+          stateData: { foo: 1 },
+          scopes: ['foo']
+        })).rejects.toThrow(redirectError);
+        expect(startSpy).toHaveBeenLastCalledWith({ originalUri: '/a', foo: 1 }, { scopes: ['foo'] });
+        expect(fetchSpy).not.toHaveBeenCalled();
       });
     });
 

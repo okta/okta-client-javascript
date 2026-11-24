@@ -50,11 +50,24 @@ const defaultOptions: AuthorizationCodeFlowOrchestrator.Options = {
  */
 export class AuthorizationCodeFlowOrchestrator<
   E extends AuthorizationCodeFlowOrchestrator.Events = AuthorizationCodeFlowOrchestrator.Events
-> extends TokenOrchestrator<E> {
+> extends TokenOrchestrator<AuthorizationCodeFlowOrchestrator.TokenParams, E> {
   /**
    * Possible events: {@link AuthorizationCodeFlowOrchestrator.Events}
    */
   protected readonly emitter: EventEmitter<E> = new EventEmitter();
+
+  /**
+   * Enables {@link AuthorizationCodeFlowOrchestrator.TokenParams | TokenParams} (like `originalUri` and `stateData`)
+   * to be provided via orchestrator consumers, like `FetchClient`
+   *
+   * @internal
+   */
+  protected readonly authParamKeys = {
+    ...TokenOrchestrator.authorizeParamKeys,
+    originalUri: undefined,
+    stateData: undefined,
+  } satisfies TokenOrchestrator.AuthorizeParamKeys<AuthorizationCodeFlowOrchestrator.TokenParams>;
+
   options: AuthorizationCodeFlowOrchestrator.Options = defaultOptions;
 
   constructor (
@@ -266,12 +279,12 @@ export namespace AuthorizationCodeFlowOrchestrator {
      * by {@link AuthorizationCodeFlowOrchestrator.TokenParams | getToken({ originalUri })} or `stateData.originalUri`.
      *
      * Use it for app-wide policy which applies to every redirect, including redirects triggered indirectly
-     * (e.g. via `FetchClient`) where per-call values cannot be provided. Examples are removing a base path
-     * or locale prefix. Set it once, when constructing the orchestrator.
+     * (e.g. via `FetchClient`). Examples are removing a base path or locale prefix. Set it once, when constructing
+     * the orchestrator.
      *
      * To override the value for a single call (e.g. within a router loader or guard, where `window.location` is not
      * updated yet), pass `originalUri` to {@link AuthorizationCodeFlowOrchestrator.getToken | getToken}
-     * rather than reassigning this option.
+     * (or `fetchClient.fetch(url, { originalUri })`) rather than reassigning this option.
      *
      * @example
      * ```ts

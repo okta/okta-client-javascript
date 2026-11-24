@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.11.0] - 2026-11-10
+## [0.11.0] - 2026-23-10
 
 ### `@okta/auth-foundation`
 
@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Added `isSuperset` comparison function ([#85](https://github.com/okta/okta-client-javascript/pull/85))
 - Added `DPoPSigningAuthority.Events`. `DPoPSigningAuthority` now emit events when signing proofs ([#88](https://github.com/okta/okta-client-javascript/pull/88))
   - Provides a means to override claims as needed.
+- Added a generic `P` (param-type) to `TokenOrchestrator` to enable implementation-specific parameters ([#89](https://github.com/okta/okta-client-javascript/pull/89))
 
 ### Fixed
 - Fixed issues with `JWT` clock-based validations ([#86](https://github.com/okta/okta-client-javascript/pull/86))
@@ -19,6 +20,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Improves error handling thrown by abstract methods in `HostOrchestrator.Host` ([#82](https://github.com/okta/okta-client-javascript/pull/82))
 - `AuthorizationCodeFlowOrchestrator.selectCredential` no longer matches on subset-scoped tokens in storage. Now correctly requests a new token when scopes cannot be satisfied from a stored token([#85](https://github.com/okta/okta-client-javascript/pull/85))
+- Updates `TokenOrchestrator` types to utilize new type param. Orchestrator-specific parameters can now be provided ([#89](https://github.com/okta/okta-client-javascript/pull/89))
 
 ## [0.10.0] - 2026-09-23
 

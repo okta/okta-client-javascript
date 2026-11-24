@@ -16,6 +16,23 @@ class MockOrchestrator extends TokenOrchestrator {
   }
 }
 
+type CustomParams = TokenOrchestrator.AuthorizeParams & { custom?: string };
+
+class CustomParamsOrchestrator extends TokenOrchestrator<CustomParams> {
+  protected readonly authParamKeys = {
+    ...TokenOrchestrator.authorizeParamKeys,
+    custom: undefined
+  } satisfies TokenOrchestrator.AuthorizeParamKeys<CustomParams>;
+
+  public getToken () {
+    return Promise.resolve(null);
+  }
+
+  public invalidateToken (): Promise<void> {
+    return Promise.resolve(undefined);
+  }
+}
+
 describe('FetchClient', () => {
   let context: any = {};
 
@@ -121,6 +138,47 @@ describe('FetchClient', () => {
       clientId: 'foo',
       scopes: ['a', 'b', 'c']
     }));
+  });
+
+  describe('orchestrator-specific params', () => {
+    it('will pass params specific to the orchestrator to `getToken`', async () => {
+      const { fetchSpy } = context;
+      const orchestrator = new CustomParamsOrchestrator();
+      const getTokenSpy = jest.spyOn(orchestrator, 'getToken').mockResolvedValue(makeTestToken());
+      const client = new FetchClient(orchestrator);
+
+      fetchSpy.mockImplementation(() => Response.json({ foo: 'bar' }));
+
+      const response = await client.fetch('http://localhost:8080/foo', {
+        custom: 'foo',
+        scopes: ['a'],
+        method: 'POST'
+      });
+
+      expect(response.status).toEqual(200);
+      expect(getTokenSpy).toHaveBeenCalledTimes(1);
+      expect(getTokenSpy).toHaveBeenLastCalledWith({ custom: 'foo', scopes: ['a'] });
+      expect(fetchSpy.mock.lastCall[0].method).toBe('POST');
+    });
+
+    it('will pass params specific to the orchestrator to `getToken` when retrying', async () => {
+      const { fetchSpy } = context;
+      const orchestrator = new CustomParamsOrchestrator();
+      const getTokenSpy = jest.spyOn(orchestrator, 'getToken')
+        .mockImplementation(() => Promise.resolve(makeTestToken()));
+      const client = new FetchClient(orchestrator);
+
+      fetchSpy
+        .mockResolvedValueOnce(new Response(null, { status: 401, statusText: 'Unauthorized' }))
+        .mockResolvedValueOnce(Response.json({ foo: 'bar' }));
+
+      const response = await client.fetch('http://localhost:8080/foo', { custom: 'foo' });
+
+      expect(response.status).toEqual(200);
+      expect(getTokenSpy).toHaveBeenCalledTimes(2);
+      expect(getTokenSpy.mock.calls[0][0]).toEqual({ custom: 'foo' });
+      expect(getTokenSpy.mock.calls[1][0]).toEqual({ custom: 'foo' });
+    });
   });
 
   it('will throw if token cannot be obtained', async () => {

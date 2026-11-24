@@ -17,15 +17,20 @@ import { pause } from './utils/index.ts';
  * * `Bearer` and `DPoP` authentication
  * * Step-up authentication retry
  * * Automatic `401` and `429` retry
- * 
+ *
+ * @typeParam P - Params accepted by the provided {@link TokenOrchestrator}, inferred from the `orchestrator` instance.
+ * These can be passed to {@link FetchClient.fetch}
  * @typeParam E - Map of all events fired from `FetchClient.emitter`
- * 
+ *
  * @noInheritDoc
  */
-export class FetchClient<E extends APIClient.Events = APIClient.Events> extends APIClient<E> {
+export class FetchClient<
+  P extends TokenOrchestrator.AuthorizeParams = TokenOrchestrator.AuthorizeParams,
+  E extends APIClient.Events = APIClient.Events
+> extends APIClient<E> {
 
   constructor (
-    private readonly orchestrator: TokenOrchestrator,
+    private readonly orchestrator: TokenOrchestrator<P>,
     ...[params]: ConstructorParameters<typeof APIClient>
   ) {
     super(params);
@@ -121,19 +126,21 @@ export class FetchClient<E extends APIClient.Events = APIClient.Events> extends 
 
   /** @internal */
   protected async authorize (request: APIRequest): Promise<void> {
-    const { authParams, rest: { dpopNonce } } = TokenOrchestrator.extractAuthParams(request.context);
+    const { authParams, rest: { dpopNonce } } = this.orchestrator.extractAuthParams(request.context);
     const { tokenId } = await this.orchestrator.authorize(request, { ...authParams, dpopNonce });
     request.context.tokenId = tokenId;
   }
 
   /**
    * Delegates request signing to {@link TokenOrchestrator.authorize}, then sends requests via the {@link !fetch} provided.
+   *
+   * Any params accepted by the provided {@link TokenOrchestrator} (`P`) are passed along to {@link TokenOrchestrator.getToken}
    */
   public async fetch (
     input: string | URL | Request,
-    init: TokenOrchestrator.AuthorizeParams & RequestInit & Partial<APIClient.RequestOptions> = {}
+    init: Partial<P> & RequestInit & Partial<APIClient.RequestOptions> = {}
   ): Promise<Response> {
-    const { authParams, rest: { authorizeRequest, ...fetchInit } } = TokenOrchestrator.extractAuthParams(init);
+    const { authParams, rest: { authorizeRequest, ...fetchInit } } = this.orchestrator.extractAuthParams(init);
     const context = { ...authParams, ...(authorizeRequest !== undefined && { authorizeRequest }) };
     return super.fetch(input, { ...fetchInit, context });
   }
